@@ -1,11 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePersistentForm } from '@/hooks/usePersistentForm';
 
 export default function SubjectEntryForm() {
   const [status, setStatus] = useState<{ type: 'idle' | 'loading' | 'success' | 'error'; message: string }>({ type: 'idle', message: '' });
-  
   usePersistentForm('subject-entry-form');
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -51,7 +50,7 @@ export default function SubjectEntryForm() {
           <input type="text" id="code" name="code" className="form-control" placeholder="e.g. MATH101" required />
         </div>
       </div>
-
+      
       <button type="submit" className="btn-submit" disabled={status.type === 'loading'}>
         {status.type === 'loading' ? 'Saving...' : 'Add Subject'}
       </button>

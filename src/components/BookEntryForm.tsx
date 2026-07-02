@@ -7,15 +7,17 @@ export default function BookEntryForm() {
   const [status, setStatus] = useState<{ type: 'idle' | 'loading' | 'success' | 'error'; message: string }>({ type: 'idle', message: '' });
   const [subjects, setSubjects] = useState<{ id: number; name: string }[]>([]);
   const [schools, setSchools] = useState<{ id: number; name: string; branch: string; city: string }[]>([]);
+  const [classes, setClasses] = useState<{ id: number; name: string }[]>([]);
   
   usePersistentForm('book-entry-form');
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [subjectsRes, schoolsRes] = await Promise.all([
+        const [subjectsRes, schoolsRes, classesRes] = await Promise.all([
           fetch('/api/subjects'),
-          fetch('/api/schools')
+          fetch('/api/schools'),
+          fetch('/api/classes')
         ]);
         
         if (subjectsRes.ok) {
@@ -26,6 +28,11 @@ export default function BookEntryForm() {
         if (schoolsRes.ok) {
           const data = await schoolsRes.json();
           setSchools(data);
+        }
+        
+        if (classesRes.ok) {
+          const data = await classesRes.json();
+          setClasses(data);
         }
       } catch (error) {
         console.error('Failed to fetch data', error);
@@ -76,21 +83,9 @@ export default function BookEntryForm() {
           <label className="form-label" htmlFor="className">Class</label>
           <select id="className" name="className" className="form-control" required defaultValue="">
             <option value="" disabled>Select a class...</option>
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-            <option value="6">6</option>
-            <option value="7">7</option>
-            <option value="8">8</option>
-            <option value="O1">O1</option>
-            <option value="O2">O2</option>
-            <option value="O3">O3</option>
-            <option value="9th metric">9th metric</option>
-            <option value="10th metric">10th metric</option>
-            <option value="FSC part 1">FSC part 1</option>
-            <option value="FSC part 2">FSC part 2</option>
+            {classes.map((cls) => (
+              <option key={cls.id} value={cls.name}>{cls.name}</option>
+            ))}
           </select>
         </div>
         
@@ -128,11 +123,6 @@ export default function BookEntryForm() {
               </option>
             ))}
           </select>
-        </div>
-        
-        <div className="form-group">
-          <label className="form-label" htmlFor="page">Page Number</label>
-          <input type="number" id="page" name="page" className="form-control" placeholder="e.g. 500" min="1" required />
         </div>
       </div>
 

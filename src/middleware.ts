@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { decrypt } from '@/lib/auth';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -13,17 +14,48 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const sessionCookie = request.cookies.get('session');
+  const sessionCookie = request.cookies.get('session')?.value;
   const isAuthenticated = !!sessionCookie;
 
   // Redirect unauthenticated users to login
-  if (!isAuthenticated && pathname !== '/login') {
+  if (!isAuthenticated && pathname !== '/login' && pathname !== '/register') {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // Redirect authenticated users trying to access login page back to home
-  if (isAuthenticated && pathname === '/login') {
-    return NextResponse.redirect(new URL('/', request.url));
+  // Redirect authenticated users trying to access login/register back to app
+  if (isAuthenticated && (pathname === '/login' || pathname === '/register')) {
+    return NextResponse.redirect(new URL('/view-data', request.url));
+  }
+
+  // Role-based access control
+  if (isAuthenticated) {
+    try {
+      const session = await decrypt(sessionCookie);
+      const role = session?.role as string;
+
+      // Define protected route prefixes
+      const staffOnlyPrefixes = ['/book', '/chapter', '/school', '/subject', '/topic'];
+      const adminOnlyPrefixes = ['/admin'];
+      
+      const isStaffRoute = staffOnlyPrefixes.some(prefix => pathname.startsWith(prefix));
+      const isAdminRoute = adminOnlyPrefixes.some(prefix => pathname.startsWith(prefix));
+
+      if (isStaffRoute && (role === 'STUDENT' || role === 'PARENT')) {
+        // Least privileged users cannot access data entry pages
+        return NextResponse.redirect(new URL('/view-data', request.url));
+      }
+
+      if (isAdminRoute && role !== 'OWNER') {
+        // Only Owner can access admin routes
+        return NextResponse.redirect(new URL('/view-data', request.url));
+      }
+      
+    } catch (error) {
+      // If decryption fails (e.g. invalid token), redirect to login and clear cookie
+      const response = NextResponse.redirect(new URL('/login', request.url));
+      response.cookies.delete('session');
+      return response;
+    }
   }
 
   return NextResponse.next();

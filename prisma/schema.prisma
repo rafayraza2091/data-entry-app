@@ -34,7 +34,6 @@ model BookEntry {
   edition   Int
   publisher String
   school    String
-  page      Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -89,8 +88,110 @@ model DataentryUser {
   password  String
   firstName String   @default("")
   lastName  String   @default("")
+  role      Role     @default(STUDENT)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("dataentryUser")
+}
+
+enum Role {
+  OWNER
+  COORDINATOR
+  TEACHER
+  ASSISTANT
+  STUDENT
+  PARENT
+}
+
+model Student {
+  id           Int      @id @default(autoincrement())
+  userId       Int?     @unique
+  firstName    String
+  secondName   String
+  address      String
+  mobileNumber String
+  email          String
+  fatherName     String?
+  parentContact1 String?
+  parentContact2 String?
+  otherInfo      String?
+  className      String
+  schoolName     String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Teacher {
+  id           Int      @id @default(autoincrement())
+  userId       Int?     @unique
+  firstName    String
+  secondName   String
+  address      String
+  mobileNumber String
+  email          String
+  fatherName     String?
+  parentContact1 String?
+  parentContact2 String?
+  otherInfo      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Admin {
+  id           Int      @id @default(autoincrement())
+  userId       Int?     @unique
+  firstName    String
+  secondName   String
+  address      String
+  mobileNumber String
+  email          String
+  fatherName     String?
+  parentContact1 String?
+  parentContact2 String?
+  otherInfo      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ClassEntry {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TaskEntry {
+  id          Int      @id @default(autoincrement())
+  createdBy   String
+  className   String?
+  subject     String
+  book        String?
+  chapter     String?
+  topic       String?
+  exercise    String?
+  description String
+  reporter    String
+  assignee    String
+  status      String   @default("OPEN")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PendingUser {
+  id             Int      @id @default(autoincrement())
+  firstName      String
+  lastName       String
+  username       String   @unique
+  password       String
+  email          String
+  contactNumber  String
+  address        String
+  designation    String   @default("student")
+  fatherName     String?
+  parentContact1 String?
+  parentContact2 String?
+  status         String   @default("PENDING")
+  createdAt      DateTime @default(now())
+  resolvedAt     DateTime?
 }

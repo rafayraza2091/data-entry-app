@@ -1,0 +1,37 @@
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+
+export async function GET() {
+  try {
+    const allUsers = await prisma.dataentryUser.findMany({
+      select: {
+        firstName: true,
+        lastName: true,
+        role: true,
+      },
+      orderBy: { firstName: 'asc' }
+    });
+
+    const teachers = allUsers.filter(u => u.role === 'TEACHER');
+    const rawStudents = allUsers.filter(u => u.role === 'STUDENT');
+    const admins = allUsers.filter(u => u.role === 'OWNER' || u.role === 'COORDINATOR' || u.role === 'ASSISTANT');
+    const owners = allUsers.filter(u => u.role === 'OWNER');
+
+    const studentsDb = await prisma.student.findMany({
+      select: { firstName: true, secondName: true, className: true }
+    });
+
+    const students = rawStudents.map(u => {
+      const studentData = studentsDb.find(s => s.firstName === u.firstName && s.secondName === u.lastName);
+      return {
+        ...u,
+        className: studentData?.className || ''
+      };
+    });
+
+    return NextResponse.json({ teachers, students, admins, owners }, { status: 200 });
+  } catch (error: any) {
+    console.error('Error fetching task users:', error);
+    return NextResponse.json({ error: 'Failed to fetch task users' }, { status: 500 });
+  }
+}

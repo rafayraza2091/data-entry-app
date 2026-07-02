@@ -16,6 +16,15 @@ export async function POST(request: Request) {
     });
 
     if (!user) {
+      // Check if they are pending
+      const pending = await prisma.pendingUser.findUnique({
+        where: { username }
+      });
+
+      if (pending) {
+        return NextResponse.json({ error: 'Your approval is still pending. Please ask the admin to approve your account.' }, { status: 403 });
+      }
+
       return NextResponse.json({ error: 'Invalid username or password' }, { status: 401 });
     }
 
@@ -26,7 +35,7 @@ export async function POST(request: Request) {
     }
 
     // Set secure JWT cookie
-    await setAuthCookie(user.id, user.username, user.firstName, user.lastName);
+    await setAuthCookie(user.id, user.username, user.role, user.firstName, user.lastName);
 
     return NextResponse.json({ success: true, message: 'Logged in successfully' }, { status: 200 });
   } catch (error) {

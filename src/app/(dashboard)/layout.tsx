@@ -9,12 +9,13 @@ export default async function DashboardLayout({
 }) {
   const session = await getSession();
   const firstName = session?.firstName || '';
+  const role = session?.role || 'STUDENT';
 
   return (
     <div className="app-wrapper">
       <TopNav firstName={firstName} />
       <div className="app-layout">
-        <Sidebar firstName={firstName} />
+        <Sidebar firstName={firstName} role={role} />
         <div className="main-content">
           {children}
         </div>

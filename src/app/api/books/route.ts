@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
   try {
     const data = await request.json();
@@ -12,17 +14,11 @@ export async function POST(request: Request) {
       edition: parseInt(data.edition, 10),
       publisher: data.publisher,
       school: data.school,
-      page: data.page ? parseInt(data.page, 10) : null,
     };
 
     const existingBook = await prisma.bookEntry.findFirst({
       where: {
         title: entryData.title,
-        className: entryData.className,
-        subject: entryData.subject,
-        edition: entryData.edition,
-        publisher: entryData.publisher,
-        school: entryData.school,
       }
     });
 

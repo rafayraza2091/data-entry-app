@@ -19,9 +19,9 @@ export async function decrypt(input: string): Promise<any> {
   return payload;
 }
 
-export async function setAuthCookie(userId: number, username: string, firstName?: string, lastName?: string) {
+export async function setAuthCookie(userId: number, username: string, role: string, firstName?: string, lastName?: string) {
   const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 1 day
-  const token = await encrypt({ userId, username, firstName, lastName, expires });
+  const token = await encrypt({ userId, username, role, firstName, lastName, expires });
 
   const cookieStore = await cookies();
   cookieStore.set('session', token, {
