@@ -159,7 +159,7 @@ export default function ViewTasksPage() {
           onChange={e => handleSaveEditDirect(task.id, field, e.target.value)}
           style={{ 
             background: 'transparent', 
-            color: 'white', 
+            color: 'inherit', 
             border: 'none', 
             cursor: 'pointer',
             appearance: 'none',
@@ -172,7 +172,7 @@ export default function ViewTasksPage() {
           }}
         >
           <option value="" disabled>-</option>
-          {options.map((o, i) => <option key={i} value={o} style={{color: 'black'}}>{o}</option>)}
+          {options.map((o, i) => <option key={i} value={o}>{o}</option>)}
         </select>
       );
     }
