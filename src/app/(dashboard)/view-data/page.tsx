@@ -171,18 +171,18 @@ export default function ViewDataPage() {
   };
 
   return (
-    <main className="container" style={{ maxWidth: '100%', padding: '2rem 4rem' }}>
+    <main className="container mx-auto px-2 md:px-8 py-4 md:py-8" style={{ maxWidth: '100%' }}>
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '0.5rem', color: '#f8fafc' }}>
-          Database <span style={{ color: '#3b82f6' }}>Viewer</span>
+        <h1 className="text-3xl md:text-4xl font-bold mb-2 text-slate-800">
+          Database <span className="text-blue-500">Viewer</span>
         </h1>
-        <p style={{ color: '#94a3b8', fontSize: '1.1rem' }}>
+        <p className="text-slate-500 text-sm md:text-base">
           View all registered entries across different categories.
         </p>
       </div>
       
-      <div className="glass-panel animate-slide-up" style={{ padding: '2rem', maxWidth: '95%', margin: '0 auto' }}>
-        <div className="tabs-container">
+      <div className="bg-white border border-gray-200 rounded-lg p-2 md:p-6 shadow-sm animate-slide-up w-full overflow-hidden">
+        <div className="tabs-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.5rem', justifyContent: 'center' }}>
           <button className={`tab-btn ${activeTab === 'entries' ? 'active' : ''}`} onClick={() => setActiveTab('entries')}>Syllabus Entries</button>
           <button className={`tab-btn ${activeTab === 'subjects' ? 'active' : ''}`} onClick={() => setActiveTab('subjects')}>Subjects</button>
           <button className={`tab-btn ${activeTab === 'schools' ? 'active' : ''}`} onClick={() => setActiveTab('schools')}>Schools</button>

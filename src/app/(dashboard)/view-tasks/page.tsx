@@ -263,17 +263,17 @@ export default function ViewTasksPage() {
   };
 
   return (
-    <main className="container" style={{ maxWidth: '100%', padding: '2rem 4rem' }}>
+    <main className="container mx-auto px-2 md:px-8 py-4 md:py-8" style={{ maxWidth: '100%' }}>
       <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '0.5rem', color: '#f8fafc' }}>
-          Task <span style={{ color: '#3b82f6' }}>Viewer</span>
+        <h1 className="text-3xl md:text-4xl font-bold mb-2 text-slate-50">
+          Task <span className="text-blue-500">Viewer</span>
         </h1>
-        <p style={{ color: '#94a3b8', fontSize: '1.1rem' }}>
+        <p className="text-slate-400 text-sm md:text-base">
           View all registered tasks in the system. Dropdowns update automatically on selection. Click description to edit.
         </p>
       </div>
       
-      <div className="glass-panel animate-slide-up" style={{ padding: '2rem', maxWidth: '95%', margin: '0 auto' }}>
+      <div className="bg-white border border-gray-200 rounded-lg p-2 md:p-6 shadow-sm animate-slide-up w-full overflow-hidden">
         {renderTable()}
       </div>
     </main>
