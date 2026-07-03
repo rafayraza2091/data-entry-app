@@ -198,6 +198,50 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
             />
           </div>
 
+          <div className="form-group" style={{ gridColumn: '1 / span 2' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+              <div className="form-group">
+                <label className="form-label">Reporter</label>
+                <select 
+                  className="form-control" 
+                  value={reporter} 
+                  onChange={e => setReporter(e.target.value)} 
+                  required
+                >
+                  <option value="" disabled>Select Reporter</option>
+                  {teachers.map((u, i) => (
+                    <option key={i} value={u}>{u}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Assignee</label>
+                {isStudent ? (
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    value={assignee} 
+                    disabled 
+                    style={{ backgroundColor: 'var(--border-color)' }}
+                  />
+                ) : (
+                  <select 
+                    className="form-control" 
+                    value={assignee} 
+                    onChange={e => setAssignee(e.target.value)} 
+                    required
+                  >
+                    <option value="" disabled>Select Assignee</option>
+                    {allUsers.map((u, i) => (
+                      <option key={i} value={u}>{u}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="form-group">
             <label className="form-label">Subject</label>
             <select 
@@ -290,49 +334,6 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
             </div>
           )}
 
-          <div className="form-group" style={{ gridColumn: '1 / span 2' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-              <div className="form-group">
-                <label className="form-label">Reporter</label>
-                <select 
-                  className="form-control" 
-                  value={reporter} 
-                  onChange={e => setReporter(e.target.value)} 
-                  required
-                >
-                  <option value="" disabled>Select Reporter</option>
-                  {teachers.map((u, i) => (
-                    <option key={i} value={u}>{u}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Assignee</label>
-                {isStudent ? (
-                  <input 
-                    type="text" 
-                    className="form-control" 
-                    value={assignee} 
-                    disabled 
-                    style={{ backgroundColor: 'var(--border-color)' }}
-                  />
-                ) : (
-                  <select 
-                    className="form-control" 
-                    value={assignee} 
-                    onChange={e => setAssignee(e.target.value)} 
-                    required
-                  >
-                    <option value="" disabled>Select Assignee</option>
-                    {allUsers.map((u, i) => (
-                      <option key={i} value={u}>{u}</option>
-                    ))}
-                  </select>
-                )}
-              </div>
-            </div>
-          </div>
         </div>
 
         <div className="form-group">
