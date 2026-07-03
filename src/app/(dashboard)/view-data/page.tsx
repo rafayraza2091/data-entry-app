@@ -131,10 +131,11 @@ export default function ViewDataPage() {
         );
         break;
       case 'entries':
-        headers = ['ID', 'Subject', 'Book', 'Edition', 'Class', 'Chapter No.', 'Chapter', 'Topic No.', 'Topic', 'Description', 'Page', 'Date', 'Time'];
+        headers = ['ID', 'School', 'Subject', 'Book', 'Edition', 'Class', 'Chapter No.', 'Chapter', 'Topic No.', 'Topic', 'Description', 'Page', 'Date', 'Time'];
         rowRenderer = (item, idx) => (
           <tr key={item.id}>
             <td>{idx + 1}</td>
+            <td>{item.school}</td>
             <td>{item.subject}</td>
             <td>{item.book}</td>
             <td>{item.edition}</td>

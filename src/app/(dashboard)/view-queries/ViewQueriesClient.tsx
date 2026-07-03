@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import ImageCropper from '@/components/ImageCropper';
 
 export default function ViewQueriesClient({ currentUser }: { currentUser: any }) {
   const [queries, setQueries] = useState<any[]>([]);
@@ -15,6 +16,15 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
   // Editing state
   const [editingQuery, setEditingQuery] = useState<any | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Image viewer state
+  const [viewingImages, setViewingImages] = useState<string[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // New Image attachment state for editing
+  const [croppedImages, setCroppedImages] = useState<Blob[]>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isCropping, setIsCropping] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -59,16 +69,41 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
     setIsSaving(true);
 
     try {
+      let imageUrls = [...(editingQuery.images || [])];
+
+      if (croppedImages.length > 0) {
+        const formData = new FormData();
+        croppedImages.forEach(blob => {
+          formData.append('images', blob, 'cropped.jpg');
+        });
+        formData.append('schoolName', editingQuery.schoolName || 'UnknownSchool');
+        formData.append('className', editingQuery.className || 'UnknownClass');
+        formData.append('studentName', editingQuery.studentName || 'UnknownStudent');
+
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        if (!uploadRes.ok) {
+          throw new Error('Failed to upload new images');
+        }
+        const uploadData = await uploadRes.json();
+        if (uploadData.urls) {
+          imageUrls = [...imageUrls, ...uploadData.urls];
+        }
+      }
+
       const response = await fetch(`/api/queries/${editingQuery.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(editingQuery),
+        body: JSON.stringify({ ...editingQuery, images: imageUrls }),
       });
 
       if (response.ok) {
         const updated = await response.json();
         setQueries(queries.map(q => q.id === editingQuery.id ? updated : q));
         setEditingQuery(null);
+        setCroppedImages([]);
       } else {
         console.error('Failed to update query');
       }
@@ -116,6 +151,7 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
                 <th className="p-4 font-semibold">Exercise</th>
                 <th className="p-4 font-semibold">Page Number</th>
                 <th className="p-4 font-semibold min-w-[200px]">Query Statement</th>
+                <th className="p-4 font-semibold">Attachments</th>
                 <th className="p-4 font-semibold">Status</th>
                 <th className="p-4 font-semibold">Actions</th>
               </tr>
@@ -137,6 +173,18 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
                   <td className="p-4 text-sm text-gray-600">{q.pageNumber || '-'}</td>
                   <td className="p-4 text-sm text-gray-700 max-w-[250px] truncate" title={q.queryStatement}>
                     {q.queryStatement}
+                  </td>
+                  <td className="p-4 text-sm">
+                    {q.images && q.images.length > 0 ? (
+                      <button 
+                        onClick={() => { setViewingImages(q.images); setCurrentImageIndex(0); }}
+                        className="px-3 py-1 bg-blue-50 text-blue-600 rounded border border-blue-100 hover:bg-blue-100 transition-colors"
+                      >
+                        Images ({q.images.length})
+                      </button>
+                    ) : (
+                      <span className="text-gray-400">-</span>
+                    )}
                   </td>
                   <td className="p-4 text-sm">
                     {getStatusBadge(q.status)}
@@ -280,10 +328,71 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
                 </div>
               </div>
 
+              {/* Attachments Section */}
+              <div className="flex flex-col gap-2" style={{ gridColumn: '1 / span 2' }}>
+                <label className="text-sm font-medium text-gray-700">Add More Attachments</label>
+                
+                <input
+                  type="file"
+                  accept="image/*"
+                  id="edit-file-upload"
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      setSelectedFile(e.target.files[0]);
+                      setIsCropping(true);
+                    }
+                    e.target.value = '';
+                  }}
+                />
+                
+                <div className="flex flex-wrap gap-4 items-start">
+                  {/* Current existing images */}
+                  {editingQuery.images?.map((url: string, index: number) => (
+                    <div key={`existing-${index}`} className="relative border border-gray-200 rounded p-1">
+                      <img 
+                        src={url} 
+                        alt="Existing Attachment" 
+                        className="w-24 h-24 object-cover rounded"
+                      />
+                    </div>
+                  ))}
+
+                  {/* New cropped images preview */}
+                  {croppedImages.map((blob, index) => (
+                    <div key={`new-${index}`} className="relative border border-teal-200 bg-teal-50 rounded p-1">
+                      <img 
+                        src={URL.createObjectURL(blob)} 
+                        alt="New Cropped preview" 
+                        className="w-24 h-24 object-cover rounded"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setCroppedImages(prev => prev.filter((_, i) => i !== index))}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-sm text-sm"
+                        title="Remove"
+                      >
+                        &times;
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* Add button */}
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById('edit-file-upload')?.click()}
+                    className="w-24 h-24 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded hover:bg-gray-50 hover:border-teal-500 hover:text-teal-600 transition-colors text-gray-500"
+                  >
+                    <span className="text-2xl mb-1">+</span>
+                    <span className="text-xs font-medium">Add Image</span>
+                  </button>
+                </div>
+              </div>
+
               <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
                 <button 
                   type="button" 
-                  onClick={() => setEditingQuery(null)}
+                  onClick={() => { setEditingQuery(null); setCroppedImages([]); }}
                   className="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded font-medium transition-colors"
                 >
                   Cancel
@@ -300,6 +409,68 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
           </div>
         </div>
       )}
+
+      {/* Image Viewer Modal */}
+      {viewingImages.length > 0 && (
+        <div className="fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-[100] p-4">
+          <button 
+            onClick={() => setViewingImages([])}
+            className="absolute top-6 right-6 text-white hover:text-gray-300 text-4xl"
+            title="Close"
+          >
+            &times;
+          </button>
+          
+          <div className="relative flex items-center justify-center w-full max-w-5xl h-full max-h-[80vh]">
+            {viewingImages.length > 1 && (
+              <button 
+                onClick={() => setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : viewingImages.length - 1))}
+                className="absolute left-0 text-white hover:text-gray-300 text-5xl px-4 py-8"
+              >
+                &#8249;
+              </button>
+            )}
+            
+            <img 
+              src={viewingImages[currentImageIndex]} 
+              alt={`Attachment ${currentImageIndex + 1}`} 
+              className="max-w-full max-h-full object-contain"
+            />
+            
+            {viewingImages.length > 1 && (
+              <button 
+                onClick={() => setCurrentImageIndex((prev) => (prev < viewingImages.length - 1 ? prev + 1 : 0))}
+                className="absolute right-0 text-white hover:text-gray-300 text-5xl px-4 py-8"
+              >
+                &#8250;
+              </button>
+            )}
+          </div>
+          
+          {viewingImages.length > 1 && (
+            <div className="text-white mt-4 text-lg">
+              {currentImageIndex + 1} / {viewingImages.length}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Image Cropper Modal */}
+      {isCropping && selectedFile && (
+        <ImageCropper
+          imageFile={selectedFile}
+          onCropComplete={(croppedBlob) => {
+            setCroppedImages(prev => [...prev, croppedBlob]);
+            setIsCropping(false);
+            setSelectedFile(null);
+          }}
+          onCancel={() => {
+            setIsCropping(false);
+            setSelectedFile(null);
+          }}
+        />
+      )}
+
     </div>
   );
 }

@@ -12,10 +12,12 @@ export default function DataEntryForm() {
   const [chapters, setChapters] = useState<{ id: number; chapterNumber: number; chapterTitle: string }[]>([]);
   const [topics, setTopics] = useState<{ id: number; topicNumber: string; topicName: string; exercise: string | null; page: number | null }[]>([]);
   const [classes, setClasses] = useState<{ id: number; name: string }[]>([]);
+  const [schools, setSchools] = useState<{ id: number; name: string }[]>([]);
   
   // Selected state
   const [selectedSubject, setSelectedSubject] = useState('');
   const [selectedClass, setSelectedClass] = useState('');
+  const [selectedSchool, setSelectedSchool] = useState('');
   const [selectedBook, setSelectedBook] = useState('');
   const [selectedChapterNumber, setSelectedChapterNumber] = useState('');
   const [selectedTopicNumber, setSelectedTopicNumber] = useState('');
@@ -61,8 +63,21 @@ export default function DataEntryForm() {
       }
     }
 
+    async function fetchSchools() {
+      try {
+        const response = await fetch('/api/schools');
+        if (response.ok) {
+          const data = await response.json();
+          setSchools(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch schools', error);
+      }
+    }
+
     fetchSubjects();
     fetchClasses();
+    fetchSchools();
   }, []);
 
   // 2. Fetch Books
@@ -145,6 +160,7 @@ export default function DataEntryForm() {
     }
 
     const payload = {
+      school: data.school,
       subject: data.subject,
       book: data.book,
       className: data.className,
@@ -192,6 +208,23 @@ export default function DataEntryForm() {
       
       <div className="form-row">
         <div className="form-group">
+          <label className="form-label" htmlFor="school">School</label>
+          <select 
+            id="school" 
+            name="school" 
+            className="form-control" 
+            required 
+            value={selectedSchool}
+            onChange={(e) => setSelectedSchool(e.target.value)}
+          >
+            <option value="" disabled>Select a school...</option>
+            {schools.map((school) => (
+              <option key={school.id} value={school.name}>{school.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-group">
           <label className="form-label" htmlFor="subject">Subject</label>
           <select 
             id="subject" 
@@ -207,7 +240,9 @@ export default function DataEntryForm() {
             ))}
           </select>
         </div>
+      </div>
         
+      <div className="form-row">
         <div className="form-group">
           <label className="form-label" htmlFor="className">Class</label>
           <select 
@@ -359,26 +394,33 @@ export default function DataEntryForm() {
       </div>
 
       <div className="form-row">
-        <div className="form-group">
-          <label className="form-label" htmlFor="exercise">Exercise</label>
-          <select 
-            id="exercise" 
-            name="exercise" 
-            className="form-control" 
-            required 
-            disabled={!selectedTopicNumber || exerciseOptions.length === 0}
-            defaultValue=""
-          >
-            <option value="" disabled>
-              {selectedTopicNumber && exerciseOptions.length === 0 ? 'No exercises found...' : 'Select an exercise...'}
-            </option>
-            {exerciseOptions.map((ex, idx) => (
-              <option key={idx} value={ex}>{ex}</option>
-            ))}
-          </select>
-        </div>
+        {selectedSubject === 'Mathematics' ? (
+          <div className="form-group">
+            <label className="form-label" htmlFor="exercise">Exercise</label>
+            <select 
+              id="exercise" 
+              name="exercise" 
+              className="form-control" 
+              required 
+              disabled={!selectedTopicNumber || exerciseOptions.length === 0}
+              defaultValue=""
+            >
+              <option value="" disabled>
+                {selectedTopicNumber && exerciseOptions.length === 0 ? 'No exercises found...' : 'Select an exercise...'}
+              </option>
+              {exerciseOptions.map((ex, idx) => (
+                <option key={idx} value={ex}>{ex}</option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <div className="form-group" style={{ display: 'none' }}>
+            {/* Hidden exercise field for non-math subjects so the payload doesn't break if needed, though we can just omit it or pass empty */}
+            <input type="hidden" name="exercise" value="" />
+          </div>
+        )}
         
-        <div className="form-group">
+        <div className="form-group" style={{ gridColumn: selectedSubject === 'Mathematics' ? 'auto' : '1 / span 2' }}>
           <label className="form-label" htmlFor="page">Page Number</label>
           <input 
             type="number" 

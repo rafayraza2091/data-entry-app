@@ -22,6 +22,7 @@ model DataEntry {
   page        Int
   date        String
   time        String
+  school      String   @default("")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -96,6 +97,8 @@ model QueryEntry {
   pageNumber     String?
   queryStatement String
   status         String   @default("open")
+  schoolName     String   @default("")
+  images         String[] @default([])
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }

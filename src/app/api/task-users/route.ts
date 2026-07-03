@@ -20,14 +20,15 @@ export async function GET() {
     const owners = allUsers.filter(u => u.role === 'OWNER');
 
     const studentsDb = await prisma.student.findMany({
-      select: { firstName: true, secondName: true, className: true }
+      select: { firstName: true, secondName: true, className: true, schoolName: true }
     });
 
     const students = rawStudents.map(u => {
       const studentData = studentsDb.find(s => s.firstName === u.firstName && s.secondName === u.lastName);
       return {
         ...u,
-        className: studentData?.className || ''
+        className: studentData?.className || '',
+        schoolName: studentData?.schoolName || ''
       };
     });
 

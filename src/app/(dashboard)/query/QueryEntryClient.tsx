@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import ImageCropper from '@/components/ImageCropper';
 
 export default function QueryEntryClient({ currentUser }: { currentUser: any }) {
   const [user, setUser] = useState<any>(currentUser);
@@ -21,13 +22,17 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
   const [topic, setTopic] = useState('');
   const [chapter, setChapter] = useState('');
   const [exercise, setExercise] = useState('');
-  const [questionNumber, setQuestionNumber] = useState('');
   const [pageNumber, setPageNumber] = useState('');
   const [queryStatement, setQueryStatement] = useState('');
   const [queryStatus, setQueryStatus] = useState('open');
   
   const [status, setStatus] = useState({ type: '', message: '' });
   const [ownerName, setOwnerName] = useState('');
+
+  // Image Upload State
+  const [croppedImages, setCroppedImages] = useState<Blob[]>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isCropping, setIsCropping] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -47,7 +52,7 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
           const aList = data.admins?.map(formatName) || [];
           const oList = data.owners?.map(formatName) || [];
           
-          setTeachers([...tList, ...aList, ...oList]);
+          setTeachers(Array.from(new Set([...tList, ...aList, ...oList])));
           setStudentsList(data.students || []);
 
           const defaultOwner = oList.length > 0 ? oList[0] : (aList.length > 0 ? aList[0] : '');
@@ -58,6 +63,8 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
             if (currentUser.role === 'STUDENT') {
               setStudentName(userName);
               setTeacherName(defaultOwner);
+            } else if (currentUser.role === 'OWNER' || currentUser.role === 'TEACHER' || currentUser.role === 'COORDINATOR' || currentUser.role === 'ASSISTANT') {
+              setTeacherName(userName);
             }
           }
         }
@@ -76,9 +83,31 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStatus({ type: '', message: '' });
+    setStatus({ type: 'loading', message: 'Uploading and submitting...' });
 
     try {
+      let imageUrls: string[] = [];
+      if (croppedImages.length > 0) {
+        const formData = new FormData();
+        croppedImages.forEach(blob => {
+          formData.append('images', blob, 'cropped.jpg');
+        });
+        formData.append('schoolName', derivedSchoolName);
+        formData.append('className', derivedClassName);
+        formData.append('studentName', studentName);
+
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        if (!uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          throw new Error(uploadData.error || 'Failed to upload images');
+        }
+        const uploadData = await uploadRes.json();
+        imageUrls = uploadData.urls || [];
+      }
+
       const res = await fetch('/api/queries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -86,15 +115,16 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
           studentName,
           teacherName,
           className: derivedClassName,
+          schoolName: derivedSchoolName,
           subject,
           book,
           chapter,
           topic,
           exercise,
-          questionNumber,
           pageNumber,
           queryStatement,
-          status: queryStatus
+          status: queryStatus,
+          images: imageUrls,
         })
       });
 
@@ -111,11 +141,10 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
       setChapter('');
       setTopic('');
       setExercise('');
-      setQuestionNumber('');
       setPageNumber('');
       setQueryStatement('');
       setQueryStatus('open');
-      setStatus({ type: 'success', message: 'Query submitted successfully!' });
+      setCroppedImages([]);
       
       if (user.role !== 'STUDENT') {
         setStudentName('');
@@ -132,10 +161,14 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
   const isStudent = user.role === 'STUDENT';
 
   let derivedClassName = user.className || '';
+  let derivedSchoolName = user.schoolName || '';
   if (studentName) {
     const assignedStudent = studentsList.find(s => `${s.firstName} ${s.lastName}`.trim() === studentName);
     if (assignedStudent && assignedStudent.className) {
       derivedClassName = assignedStudent.className;
+    }
+    if (assignedStudent && assignedStudent.schoolName) {
+      derivedSchoolName = assignedStudent.schoolName;
     }
   }
 
@@ -279,17 +312,6 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
             </div>
 
             <div className="form-group">
-              <label className="form-label">Question Number</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                value={questionNumber} 
-                onChange={e => setQuestionNumber(e.target.value)} 
-                placeholder="e.g. Q4 (Optional)"
-              />
-            </div>
-
-            <div className="form-group">
               <label className="form-label">Page Number</label>
               <input 
                 type="text" 
@@ -352,6 +374,45 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
             />
           </div>
 
+          {/* Attachments Section */}
+          <div className="form-group" style={{ gridColumn: '1 / span 2' }}>
+            <label className="form-label">Attachments (Optional)</label>
+            <input 
+              type="file" 
+              accept="image/*" 
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  setSelectedFile(e.target.files[0]);
+                  setIsCropping(true);
+                  e.target.value = ''; // Reset input so same file can be selected again
+                }
+              }} 
+              className="form-control" 
+              style={{ padding: '8px' }}
+            />
+            {croppedImages.length > 0 && (
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
+                {croppedImages.map((blob, idx) => (
+                  <div key={idx} style={{ position: 'relative', width: '80px', height: '80px' }}>
+                    <img 
+                      src={URL.createObjectURL(blob)} 
+                      alt="cropped preview" 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--border-color)' }} 
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setCroppedImages(prev => prev.filter((_, i) => i !== idx))}
+                      style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#e74c3c', color: 'white', borderRadius: '50%', width: '20px', height: '20px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', lineHeight: 1 }}
+                      title="Remove image"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
         </div>
 
         <button type="submit" className="btn-submit" disabled={status.type === 'loading'}>
@@ -364,6 +425,21 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
           </div>
         )}
       </form>
+
+      {isCropping && selectedFile && (
+        <ImageCropper
+          imageFile={selectedFile}
+          onCropComplete={(croppedBlob) => {
+            setCroppedImages(prev => [...prev, croppedBlob]);
+            setIsCropping(false);
+            setSelectedFile(null);
+          }}
+          onCancel={() => {
+            setIsCropping(false);
+            setSelectedFile(null);
+          }}
+        />
+      )}
     </div>
   );
 }

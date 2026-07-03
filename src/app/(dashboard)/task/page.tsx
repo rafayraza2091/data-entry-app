@@ -12,7 +12,7 @@ export default async function TaskEntryPage() {
   const uppercaseName = displayName.toUpperCase();
 
   return (
-    <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8" style={{ maxWidth: '100%' }}>
+    <main className="container" style={{ maxWidth: '100%' }}>
       <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
         <h1 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '1rem', color: '#172b4d' }}>
           Welcome, <span style={{ color: '#0d9488' }}>{uppercaseName}</span>!

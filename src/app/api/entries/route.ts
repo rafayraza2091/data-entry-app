@@ -6,6 +6,7 @@ export async function POST(request: Request) {
     const data = await request.json();
     
     const entryData = {
+      school: data.school || '',
       book: data.book,
       subject: data.subject,
       className: data.className,
@@ -23,6 +24,7 @@ export async function POST(request: Request) {
 
     const existingEntry = await prisma.dataEntry.findFirst({
       where: {
+        school: entryData.school,
         subject: entryData.subject,
         book: entryData.book,
         className: entryData.className,
