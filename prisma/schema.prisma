@@ -82,6 +82,20 @@ model TopicEntry {
   updatedAt     DateTime @updatedAt
 }
 
+model QueryEntry {
+  id             Int      @id @default(autoincrement())
+  studentName    String
+  teacherName    String
+  className      String
+  subject        String
+  book           String?
+  topic          String?
+  pageNumber     String?
+  queryStatement String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
 model DataentryUser {
   id        Int      @id @default(autoincrement())
   username  String   @unique

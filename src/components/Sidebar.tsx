@@ -86,6 +86,11 @@ export default function Sidebar({
             {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Topic Entry</span>}
           </Link>
 
+          <Link href="/query" className={`flex items-center px-3 py-2.5 rounded-md transition-colors ${pathname === '/query' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Query Entry">
+            <i className="fa-solid fa-question-circle w-6 text-center"></i>
+            {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Query Entry</span>}
+          </Link>
+
           {/* View Section */}
           <div className="mt-4 pt-4 border-t border-white/10">
             {isExpanded && <div className="text-xs uppercase text-subtextGray font-bold mb-2 px-2 tracking-wider">View</div>}
