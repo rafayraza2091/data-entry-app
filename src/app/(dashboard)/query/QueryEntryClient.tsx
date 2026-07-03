@@ -119,7 +119,7 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
   const isStudent = user.role === 'STUDENT';
 
   let derivedClassName = user.className || '';
-  if (!isStudent && studentName) {
+  if (studentName) {
     const assignedStudent = studentsList.find(s => `${s.firstName} ${s.lastName}`.trim() === studentName);
     if (assignedStudent && assignedStudent.className) {
       derivedClassName = assignedStudent.className;
