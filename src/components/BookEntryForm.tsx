@@ -8,6 +8,7 @@ export default function BookEntryForm() {
   const [subjects, setSubjects] = useState<{ id: number; name: string }[]>([]);
   const [schools, setSchools] = useState<{ id: number; name: string; branch: string; city: string }[]>([]);
   const [classes, setClasses] = useState<{ id: number; name: string }[]>([]);
+  const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
   
   usePersistentForm('book-entry-form');
 
@@ -43,10 +44,15 @@ export default function BookEntryForm() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (selectedClasses.length === 0) {
+      setStatus({ type: 'error', message: 'Please select at least one class.' });
+      return;
+    }
     setStatus({ type: 'loading', message: 'Submitting...' });
 
     const formData = new FormData(e.currentTarget);
     const data = Object.fromEntries(formData.entries());
+    data.className = selectedClasses.join(', ');
 
     try {
       const response = await fetch('/api/books', {
@@ -61,6 +67,7 @@ export default function BookEntryForm() {
       }
       
       setStatus({ type: 'success', message: 'Book entry successful!' });
+      setSelectedClasses([]);
       
       // Clear success message after 3 seconds
       setTimeout(() => setStatus({ type: 'idle', message: '' }), 3000);
@@ -80,13 +87,26 @@ export default function BookEntryForm() {
         </div>
 
         <div className="form-group">
-          <label className="form-label" htmlFor="className">Class</label>
-          <select id="className" name="className" className="form-control" required defaultValue="">
-            <option value="" disabled>Select a class...</option>
+          <label className="form-label">Classes</label>
+          <div className="form-control" style={{ height: 'auto', maxHeight: '150px', overflowY: 'auto', padding: '0.5rem' }}>
             {classes.map((cls) => (
-              <option key={cls.id} value={cls.name}>{cls.name}</option>
+              <label key={cls.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem', cursor: 'pointer' }}>
+                <input 
+                  type="checkbox" 
+                  checked={selectedClasses.includes(cls.name)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedClasses([...selectedClasses, cls.name]);
+                    } else {
+                      setSelectedClasses(selectedClasses.filter(c => c !== cls.name));
+                    }
+                  }}
+                />
+                <span style={{ fontSize: '0.9rem', color: '#475569' }}>{cls.name}</span>
+              </label>
             ))}
-          </select>
+            {classes.length === 0 && <span style={{ color: '#9ca3af', fontSize: '0.9rem' }}>No classes found...</span>}
+          </div>
         </div>
         
         <div className="form-group">
