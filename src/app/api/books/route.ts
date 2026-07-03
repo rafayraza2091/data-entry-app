@@ -41,8 +41,11 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const subject = searchParams.get('subject');
+    const className = searchParams.get('className');
 
-    const whereClause = subject ? { subject } : {};
+    const whereClause: any = {};
+    if (subject) whereClause.subject = subject;
+    if (className) whereClause.className = { contains: className };
 
     const entries = await prisma.bookEntry.findMany({
       where: whereClause,

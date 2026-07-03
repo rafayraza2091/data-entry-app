@@ -7,41 +7,50 @@ export default function TopicEntryForm() {
   const [status, setStatus] = useState<{ type: 'idle' | 'loading' | 'success' | 'error'; message: string }>({ type: 'idle', message: '' });
   
   const [subjects, setSubjects] = useState<{ id: number; name: string }[]>([]);
+  const [classes, setClasses] = useState<{ id: number; name: string }[]>([]);
   const [books, setBooks] = useState<{ id: number; title: string }[]>([]);
   const [chapters, setChapters] = useState<{ id: number; chapterNumber: number; chapterTitle: string }[]>([]);
   
   const [selectedSubject, setSelectedSubject] = useState('');
+  const [selectedClass, setSelectedClass] = useState('');
   const [selectedBook, setSelectedBook] = useState('');
   const [selectedChapterNumber, setSelectedChapterNumber] = useState('');
   
   usePersistentForm('topic-entry-form');
 
-  // Fetch subjects on mount
+  // Fetch subjects and classes on mount
   useEffect(() => {
-    async function fetchSubjects() {
+    async function fetchData() {
       try {
-        const response = await fetch('/api/subjects');
-        if (response.ok) {
-          const data = await response.json();
+        const [subjectsRes, classesRes] = await Promise.all([
+          fetch('/api/subjects'),
+          fetch('/api/classes')
+        ]);
+        if (subjectsRes.ok) {
+          const data = await subjectsRes.json();
           setSubjects(data);
         }
+        if (classesRes.ok) {
+          const data = await classesRes.json();
+          setClasses(data);
+        }
       } catch (error) {
-        console.error('Failed to fetch subjects', error);
+        console.error('Failed to fetch data', error);
       }
     }
-    fetchSubjects();
+    fetchData();
   }, []);
 
-  // Fetch books when subject changes
+  // Fetch books when subject or class changes
   useEffect(() => {
     async function fetchBooksForSubject() {
-      if (!selectedSubject) {
+      if (!selectedSubject || !selectedClass) {
         setBooks([]);
         setSelectedBook('');
         return;
       }
       try {
-        const response = await fetch(`/api/books?subject=${encodeURIComponent(selectedSubject)}`);
+        const response = await fetch(`/api/books?subject=${encodeURIComponent(selectedSubject)}&className=${encodeURIComponent(selectedClass)}`);
         if (response.ok) {
           const data = await response.json();
           setBooks(data);
@@ -51,7 +60,7 @@ export default function TopicEntryForm() {
       }
     }
     fetchBooksForSubject();
-  }, [selectedSubject]);
+  }, [selectedSubject, selectedClass]);
 
   // Fetch chapters when book changes
   useEffect(() => {
@@ -150,6 +159,24 @@ export default function TopicEntryForm() {
         </div>
 
         <div className="form-group">
+          <label className="form-label" htmlFor="className">Class</label>
+          <select 
+            id="className" 
+            name="className" 
+            className="form-control" 
+            required 
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value)}
+            disabled={!selectedSubject}
+          >
+            <option value="" disabled>Select a class...</option>
+            {classes.map((cls) => (
+              <option key={cls.id} value={cls.name}>{cls.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-group">
           <label className="form-label" htmlFor="book">Book</label>
           <select 
             id="book" 
@@ -160,10 +187,10 @@ export default function TopicEntryForm() {
             onChange={(e) => {
               setSelectedBook(e.target.value);
             }}
-            disabled={!selectedSubject || books.length === 0}
+            disabled={!selectedSubject || !selectedClass || books.length === 0}
           >
             <option value="" disabled>
-              {selectedSubject && books.length === 0 ? 'No books found...' : 'Select a book...'}
+              {selectedSubject && selectedClass && books.length === 0 ? 'No books found...' : 'Select a book...'}
             </option>
             {books.map((book) => (
               <option key={book.id} value={book.title}>

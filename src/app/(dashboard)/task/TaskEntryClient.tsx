@@ -141,7 +141,10 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
     }
   }
 
-  const availableBooks = booksList.filter(b => b.subject === subject);
+  const availableBooks = booksList.filter(b => 
+    b.subject === subject && 
+    (b.className || '').includes(derivedClassName)
+  );
   const availableChapters = chaptersList.filter(c => c.subject === subject && c.book === book);
   const availableTopics = topicsList.filter(t => t.subject === subject && t.book === book && (t.chapterTitle === chapter || t.chapterName === chapter));
   

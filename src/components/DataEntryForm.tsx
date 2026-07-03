@@ -15,6 +15,7 @@ export default function DataEntryForm() {
   
   // Selected state
   const [selectedSubject, setSelectedSubject] = useState('');
+  const [selectedClass, setSelectedClass] = useState('');
   const [selectedBook, setSelectedBook] = useState('');
   const [selectedChapterNumber, setSelectedChapterNumber] = useState('');
   const [selectedTopicNumber, setSelectedTopicNumber] = useState('');
@@ -67,13 +68,13 @@ export default function DataEntryForm() {
   // 2. Fetch Books
   useEffect(() => {
     async function fetchBooks() {
-      if (!selectedSubject) {
+      if (!selectedSubject || !selectedClass) {
         setBooks([]);
         setSelectedBook('');
         return;
       }
       try {
-        const response = await fetch(`/api/books?subject=${encodeURIComponent(selectedSubject)}`);
+        const response = await fetch(`/api/books?subject=${encodeURIComponent(selectedSubject)}&className=${encodeURIComponent(selectedClass)}`);
         if (response.ok) {
           const data = await response.json();
           setBooks(data);
@@ -83,7 +84,7 @@ export default function DataEntryForm() {
       }
     }
     fetchBooks();
-  }, [selectedSubject]);
+  }, [selectedSubject, selectedClass]);
 
   // 3. Fetch Chapters
   useEffect(() => {
@@ -209,7 +210,15 @@ export default function DataEntryForm() {
         
         <div className="form-group">
           <label className="form-label" htmlFor="className">Class</label>
-          <select id="className" name="className" className="form-control" required defaultValue="">
+          <select 
+            id="className" 
+            name="className" 
+            className="form-control" 
+            required 
+            value={selectedClass}
+            onChange={(e) => setSelectedClass(e.target.value)}
+            disabled={!selectedSubject}
+          >
             <option value="" disabled>Select a class...</option>
             {classes.map((cls) => (
               <option key={cls.id} value={cls.name}>{cls.name}</option>
@@ -226,10 +235,10 @@ export default function DataEntryForm() {
             required 
             value={selectedBook}
             onChange={(e) => setSelectedBook(e.target.value)}
-            disabled={!selectedSubject || books.length === 0}
+            disabled={!selectedSubject || !selectedClass || books.length === 0}
           >
             <option value="" disabled>
-              {selectedSubject && books.length === 0 ? 'No books found...' : 'Select a book...'}
+              {selectedSubject && selectedClass && books.length === 0 ? 'No books found...' : 'Select a book...'}
             </option>
             {books.map((book) => (
               <option key={book.id} value={book.title}>{book.title}</option>
