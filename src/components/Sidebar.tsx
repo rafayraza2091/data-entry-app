@@ -100,6 +100,11 @@ export default function Sidebar({
               {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">View Data</span>}
             </Link>
 
+            <Link href="/view-queries" className={`flex items-center px-3 py-2.5 rounded-md transition-colors ${pathname === '/view-queries' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="View Queries">
+              <i className="fa-solid fa-clipboard-question w-6 text-center"></i>
+              {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">View Queries</span>}
+            </Link>
+
             <Link href="/view-tasks" className={`flex items-center px-3 py-2.5 rounded-md transition-colors ${pathname === '/view-tasks' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="View Tasks">
               <i className="fa-solid fa-tasks w-6 text-center"></i>
               {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">View Tasks</span>}
