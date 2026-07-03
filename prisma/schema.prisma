@@ -89,11 +89,13 @@ model QueryEntry {
   className      String
   subject        String
   book           String?
+  chapter        String?
   topic          String?
   exercise       String?
   questionNumber String?
   pageNumber     String?
   queryStatement String
+  status         String   @default("open")
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }

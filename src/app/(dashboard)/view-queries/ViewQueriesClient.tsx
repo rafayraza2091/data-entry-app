@@ -7,18 +7,27 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Inline editing state
-  const [editingQuery, setEditingQuery] = useState<number | null>(null);
-  const [editValue, setEditValue] = useState<string>('');
+  // Dropdown lists for the edit modal
+  const [subjectsList, setSubjectsList] = useState<any[]>([]);
+  const [booksList, setBooksList] = useState<any[]>([]);
+  const [topicsList, setTopicsList] = useState<any[]>([]);
+
+  // Editing state
+  const [editingQuery, setEditingQuery] = useState<any | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    async function fetchQueries() {
+    async function fetchData() {
       try {
-        const response = await fetch('/api/queries');
-        if (!response.ok) {
-          throw new Error('Failed to fetch queries');
-        }
-        const data = await response.json();
+        const [qRes, sRes, bRes, tRes] = await Promise.all([
+          fetch('/api/queries'),
+          fetch('/api/subjects'),
+          fetch('/api/books'),
+          fetch('/api/topics')
+        ]);
+
+        if (!qRes.ok) throw new Error('Failed to fetch queries');
+        const data = await qRes.json();
 
         // Apply filtering based on role
         if (currentUser.role === 'STUDENT') {
@@ -26,9 +35,12 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
           const filtered = data.filter((q: any) => q.studentName === studentFullName);
           setQueries(filtered);
         } else {
-          // Teachers, Owners, Coordinators, Admins see everything
           setQueries(data);
         }
+
+        if (sRes.ok) setSubjectsList(await sRes.json());
+        if (bRes.ok) setBooksList(await bRes.json());
+        if (tRes.ok) setTopicsList(await tRes.json());
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -37,35 +49,42 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
     }
 
     if (currentUser) {
-      fetchQueries();
+      fetchData();
     }
   }, [currentUser]);
 
-  const handleEditSubmit = async (queryId: number) => {
-    if (!editValue.trim()) {
-      setEditingQuery(null);
-      return;
-    }
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingQuery) return;
+    setIsSaving(true);
 
     try {
-      const response = await fetch(`/api/queries/${queryId}`, {
+      const response = await fetch(`/api/queries/${editingQuery.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ queryStatement: editValue }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingQuery),
       });
 
       if (response.ok) {
-        setQueries(queries.map(q => q.id === queryId ? { ...q, queryStatement: editValue } : q));
+        const updated = await response.json();
+        setQueries(queries.map(q => q.id === editingQuery.id ? updated : q));
+        setEditingQuery(null);
       } else {
         console.error('Failed to update query');
       }
     } catch (err) {
       console.error(err);
     } finally {
-      setEditingQuery(null);
+      setIsSaving(false);
     }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const s = (status || 'open').toLowerCase();
+    if (s === 'open') return <span className="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-semibold uppercase">Open</span>;
+    if (s === 'pending') return <span className="px-2 py-1 bg-yellow-200 text-yellow-800 rounded text-xs font-semibold uppercase">Pending</span>;
+    if (s === 'done') return <span className="px-2 py-1 bg-green-200 text-green-800 rounded text-xs font-semibold uppercase">Done</span>;
+    return <span className="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-semibold uppercase">{s}</span>;
   };
 
   if (loading) return <div style={{ padding: '2rem' }}>Loading queries...</div>;
@@ -83,65 +102,202 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse whitespace-nowrap">
             <thead>
               <tr className="border-b border-gray-200 text-teal-600 uppercase text-xs tracking-wider">
                 <th className="p-4 font-semibold">Date</th>
+                <th className="p-4 font-semibold">Teacher</th>
                 <th className="p-4 font-semibold">Student</th>
                 <th className="p-4 font-semibold">Class</th>
                 <th className="p-4 font-semibold">Subject</th>
-                <th className="p-4 font-semibold">Topic / Details</th>
-                <th className="p-4 font-semibold">Query Statement</th>
+                <th className="p-4 font-semibold">Book</th>
+                <th className="p-4 font-semibold">Chapter</th>
+                <th className="p-4 font-semibold">Topic</th>
+                <th className="p-4 font-semibold">Exercise</th>
+                <th className="p-4 font-semibold">Page Number</th>
+                <th className="p-4 font-semibold min-w-[200px]">Query Statement</th>
+                <th className="p-4 font-semibold">Status</th>
+                <th className="p-4 font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
               {queries.map((q, idx) => (
                 <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                  <td className="p-4 text-sm text-gray-600 whitespace-nowrap">
+                  <td className="p-4 text-sm text-gray-600">
                     {new Date(q.createdAt).toLocaleDateString()}
                   </td>
+                  <td className="p-4 text-sm font-medium text-gray-900">{q.teacherName}</td>
                   <td className="p-4 text-sm font-medium text-gray-900">{q.studentName}</td>
                   <td className="p-4 text-sm text-gray-600">{q.className}</td>
                   <td className="p-4 text-sm text-gray-600">{q.subject}</td>
-                  <td className="p-4 text-sm text-gray-500">
-                    {q.topic && <div><span className="text-gray-400">Topic:</span> {q.topic}</div>}
-                    {q.exercise && <div><span className="text-gray-400">Ex:</span> {q.exercise}</div>}
-                    {q.questionNumber && <div><span className="text-gray-400">Q:</span> {q.questionNumber}</div>}
-                    {q.pageNumber && <div><span className="text-gray-400">Page:</span> {q.pageNumber}</div>}
-                    {!q.topic && !q.exercise && !q.pageNumber && '-'}
+                  <td className="p-4 text-sm text-gray-600">{q.book || '-'}</td>
+                  <td className="p-4 text-sm text-gray-600">{q.chapter || '-'}</td>
+                  <td className="p-4 text-sm text-gray-600">{q.topic || '-'}</td>
+                  <td className="p-4 text-sm text-gray-600">{q.exercise || '-'}</td>
+                  <td className="p-4 text-sm text-gray-600">{q.pageNumber || '-'}</td>
+                  <td className="p-4 text-sm text-gray-700 max-w-[250px] truncate" title={q.queryStatement}>
+                    {q.queryStatement}
                   </td>
-                  <td className="p-4 text-sm text-gray-700 max-w-xs truncate" title={q.queryStatement}>
-                    {editingQuery === q.id ? (
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          className="w-full bg-white border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
-                          value={editValue}
-                          onChange={(e) => setEditValue(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') handleEditSubmit(q.id);
-                            if (e.key === 'Escape') setEditingQuery(null);
-                          }}
-                          autoFocus
-                          onBlur={() => handleEditSubmit(q.id)}
-                        />
-                      </div>
-                    ) : (
-                      <div 
-                        className="cursor-pointer hover:bg-gray-100 px-2 py-1 rounded transition-colors -ml-2 truncate"
-                        onClick={() => {
-                          setEditingQuery(q.id);
-                          setEditValue(q.queryStatement);
-                        }}
-                      >
-                        {q.queryStatement || <span className="text-gray-400 italic">Empty</span>}
-                      </div>
-                    )}
+                  <td className="p-4 text-sm">
+                    {getStatusBadge(q.status)}
+                  </td>
+                  <td className="p-4 text-sm text-gray-600">
+                    <button 
+                      onClick={() => setEditingQuery({ ...q })}
+                      className="px-3 py-1 bg-teal-50 text-teal-600 rounded border border-teal-100 hover:bg-teal-100 transition-colors"
+                    >
+                      Edit
+                    </button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editingQuery && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-slide-up">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
+              <h2 className="text-xl font-bold text-gray-800">Edit Query</h2>
+              <button onClick={() => setEditingQuery(null)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            
+            <form onSubmit={handleEditSubmit} className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                
+                {/* Non-editable fields */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Student</label>
+                  <input type="text" disabled value={editingQuery.studentName} className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-600 cursor-not-allowed" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Teacher</label>
+                  <input type="text" disabled value={editingQuery.teacherName} className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-600 cursor-not-allowed" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Class</label>
+                  <input type="text" disabled value={editingQuery.className} className="w-full bg-gray-100 border border-gray-300 rounded px-3 py-2 text-gray-600 cursor-not-allowed" />
+                </div>
+                
+                {/* Editable fields */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                  <select 
+                    value={editingQuery.subject || ''} 
+                    onChange={e => setEditingQuery({ ...editingQuery, subject: e.target.value, book: '', topic: '' })}
+                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    required
+                  >
+                    <option value="" disabled>Select Subject</option>
+                    {subjectsList.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Book (Optional)</label>
+                  <select 
+                    value={editingQuery.book || ''} 
+                    onChange={e => setEditingQuery({ ...editingQuery, book: e.target.value, topic: '' })}
+                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  >
+                    <option value="">Select Book</option>
+                    {booksList.filter(b => b.subject === editingQuery.subject).map(b => (
+                      <option key={b.id} value={b.title}>{b.title}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Chapter (Optional)</label>
+                  <input 
+                    type="text" 
+                    value={editingQuery.chapter || ''} 
+                    onChange={e => setEditingQuery({ ...editingQuery, chapter: e.target.value })}
+                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Topic (Optional)</label>
+                  <select 
+                    value={editingQuery.topic || ''} 
+                    onChange={e => setEditingQuery({ ...editingQuery, topic: e.target.value, exercise: '' })}
+                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  >
+                    <option value="">Select Topic</option>
+                    {topicsList
+                      .filter(t => t.subject === editingQuery.subject && (editingQuery.book ? t.book === editingQuery.book : true))
+                      .map((t, i) => <option key={i} value={t.topicName || ''}>{t.topicName}</option>)
+                    }
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Exercise (Optional)</label>
+                  <input 
+                    type="text" 
+                    value={editingQuery.exercise || ''} 
+                    onChange={e => setEditingQuery({ ...editingQuery, exercise: e.target.value })}
+                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Page Number (Optional)</label>
+                  <input 
+                    type="text" 
+                    value={editingQuery.pageNumber || ''} 
+                    onChange={e => setEditingQuery({ ...editingQuery, pageNumber: e.target.value })}
+                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select 
+                    value={editingQuery.status || 'open'} 
+                    onChange={e => setEditingQuery({ ...editingQuery, status: e.target.value })}
+                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    required
+                  >
+                    <option value="open">Open</option>
+                    <option value="pending">Pending</option>
+                    <option value="done">Done</option>
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Query Statement</label>
+                  <textarea 
+                    value={editingQuery.queryStatement || ''} 
+                    onChange={e => setEditingQuery({ ...editingQuery, queryStatement: e.target.value })}
+                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 min-h-[100px]"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                <button 
+                  type="button" 
+                  onClick={() => setEditingQuery(null)}
+                  className="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={isSaving}
+                  className="px-4 py-2 text-white bg-teal-600 hover:bg-teal-700 rounded font-medium transition-colors disabled:opacity-50"
+                >
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

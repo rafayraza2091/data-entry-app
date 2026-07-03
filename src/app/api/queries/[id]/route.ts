@@ -10,7 +10,14 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     const updatedQuery = await prisma.queryEntry.update({
       where: { id },
       data: {
+        subject: data.subject,
+        book: data.book || null,
+        chapter: data.chapter || null,
+        topic: data.topic || null,
+        exercise: data.exercise || null,
+        pageNumber: data.pageNumber || null,
         queryStatement: data.queryStatement,
+        status: data.status,
       },
     });
 

@@ -19,11 +19,13 @@ export async function POST(request: Request) {
         className: data.className,
         subject: data.subject,
         book: data.book || null,
+        chapter: data.chapter || null,
         topic: data.topic || null,
         exercise: data.exercise || null,
         questionNumber: data.questionNumber || null,
         pageNumber: data.pageNumber || null,
         queryStatement: data.queryStatement,
+        status: data.status || 'open',
       },
     });
 

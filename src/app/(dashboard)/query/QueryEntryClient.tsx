@@ -19,10 +19,12 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
   const [subject, setSubject] = useState('');
   const [book, setBook] = useState('');
   const [topic, setTopic] = useState('');
+  const [chapter, setChapter] = useState('');
   const [exercise, setExercise] = useState('');
   const [questionNumber, setQuestionNumber] = useState('');
   const [pageNumber, setPageNumber] = useState('');
   const [queryStatement, setQueryStatement] = useState('');
+  const [queryStatus, setQueryStatus] = useState('open');
   
   const [status, setStatus] = useState({ type: '', message: '' });
   const [ownerName, setOwnerName] = useState('');
@@ -86,11 +88,13 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
           className: derivedClassName,
           subject,
           book,
+          chapter,
           topic,
           exercise,
           questionNumber,
           pageNumber,
-          queryStatement
+          queryStatement,
+          status: queryStatus
         })
       });
 
@@ -104,11 +108,14 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
       // Reset form fields
       setSubject('');
       setBook('');
+      setChapter('');
       setTopic('');
       setExercise('');
       setQuestionNumber('');
       setPageNumber('');
       setQueryStatement('');
+      setQueryStatus('open');
+      setStatus({ type: 'success', message: 'Query submitted successfully!' });
       
       if (user.role !== 'STUDENT') {
         setStudentName('');
@@ -207,83 +214,93 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
             </select>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Book</label>
-            <select 
-              className="form-control" 
-              value={book} 
-              onChange={e => {
-                setBook(e.target.value);
-                setTopic('');
-              }} 
-              disabled={!subject}
-            >
-              <option value="" disabled>Select Book (Optional)</option>
-              {availableBooks.map(b => (
-                <option key={b.id} value={b.title}>{b.title} Edition {b.edition}</option>
-              ))}
-            </select>
+          {/* Dynamic Fields Section based on Subject */}
+          <div className="form-group" style={{ gridColumn: '1 / span 2', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+            <div className="form-group">
+              <label className="form-label">Book</label>
+              <select 
+                className="form-control" 
+                value={book} 
+                onChange={e => {
+                  setBook(e.target.value);
+                  setTopic('');
+                }} 
+                disabled={!subject}
+              >
+                <option value="" disabled>Select Book (Optional)</option>
+                {availableBooks.map((b: any) => (
+                  <option key={b.id} value={b.title}>{b.title} Edition {b.edition}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Chapter</label>
+              <input
+                type="text"
+                className="form-control"
+                value={chapter}
+                onChange={(e) => setChapter(e.target.value)}
+                placeholder="Enter Chapter (Optional)"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Topic</label>
+              <select 
+                className="form-control" 
+                value={topic} 
+                onChange={e => {
+                  setTopic(e.target.value);
+                  setExercise('');
+                }} 
+                disabled={!subject}
+              >
+                <option value="" disabled>Select Topic (Optional)</option>
+                {uniqueTopicNames.map((tName, i) => (
+                  <option key={i} value={tName as string}>{tName as string}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Exercise</label>
+              <select 
+                className="form-control" 
+                value={exercise} 
+                onChange={e => setExercise(e.target.value)} 
+                disabled={!topic || availableExercises.length === 0}
+              >
+                <option value="" disabled>Select Exercise (Optional)</option>
+                {availableExercises.map((exName, i) => (
+                  <option key={i} value={exName as string}>{exName as string}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Question Number</label>
+              <input 
+                type="text" 
+                className="form-control" 
+                value={questionNumber} 
+                onChange={e => setQuestionNumber(e.target.value)} 
+                placeholder="e.g. Q4 (Optional)"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Page Number</label>
+              <input 
+                type="text" 
+                className="form-control" 
+                value={pageNumber} 
+                onChange={e => setPageNumber(e.target.value)} 
+                placeholder="e.g. 42 (Optional)"
+              />
+            </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Topic</label>
-            <select 
-              className="form-control" 
-              value={topic} 
-              onChange={e => {
-                setTopic(e.target.value);
-                setExercise('');
-              }} 
-              disabled={!subject}
-            >
-              <option value="" disabled>Select Topic (Optional)</option>
-              {uniqueTopicNames.map((tName, i) => (
-                <option key={i} value={tName as string}>{tName as string}</option>
-              ))}
-            </select>
-          </div>
-
-          {subject === 'Mathematics' && (
-            <>
-              <div className="form-group">
-                <label className="form-label">Exercise</label>
-                <select 
-                  className="form-control" 
-                  value={exercise} 
-                  onChange={e => setExercise(e.target.value)} 
-                  disabled={!topic || availableExercises.length === 0}
-                >
-                  <option value="" disabled>Select Exercise (Optional)</option>
-                  {availableExercises.map((exName, i) => (
-                    <option key={i} value={exName as string}>{exName as string}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Question Number</label>
-                <input 
-                  type="text" 
-                  className="form-control" 
-                  value={questionNumber} 
-                  onChange={e => setQuestionNumber(e.target.value)} 
-                  placeholder="e.g. Q4 (Optional)"
-                />
-              </div>
-            </>
-          )}
-          
-          <div className="form-group">
-            <label className="form-label">Page Number</label>
-            <input 
-              type="text" 
-              className="form-control" 
-              value={pageNumber} 
-              onChange={e => setPageNumber(e.target.value)} 
-              placeholder="e.g. 42 (Optional)"
-            />
-          </div>
-          
           <div className="form-group" style={{ gridColumn: '1 / span 2' }}>
             <label className="form-label">Teacher</label>
             {isStudent ? (
@@ -307,6 +324,19 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
                 ))}
               </select>
             )}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Status</label>
+            <select 
+              className="form-control" 
+              value={queryStatus} 
+              onChange={e => setQueryStatus(e.target.value)} 
+            >
+              <option value="open">Open</option>
+              <option value="pending">Pending</option>
+              <option value="done">Done</option>
+            </select>
           </div>
 
           <div className="form-group" style={{ gridColumn: '1 / span 2' }}>
