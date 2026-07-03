@@ -208,6 +208,16 @@ export default function DataEntryForm() {
         </div>
         
         <div className="form-group">
+          <label className="form-label" htmlFor="className">Class</label>
+          <select id="className" name="className" className="form-control" required defaultValue="">
+            <option value="" disabled>Select a class...</option>
+            {classes.map((cls) => (
+              <option key={cls.id} value={cls.name}>{cls.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-group">
           <label className="form-label" htmlFor="book">Book</label>
           <select 
             id="book" 
@@ -223,16 +233,6 @@ export default function DataEntryForm() {
             </option>
             {books.map((book) => (
               <option key={book.id} value={book.title}>{book.title}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="form-group">
-          <label className="form-label" htmlFor="className">Class</label>
-          <select id="className" name="className" className="form-control" required defaultValue="">
-            <option value="" disabled>Select a class...</option>
-            {classes.map((cls) => (
-              <option key={cls.id} value={cls.name}>{cls.name}</option>
             ))}
           </select>
         </div>
