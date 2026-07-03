@@ -20,6 +20,8 @@ export async function POST(request: Request) {
         subject: data.subject,
         book: data.book || null,
         topic: data.topic || null,
+        exercise: data.exercise || null,
+        questionNumber: data.questionNumber || null,
         pageNumber: data.pageNumber || null,
         queryStatement: data.queryStatement,
       },

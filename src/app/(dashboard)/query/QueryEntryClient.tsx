@@ -19,6 +19,8 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
   const [subject, setSubject] = useState('');
   const [book, setBook] = useState('');
   const [topic, setTopic] = useState('');
+  const [exercise, setExercise] = useState('');
+  const [questionNumber, setQuestionNumber] = useState('');
   const [pageNumber, setPageNumber] = useState('');
   const [queryStatement, setQueryStatement] = useState('');
   
@@ -85,6 +87,8 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
           subject,
           book,
           topic,
+          exercise,
+          questionNumber,
           pageNumber,
           queryStatement
         })
@@ -101,6 +105,8 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
       setSubject('');
       setBook('');
       setTopic('');
+      setExercise('');
+      setQuestionNumber('');
       setPageNumber('');
       setQueryStatement('');
       
@@ -137,6 +143,7 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
   );
   
   const uniqueTopicNames = Array.from(new Set(availableTopics.map(t => t.topicName).filter(Boolean)));
+  const availableExercises = topic ? Array.from(new Set(availableTopics.filter(t => t.topicName === topic).map(t => t.exercise).filter(Boolean))) : [];
 
   return (
     <div className="glass-panel animate-slide-up" style={{ maxWidth: '800px', margin: '2rem auto', padding: '2rem' }}>
@@ -223,7 +230,10 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
             <select 
               className="form-control" 
               value={topic} 
-              onChange={e => setTopic(e.target.value)} 
+              onChange={e => {
+                setTopic(e.target.value);
+                setExercise('');
+              }} 
               disabled={!subject}
             >
               <option value="" disabled>Select Topic (Optional)</option>
@@ -232,6 +242,36 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
               ))}
             </select>
           </div>
+
+          {subject === 'Mathematics' && (
+            <>
+              <div className="form-group">
+                <label className="form-label">Exercise</label>
+                <select 
+                  className="form-control" 
+                  value={exercise} 
+                  onChange={e => setExercise(e.target.value)} 
+                  disabled={!topic || availableExercises.length === 0}
+                >
+                  <option value="" disabled>Select Exercise (Optional)</option>
+                  {availableExercises.map((exName, i) => (
+                    <option key={i} value={exName as string}>{exName as string}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Question Number</label>
+                <input 
+                  type="text" 
+                  className="form-control" 
+                  value={questionNumber} 
+                  onChange={e => setQuestionNumber(e.target.value)} 
+                  placeholder="e.g. Q4 (Optional)"
+                />
+              </div>
+            </>
+          )}
           
           <div className="form-group">
             <label className="form-label">Page Number</label>

@@ -90,6 +90,8 @@ model QueryEntry {
   subject        String
   book           String?
   topic          String?
+  exercise       String?
+  questionNumber String?
   pageNumber     String?
   queryStatement String
   createdAt      DateTime @default(now())
