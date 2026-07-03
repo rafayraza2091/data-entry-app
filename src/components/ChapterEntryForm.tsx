@@ -126,7 +126,7 @@ export default function ChapterEntryForm() {
           </select>
         </div>
 
-        <div className="form-group">
+        <div className="form-group" style={{ gridColumn: '1 / span 2' }}>
           <label className="form-label" htmlFor="book">Book</label>
           <select 
             id="book" 

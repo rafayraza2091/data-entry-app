@@ -55,16 +55,14 @@ export default function SchoolEntryForm() {
           <label className="form-label" htmlFor="branch">Branch Name</label>
           <input type="text" id="branch" name="branch" className="form-control" placeholder="e.g. Main Campus" required />
         </div>
-      </div>
-
-
-      <div className="form-row">
         <div className="form-group">
           <label className="form-label" htmlFor="city">City Name</label>
           <input type="text" id="city" name="city" className="form-control" placeholder="e.g. Lahore" required />
         </div>
+      </div>
 
-        <div className="form-group">
+      <div className="form-row">
+        <div className="form-group" style={{ gridColumn: '1 / span 2' }}>
           <label className="form-label" htmlFor="address">School Address</label>
           <input type="text" id="address" name="address" className="form-control" placeholder="e.g. 123 Education Lane..." required />
         </div>
