@@ -88,24 +88,84 @@ export default function BookEntryForm() {
 
         <div className="form-group">
           <label className="form-label">Classes</label>
-          <div className="form-control" style={{ height: 'auto', maxHeight: '150px', overflowY: 'auto', padding: '0.5rem' }}>
-            {classes.map((cls) => (
-              <label key={cls.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem', cursor: 'pointer' }}>
-                <input 
-                  type="checkbox" 
-                  checked={selectedClasses.includes(cls.name)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedClasses([...selectedClasses, cls.name]);
-                    } else {
-                      setSelectedClasses(selectedClasses.filter(c => c !== cls.name));
-                    }
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', flexDirection: 'row' }}>
+            <select 
+              className="form-control" 
+              defaultValue=""
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val && !selectedClasses.includes(val)) {
+                  setSelectedClasses([...selectedClasses, val]);
+                }
+                e.target.value = ""; // Reset after selection
+              }}
+              style={{ flex: '1', minWidth: '150px' }}
+            >
+              <option value="" disabled>Select a class...</option>
+              {classes.filter(c => !selectedClasses.includes(c.name)).map((cls) => (
+                <option key={cls.id} value={cls.name}>{cls.name}</option>
+              ))}
+            </select>
+            
+            <div style={{ flex: '2', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', minHeight: '42px', alignItems: 'center', padding: '0.25rem' }}>
+              {selectedClasses.length === 0 && <span style={{ color: '#9ca3af', fontSize: '0.9rem' }}>No classes selected...</span>}
+              {selectedClasses.map(cls => (
+                <div 
+                  key={cls}
+                  className="class-badge"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '0.35rem 0.75rem',
+                    background: '#f0fdf4',
+                    border: '1px solid #bbf7d0',
+                    color: '#166534',
+                    borderRadius: '9999px',
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    position: 'relative',
+                    cursor: 'default',
+                    transition: 'all 0.2s ease'
                   }}
-                />
-                <span style={{ fontSize: '0.9rem', color: '#475569' }}>{cls.name}</span>
-              </label>
-            ))}
-            {classes.length === 0 && <span style={{ color: '#9ca3af', fontSize: '0.9rem' }}>No classes found...</span>}
+                  onMouseEnter={(e) => {
+                    const btn = e.currentTarget.querySelector('.delete-btn') as HTMLElement;
+                    if(btn) btn.style.opacity = '1';
+                  }}
+                  onMouseLeave={(e) => {
+                    const btn = e.currentTarget.querySelector('.delete-btn') as HTMLElement;
+                    if(btn) btn.style.opacity = '0';
+                  }}
+                >
+                  {cls}
+                  <button 
+                    type="button"
+                    className="delete-btn"
+                    onClick={() => setSelectedClasses(selectedClasses.filter(c => c !== cls))}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: '#ef4444',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '16px',
+                      height: '16px',
+                      fontSize: '10px',
+                      cursor: 'pointer',
+                      padding: 0,
+                      marginLeft: '6px',
+                      opacity: 0,
+                      transition: 'opacity 0.2s ease',
+                      lineHeight: 1
+                    }}
+                    title="Remove class"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
         
