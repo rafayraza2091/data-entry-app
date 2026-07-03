@@ -33,7 +33,7 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
     async function fetchData() {
       try {
         const [usersRes, subjRes, booksRes, chapRes, topRes] = await Promise.all([
-          fetch('/api/task-users'),
+          fetch(`/api/task-users?t=${Date.now()}`),
           fetch('/api/subjects'),
           fetch('/api/books'),
           fetch('/api/chapters'),

@@ -29,7 +29,7 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
     async function fetchData() {
       try {
         const [usersRes, subjRes, booksRes, topRes] = await Promise.all([
-          fetch('/api/task-users'),
+          fetch(`/api/task-users?t=${Date.now()}`),
           fetch('/api/subjects'),
           fetch('/api/books'),
           fetch('/api/topics')
