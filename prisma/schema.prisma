@@ -98,6 +98,7 @@ model QueryEntry {
   queryStatement String
   status         String   @default("open")
   schoolName     String   @default("")
+  createdBy      String   @default("")
   images         String[] @default([])
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

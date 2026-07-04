@@ -125,6 +125,7 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
           queryStatement,
           status: queryStatus,
           images: imageUrls,
+          createdBy: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'Unknown',
         })
       });
 

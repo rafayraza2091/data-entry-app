@@ -550,52 +550,48 @@ export default function UsersPage() {
 
       {/* ----------------- SUBMIT CONFIRMATION MODAL ----------------- */}
       {showModal && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)',
-          zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
-          <div className="card" style={{ width: '90%', maxWidth: '500px', animation: 'fadeIn 0.2s ease', border: '1px solid var(--border-color)' }}>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem', color: 'var(--text-primary)' }}>Confirm Details</h3>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
-              Please review the {category} details below before confirming.
-            </p>
-            
-            <div style={{ backgroundColor: 'var(--bg-color)', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1.5rem', maxHeight: '40vh', overflowY: 'auto' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.5rem', fontSize: '0.9rem' }}>
-                <strong style={{ color: 'var(--text-secondary)' }}>Category:</strong> <span style={{ textTransform: 'capitalize' }}>{category}</span>
-                <strong style={{ color: 'var(--text-secondary)' }}>Name:</strong> <span>{formData.firstName} {formData.secondName}</span>
-                <strong style={{ color: 'var(--text-secondary)' }}>Email:</strong> <span>{formData.email}</span>
-                <strong style={{ color: 'var(--text-secondary)' }}>Mobile:</strong> <span>{formData.mobileNumber}</span>
-                <strong style={{ color: 'var(--text-secondary)' }}>Address:</strong> <span>{formData.address}</span>
-                {formData.fatherName && <><strong style={{ color: 'var(--text-secondary)' }}>Father Name:</strong> <span>{formData.fatherName}</span></>}
-                {formData.parentContact1 && <><strong style={{ color: 'var(--text-secondary)' }}>Parent Contact 1:</strong> <span>{formData.parentContact1}</span></>}
-                {formData.parentContact2 && <><strong style={{ color: 'var(--text-secondary)' }}>Parent Contact 2:</strong> <span>{formData.parentContact2}</span></>}
-                {category === 'student' && (
-                  <>
-                    <strong style={{ color: 'var(--text-secondary)' }}>Class:</strong> <span>{formData.class}</span>
-                    <strong style={{ color: 'var(--text-secondary)' }}>School:</strong> <span>{formData.schoolName}</span>
-                  </>
-                )}
-                <div style={{ gridColumn: '1 / -1', height: '1px', backgroundColor: 'var(--border-color)', margin: '0.5rem 0' }}></div>
-                <strong style={{ color: 'var(--text-secondary)' }}>Login Account:</strong> <span style={{ color: '#10b981', fontWeight: 600 }}>Yes (Username: {formData.username})</span>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md animate-fade-in border border-gray-200 overflow-hidden flex flex-col">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Confirm Details</h3>
+              <p className="text-gray-500 text-sm mb-6">
+                Please review the {category} details below before confirming.
+              </p>
+              
+              <div className="bg-gray-50 rounded-lg p-4 mb-2 max-h-[50vh] overflow-y-auto">
+                <div className="grid grid-cols-[1fr_2fr] gap-3 text-sm">
+                  <strong className="text-gray-600">Category:</strong> <span className="capitalize text-gray-900">{category}</span>
+                  <strong className="text-gray-600">Name:</strong> <span className="text-gray-900">{formData.firstName} {formData.secondName}</span>
+                  <strong className="text-gray-600">Email:</strong> <span className="text-gray-900">{formData.email}</span>
+                  <strong className="text-gray-600">Mobile:</strong> <span className="text-gray-900">{formData.mobileNumber}</span>
+                  <strong className="text-gray-600">Address:</strong> <span className="text-gray-900">{formData.address}</span>
+                  {formData.fatherName && <><strong className="text-gray-600">Father Name:</strong> <span className="text-gray-900">{formData.fatherName}</span></>}
+                  {formData.parentContact1 && <><strong className="text-gray-600">Parent Contact 1:</strong> <span className="text-gray-900">{formData.parentContact1}</span></>}
+                  {formData.parentContact2 && <><strong className="text-gray-600">Parent Contact 2:</strong> <span className="text-gray-900">{formData.parentContact2}</span></>}
+                  {category === 'student' && (
+                    <>
+                      <strong className="text-gray-600">Class:</strong> <span className="text-gray-900">{formData.class}</span>
+                      <strong className="text-gray-600">School:</strong> <span className="text-gray-900">{formData.schoolName}</span>
+                    </>
+                  )}
+                  <div className="col-span-2 h-px bg-gray-200 my-2"></div>
+                  <strong className="text-gray-600">Login Account:</strong> <span className="text-teal-600 font-semibold">Yes (Username: {formData.username})</span>
+                </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex gap-3 justify-end">
               <button 
                 type="button" 
                 onClick={() => setShowModal(false)}
-                className="btn-secondary"
-                style={{ padding: '0.5rem 1.5rem', backgroundColor: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '0.5rem', cursor: 'pointer' }}
+                className="px-5 py-2 rounded-md font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
               <button 
                 type="button" 
                 onClick={confirmSubmit}
-                className="btn-primary"
-                style={{ padding: '0.5rem 1.5rem', borderRadius: '0.5rem', cursor: 'pointer' }}
+                className="px-5 py-2 rounded-md font-medium text-white bg-teal-600 hover:bg-teal-700 transition-colors shadow-sm"
               >
                 Confirm
               </button>

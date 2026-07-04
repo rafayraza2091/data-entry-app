@@ -27,6 +27,7 @@ export async function POST(request: Request) {
         queryStatement: data.queryStatement,
         status: data.status || 'open',
         images: data.images || [],
+        createdBy: data.createdBy || '',
       },
     });
 

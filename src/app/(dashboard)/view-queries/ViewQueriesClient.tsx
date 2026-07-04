@@ -141,6 +141,7 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
             <thead>
               <tr className="border-b border-gray-200 text-teal-600 uppercase text-xs tracking-wider">
                 <th className="p-4 font-semibold">Date</th>
+                <th className="p-4 font-semibold">Created By</th>
                 <th className="p-4 font-semibold">Teacher</th>
                 <th className="p-4 font-semibold">Student</th>
                 <th className="p-4 font-semibold">Class</th>
@@ -162,6 +163,7 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
                   <td className="p-4 text-sm text-gray-600">
                     {new Date(q.createdAt).toLocaleDateString()}
                   </td>
+                  <td className="p-4 text-sm font-medium text-teal-700">{q.createdBy || '-'}</td>
                   <td className="p-4 text-sm font-medium text-gray-900">{q.teacherName}</td>
                   <td className="p-4 text-sm font-medium text-gray-900">{q.studentName}</td>
                   <td className="p-4 text-sm text-gray-600">{q.className}</td>
