@@ -100,10 +100,13 @@ export default function ViewEmployeesClient({ role }: { role?: string }) {
   return (
     <div className="animate-slide-up p-4 md:p-8">
       {successMsg && (
-        <div className="bg-green-50 text-green-700 p-4 rounded-md mb-6 border border-green-200 flex items-center justify-between">
-          <span>{successMsg}</span>
-          <button onClick={() => setSuccessMsg('')} className="text-green-700 hover:text-green-900">
-            <i className="fa-solid fa-xmark"></i>
+        <div className="fixed top-24 right-8 z-[100] animate-fade-in bg-green-50 text-green-700 px-6 py-4 rounded-lg shadow-xl border border-green-200 flex items-center justify-between min-w-[300px]">
+          <div className="flex items-center gap-3">
+            <i className="fa-solid fa-circle-check text-xl"></i>
+            <span className="font-medium">{successMsg}</span>
+          </div>
+          <button onClick={() => setSuccessMsg('')} className="text-green-700 hover:text-green-900 ml-6">
+            <i className="fa-solid fa-xmark text-lg"></i>
           </button>
         </div>
       )}
