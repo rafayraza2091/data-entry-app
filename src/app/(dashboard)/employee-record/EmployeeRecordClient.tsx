@@ -2,15 +2,7 @@
 
 import React, { useState } from 'react';
 
-export default function EmployeeRecordClient({ 
-  isModal, 
-  onSuccess, 
-  onCancel 
-}: { 
-  isModal?: boolean; 
-  onSuccess?: () => void; 
-  onCancel?: () => void; 
-} = {}) {
+export default function EmployeeRecordClient() {
   const [formData, setFormData] = useState({
     firstName: '',
     secondName: '',
@@ -81,12 +73,7 @@ export default function EmployeeRecordClient({
         toDate: '',
         currentlyWorking: false
       });
-      
-      if (onSuccess) {
-        onSuccess();
-      } else {
-        setTimeout(() => setStatusMsg({ type: 'idle', message: '' }), 3000);
-      }
+      setTimeout(() => setStatusMsg({ type: 'idle', message: '' }), 3000);
     } catch (err: any) {
       setStatusMsg({ type: 'error', message: err.message || 'An error occurred while submitting.' });
     } finally {
@@ -95,18 +82,14 @@ export default function EmployeeRecordClient({
   };
 
   return (
-    <main className={isModal ? 'w-full' : 'container'} style={isModal ? {} : { maxWidth: '100%' }}>
-      {!isModal && (
-        <div className="text-center mb-1 md:mb-12 mt-6">
-          <p className="text-gray-400 text-sm md:text-lg">
-            Please fill out the form below to add a new employee record to the database.
-          </p>
-        </div>
-      )}
+    <main className="container" style={{ maxWidth: '100%' }}>
+      <div className="text-center mb-1 md:mb-12 mt-6">
+        <p className="text-gray-400 text-sm md:text-lg">
+          Please fill out the form below to add a new employee record to the database.
+        </p>
+      </div>
 
-      <form onSubmit={handleSubmit} className={isModal ? '' : 'glass-panel animate-slide-up'} style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        
-        {isModal && <h2 className="text-xl font-semibold mb-4 text-gray-800">Add Employee Record</h2>}
+      <form onSubmit={handleSubmit} className="glass-panel animate-slide-up" style={{ maxWidth: '1200px', margin: '0 auto' }}>
         
         {statusMsg.message && (
           <div className={`mb-6 p-4 rounded-md text-sm font-medium ${
@@ -340,25 +323,13 @@ export default function EmployeeRecordClient({
           </div>
         )}
 
-        <div className="flex gap-4 mt-4">
-          <button 
-            type="submit" 
-            className="btn-submit flex-1"
-            disabled={loading}
-          >
-            {loading ? 'Saving...' : 'Submit Entry'}
-          </button>
-          {onCancel && (
-            <button 
-              type="button" 
-              onClick={onCancel}
-              className="bg-gray-200 text-gray-700 px-4 py-3 rounded-md font-semibold hover:bg-gray-300 transition-colors flex-1"
-              disabled={loading}
-            >
-              Cancel
-            </button>
-          )}
-        </div>
+        <button 
+          type="submit" 
+          className="btn-submit mt-4"
+          disabled={loading}
+        >
+          {loading ? 'Saving...' : 'Submit Entry'}
+        </button>
       </form>
     </main>
   );

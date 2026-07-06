@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react';
 
-import EmployeeRecordClient from '../employee-record/EmployeeRecordClient';
-
 export default function ViewEmployeesClient({ role }: { role?: string }) {
   const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -13,23 +11,21 @@ export default function ViewEmployeesClient({ role }: { role?: string }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<any>({});
   const [saving, setSaving] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
-
-  const fetchEmployees = async () => {
-    try {
-      const response = await fetch('/api/employees');
-      if (!response.ok) throw new Error('Failed to fetch employee records');
-      const data = await response.json();
-      setEmployees(data);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    fetchEmployees();
+    async function fetchData() {
+      try {
+        const response = await fetch('/api/employees');
+        if (!response.ok) throw new Error('Failed to fetch employee records');
+        const data = await response.json();
+        setEmployees(data);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
   }, []);
 
   const handleEditClick = (emp: any) => {
@@ -94,48 +90,12 @@ export default function ViewEmployeesClient({ role }: { role?: string }) {
 
   return (
     <div className="animate-slide-up p-4 md:p-8">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-800">Employed Staff</h2>
-        <button 
-          onClick={() => setShowAddModal(true)} 
-          className="bg-primary text-white px-4 py-2 rounded-md hover:bg-teal-600 transition-colors shadow-sm flex items-center gap-2"
-        >
-          <i className="fa-solid fa-plus"></i>
-          <span>Add Employee</span>
-        </button>
-      </div>
-
       {successMsg && (
         <div className="bg-green-50 text-green-700 p-4 rounded-md mb-6 border border-green-200 flex items-center justify-between">
           <span>{successMsg}</span>
           <button onClick={() => setSuccessMsg('')} className="text-green-700 hover:text-green-900">
             <i className="fa-solid fa-xmark"></i>
           </button>
-        </div>
-      )}
-
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto relative">
-            <button 
-              onClick={() => setShowAddModal(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 z-10"
-            >
-              <i className="fa-solid fa-xmark text-2xl"></i>
-            </button>
-            <div className="p-2">
-              <EmployeeRecordClient 
-                isModal={true} 
-                onSuccess={() => {
-                  setShowAddModal(false);
-                  fetchEmployees();
-                  setSuccessMsg('Employee added successfully!');
-                  setTimeout(() => setSuccessMsg(''), 3000);
-                }}
-                onCancel={() => setShowAddModal(false)}
-              />
-            </div>
-          </div>
         </div>
       )}
 
