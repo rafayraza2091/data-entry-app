@@ -15,5 +15,5 @@ export default async function ViewEmployeesPage() {
     redirect('/view-data');
   }
 
-  return <ViewEmployeesClient />;
+  return <ViewEmployeesClient role={role} />;
 }

@@ -76,3 +76,35 @@ export async function GET() {
     return NextResponse.json({ error: 'Failed to fetch employee records', details: error.message }, { status: 500 });
   }
 }
+
+export async function PUT(request: Request) {
+  try {
+    const session = await getSession();
+    if (!session || session.role !== 'OWNER') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
+    const data = await request.json();
+    const { id, ...updateData } = data;
+
+    if (!id) {
+      return NextResponse.json({ error: 'Employee ID is required' }, { status: 400 });
+    }
+
+    if (updateData.currentlyWorking) {
+      updateData.toDate = 'Currently working here';
+    } else if (updateData.currentlyWorking === false && updateData.toDate === 'Currently working here') {
+      updateData.toDate = null;
+    }
+
+    const updatedRecord = await prisma.employeeRecord.update({
+      where: { id },
+      data: updateData
+    });
+
+    return NextResponse.json(updatedRecord, { status: 200 });
+  } catch (error: any) {
+    console.error('Error updating employee record:', error);
+    return NextResponse.json({ error: 'Failed to update employee record', details: error.message }, { status: 500 });
+  }
+}
