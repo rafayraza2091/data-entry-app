@@ -37,7 +37,6 @@ export default function SubjectEntryForm() {
 
   return (
     <form id="subject-entry-form" onSubmit={handleSubmit} className="glass-panel animate-slide-up" style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      <h2 className="form-title">Add a Subject</h2>
       
       <div className="form-row">
         <div className="form-group">

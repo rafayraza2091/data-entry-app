@@ -229,31 +229,31 @@ export default function ViewTasksPage() {
     ];
 
     return (
-      <div className="table-responsive">
-        <table className="data-table">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
+        <table className="w-full text-left border-collapse whitespace-nowrap">
           <thead>
-            <tr>
-              {headers.map(h => <th key={h}>{h}</th>)}
+            <tr className="border-b border-gray-200 bg-teal-50 text-teal-700 uppercase text-xs tracking-wider">
+              {headers.map(h => <th key={h} className="p-2 md:p-4 font-semibold">{h}</th>)}
             </tr>
           </thead>
           <tbody>
             {tasks.map((item, idx) => (
-              <tr key={item.id}>
-                <td>{idx + 1}</td>
-                <td>{item.assignee}</td>
-                <td>{item.reporter}</td>
-                <td>{item.className || '-'}</td>
-                <td>{renderEditableCell(item, 'subject')}</td>
-                <td>{renderEditableCell(item, 'book')}</td>
-                <td>{renderEditableCell(item, 'chapter')}</td>
-                <td>{renderEditableCell(item, 'topic')}</td>
-                <td>{renderEditableCell(item, 'exercise')}</td>
-                <td style={{ maxWidth: '200px' }} title={item.description}>
+              <tr key={item.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                <td className="p-2 md:p-4 text-sm text-gray-600">{idx + 1}</td>
+                <td className="p-2 md:p-4 text-sm text-gray-600">{item.assignee}</td>
+                <td className="p-2 md:p-4 text-sm text-gray-600">{item.reporter}</td>
+                <td className="p-2 md:p-4 text-sm text-gray-600">{item.className || '-'}</td>
+                <td className="p-2 md:p-4 text-sm text-gray-600">{renderEditableCell(item, 'subject')}</td>
+                <td className="p-2 md:p-4 text-sm text-gray-600">{renderEditableCell(item, 'book')}</td>
+                <td className="p-2 md:p-4 text-sm text-gray-600">{renderEditableCell(item, 'chapter')}</td>
+                <td className="p-2 md:p-4 text-sm text-gray-600">{renderEditableCell(item, 'topic')}</td>
+                <td className="p-2 md:p-4 text-sm text-gray-600">{renderEditableCell(item, 'exercise')}</td>
+                <td className="p-2 md:p-4 text-sm text-gray-600" style={{ maxWidth: '250px', whiteSpace: 'normal', wordWrap: 'break-word' }} title={item.description}>
                   {renderEditableCell(item, 'description')}
                 </td>
-                <td>{renderEditableCell(item, 'status')}</td>
-                <td>{item.createdBy}</td>
-                <td>{new Date(item.createdAt).toLocaleDateString()}</td>
+                <td className="p-2 md:p-4 text-sm text-gray-600">{renderEditableCell(item, 'status')}</td>
+                <td className="p-2 md:p-4 text-sm text-gray-600">{item.createdBy}</td>
+                <td className="p-2 md:p-4 text-sm text-gray-600">{new Date(item.createdAt).toLocaleDateString()}</td>
               </tr>
             ))}
           </tbody>
@@ -264,16 +264,9 @@ export default function ViewTasksPage() {
 
   return (
     <main className="container mx-auto px-2 md:px-8 py-4 md:py-8" style={{ maxWidth: '100%' }}>
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <h1 className="text-3xl md:text-4xl font-bold mb-2 text-slate-50">
-          Task <span className="text-blue-500">Viewer</span>
-        </h1>
-        <p className="text-slate-400 text-sm md:text-base">
-          View all registered tasks in the system. Dropdowns update automatically on selection. Click description to edit.
-        </p>
-      </div>
+
       
-      <div className="bg-white border border-gray-200 rounded-lg p-2 md:p-6 shadow-sm animate-slide-up w-full overflow-hidden">
+      <div className="animate-slide-up w-full">
         {renderTable()}
       </div>
     </main>

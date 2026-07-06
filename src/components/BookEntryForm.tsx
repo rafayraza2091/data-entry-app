@@ -78,7 +78,6 @@ export default function BookEntryForm() {
 
   return (
     <form id="book-entry-form" onSubmit={handleSubmit} className="glass-panel animate-slide-up" style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      <h2 className="form-title">Book Entry</h2>
       
       <div className="form-row">
         <div className="form-group">
@@ -88,7 +87,7 @@ export default function BookEntryForm() {
 
         <div className="form-group">
           <label className="form-label">Classes</label>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', flexDirection: 'row' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', width: '100%' }}>
             <select 
               className="form-control" 
               defaultValue=""
@@ -107,10 +106,8 @@ export default function BookEntryForm() {
               ))}
             </select>
             
-            <div style={{ flex: '2', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', minHeight: '42px', alignItems: 'center', padding: '0.25rem' }}>
-              {selectedClasses.length === 0 && <span style={{ color: '#9ca3af', fontSize: '0.9rem' }}>No classes selected...</span>}
-              {selectedClasses.map(cls => (
-                <div 
+            {selectedClasses.map(cls => (
+              <div 
                   key={cls}
                   className="class-badge"
                   style={{
@@ -165,7 +162,6 @@ export default function BookEntryForm() {
                   </button>
                 </div>
               ))}
-            </div>
           </div>
         </div>
         

@@ -187,9 +187,9 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
   const availableExercises = topic ? Array.from(new Set(availableTopics.filter(t => t.topicName === topic).map(t => t.exercise).filter(Boolean))) : [];
 
   return (
-    <div className="glass-panel animate-slide-up" style={{ maxWidth: '800px', margin: '2rem auto', padding: '2rem' }}>
+    <div className="glass-panel animate-slide-up mx-auto max-w-4xl mt-4 md:mt-8 p-4 md:p-8">
       <form onSubmit={handleSubmit}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+        <div className="form-row">
           
           <div className="form-group">
             <label className="form-label">Student Name</label>
@@ -249,82 +249,80 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
           </div>
 
           {/* Dynamic Fields Section based on Subject */}
-          <div className="form-group" style={{ gridColumn: '1 / span 2', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-            <div className="form-group">
-              <label className="form-label">Book</label>
-              <select 
-                className="form-control" 
-                value={book} 
-                onChange={e => {
-                  setBook(e.target.value);
-                  setTopic('');
-                }} 
-                disabled={!subject}
-              >
-                <option value="" disabled>Select Book (Optional)</option>
-                {availableBooks.map((b: any) => (
-                  <option key={b.id} value={b.title}>{b.title} Edition {b.edition}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div className="form-group">
-              <label className="form-label">Chapter</label>
-              <input
-                type="text"
-                className="form-control"
-                value={chapter}
-                onChange={(e) => setChapter(e.target.value)}
-                placeholder="Enter Chapter (Optional)"
-              />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Topic</label>
-              <select 
-                className="form-control" 
-                value={topic} 
-                onChange={e => {
-                  setTopic(e.target.value);
-                  setExercise('');
-                }} 
-                disabled={!subject}
-              >
-                <option value="" disabled>Select Topic (Optional)</option>
-                {uniqueTopicNames.map((tName, i) => (
-                  <option key={i} value={tName as string}>{tName as string}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Exercise</label>
-              <select 
-                className="form-control" 
-                value={exercise} 
-                onChange={e => setExercise(e.target.value)} 
-                disabled={!topic || availableExercises.length === 0}
-              >
-                <option value="" disabled>Select Exercise (Optional)</option>
-                {availableExercises.map((exName, i) => (
-                  <option key={i} value={exName as string}>{exName as string}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Page Number</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                value={pageNumber} 
-                onChange={e => setPageNumber(e.target.value)} 
-                placeholder="e.g. 42 (Optional)"
-              />
-            </div>
+          <div className="form-group">
+            <label className="form-label">Book</label>
+            <select 
+              className="form-control" 
+              value={book} 
+              onChange={e => {
+                setBook(e.target.value);
+                setTopic('');
+              }} 
+              disabled={!subject}
+            >
+              <option value="" disabled>Select Book (Optional)</option>
+              {availableBooks.map((b: any) => (
+                <option key={b.id} value={b.title}>{b.title} Edition {b.edition}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="form-group">
+            <label className="form-label">Chapter</label>
+            <input
+              type="text"
+              className="form-control"
+              value={chapter}
+              onChange={(e) => setChapter(e.target.value)}
+              placeholder="Enter Chapter (Optional)"
+            />
           </div>
 
-          <div className="form-group" style={{ gridColumn: '1 / span 2' }}>
+          <div className="form-group">
+            <label className="form-label">Topic</label>
+            <select 
+              className="form-control" 
+              value={topic} 
+              onChange={e => {
+                setTopic(e.target.value);
+                setExercise('');
+              }} 
+              disabled={!subject}
+            >
+              <option value="" disabled>Select Topic (Optional)</option>
+              {uniqueTopicNames.map((tName, i) => (
+                <option key={i} value={tName as string}>{tName as string}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Exercise</label>
+            <select 
+              className="form-control" 
+              value={exercise} 
+              onChange={e => setExercise(e.target.value)} 
+              disabled={!topic || availableExercises.length === 0}
+            >
+              <option value="" disabled>Select Exercise (Optional)</option>
+              {availableExercises.map((exName, i) => (
+                <option key={i} value={exName as string}>{exName as string}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Page Number</label>
+            <input 
+              type="text" 
+              className="form-control" 
+              value={pageNumber} 
+              onChange={e => setPageNumber(e.target.value)} 
+              placeholder="e.g. 42 (Optional)"
+            />
+          </div>
+
+          <div className="form-group">
             <label className="form-label">Teacher</label>
             {isStudent ? (
               <input 
@@ -362,21 +360,21 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
             </select>
           </div>
 
-          <div className="form-group" style={{ gridColumn: '1 / span 2' }}>
+          <div className="form-group col-span-2">
             <label className="form-label">Query</label>
             <textarea 
               className="form-control" 
               value={queryStatement} 
               onChange={e => setQueryStatement(e.target.value)} 
-              rows={4}
+              rows={2}
               placeholder="Enter your query statement here..."
               required
-              style={{ minHeight: '100px', height: 'auto', padding: '12px' }}
+              style={{ padding: '12px', resize: 'vertical' }}
             />
           </div>
 
           {/* Attachments Section */}
-          <div className="form-group" style={{ gridColumn: '1 / span 2' }}>
+          <div className="form-group col-span-2">
             <label className="form-label">Attachments (Optional)</label>
             <input 
               type="file" 

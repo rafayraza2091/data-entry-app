@@ -57,18 +57,14 @@ export default function ClassesPage() {
 
   return (
     <main className="container" style={{ maxWidth: '100%' }}>
-      <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '1rem', color: '#172b4d' }}>
-          Add a <span style={{ color: '#0d9488' }}>Class</span>
-        </h1>
-        <p style={{ color: '#94a3b8', fontSize: '1.1rem' }}>
+      <div className="text-center mb-1 md:mb-12">
+        <p className="text-gray-400 text-sm md:text-lg">
           Enter a new class here. It will become available in the dropdowns for Book and Syllabus entries.
         </p>
       </div>
 
       <div className="content-container">
         <div className="glass-panel animate-slide-up" style={{ maxWidth: '800px', margin: '0 auto 2rem auto' }}>
-          <h2 className="form-title">Add New Class</h2>
           
           {success && (
             <div className="status-message status-success">
@@ -111,7 +107,6 @@ export default function ClassesPage() {
         </div>
 
         <div className="glass-panel animate-slide-up" style={{ maxWidth: '800px', margin: '0 auto', animationDelay: '0.1s' }}>
-          <h2 className="form-title">Saved Classes</h2>
           
           {initialLoading ? (
             <p style={{ color: 'var(--text-secondary)' }}>Loading classes...</p>

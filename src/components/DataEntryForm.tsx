@@ -204,7 +204,6 @@ export default function DataEntryForm() {
 
   return (
     <form id="syllabus-entry-form" onSubmit={handleSubmit} className="glass-panel animate-slide-up" style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      <h2 className="form-title">Syllabus Entry</h2>
       
       <div className="form-row">
         <div className="form-group">
@@ -420,7 +419,7 @@ export default function DataEntryForm() {
           </div>
         )}
         
-        <div className="form-group" style={{ gridColumn: selectedSubject === 'Mathematics' ? 'auto' : '1 / span 2' }}>
+        <div className={`form-group ${selectedSubject === 'Mathematics' ? '' : 'col-span-2'}`}>
           <label className="form-label" htmlFor="page">Page Number</label>
           <input 
             type="number" 

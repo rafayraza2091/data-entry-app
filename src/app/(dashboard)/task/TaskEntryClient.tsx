@@ -168,13 +168,11 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
   };
 
   return (
-    <div className="glass-panel animate-slide-up" style={{ maxWidth: '800px', margin: '2rem auto', padding: '2rem' }}>
-      <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1.5rem', color: 'var(--text-color)' }}>
-        Task Entry
-      </h2>
+    <div className="glass-panel animate-slide-up" style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem' }}>
+
 
       <form onSubmit={handleSubmit}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+        <div className="form-row">
           
           <div className="form-group">
             <label className="form-label">Name</label>
@@ -198,8 +196,8 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
             />
           </div>
 
-          <div className="form-group" style={{ gridColumn: '1 / span 2' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          <div className="form-group col-span-2">
+            <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Reporter</label>
                 <select 

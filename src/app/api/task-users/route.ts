@@ -14,9 +14,9 @@ export async function GET() {
       orderBy: { firstName: 'asc' }
     });
 
-    const teachers = allUsers.filter(u => u.role === 'TEACHER');
+    const teachers = allUsers.filter(u => u.role === 'TEACHER' || u.role === 'COORDINATOR');
     const rawStudents = allUsers.filter(u => u.role === 'STUDENT');
-    const admins = allUsers.filter(u => u.role === 'OWNER' || u.role === 'COORDINATOR' || u.role === 'ASSISTANT');
+    const admins = allUsers.filter(u => u.role === 'OWNER' || u.role === 'ASSISTANT'); // Removed COORDINATOR from here since they act like teachers
     const owners = allUsers.filter(u => u.role === 'OWNER');
 
     const studentsDb = await prisma.student.findMany({

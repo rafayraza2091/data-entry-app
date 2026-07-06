@@ -173,23 +173,16 @@ export default function ViewDataPage() {
 
   return (
     <main className="container mx-auto px-2 md:px-8 py-4 md:py-8" style={{ maxWidth: '100%' }}>
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <h1 className="text-3xl md:text-4xl font-bold mb-2 text-slate-800">
-          Database <span className="text-blue-500">Viewer</span>
-        </h1>
-        <p className="text-slate-500 text-sm md:text-base">
-          View all registered entries across different categories.
-        </p>
-      </div>
+
       
       <div className="bg-white border border-gray-200 rounded-lg p-2 md:p-6 shadow-sm animate-slide-up w-full overflow-hidden">
-        <div className="tabs-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.5rem', justifyContent: 'center' }}>
-          <button className={`tab-btn ${activeTab === 'entries' ? 'active' : ''}`} onClick={() => setActiveTab('entries')}>Syllabus Entries</button>
-          <button className={`tab-btn ${activeTab === 'subjects' ? 'active' : ''}`} onClick={() => setActiveTab('subjects')}>Subjects</button>
-          <button className={`tab-btn ${activeTab === 'schools' ? 'active' : ''}`} onClick={() => setActiveTab('schools')}>Schools</button>
-          <button className={`tab-btn ${activeTab === 'books' ? 'active' : ''}`} onClick={() => setActiveTab('books')}>Books</button>
-          <button className={`tab-btn ${activeTab === 'chapters' ? 'active' : ''}`} onClick={() => setActiveTab('chapters')}>Chapters</button>
-          <button className={`tab-btn ${activeTab === 'topics' ? 'active' : ''}`} onClick={() => setActiveTab('topics')}>Topics</button>
+        <div className="tabs-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.5rem', justifyContent: 'flex-start' }}>
+          <button className={`px-2 py-1 text-xs md:px-4 md:py-2 md:text-sm rounded-md font-medium transition-colors ${activeTab === 'entries' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`} onClick={() => setActiveTab('entries')}>Syllabus</button>
+          <button className={`px-2 py-1 text-xs md:px-4 md:py-2 md:text-sm rounded-md font-medium transition-colors ${activeTab === 'subjects' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`} onClick={() => setActiveTab('subjects')}>Subjects</button>
+          <button className={`px-2 py-1 text-xs md:px-4 md:py-2 md:text-sm rounded-md font-medium transition-colors ${activeTab === 'schools' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`} onClick={() => setActiveTab('schools')}>Schools</button>
+          <button className={`px-2 py-1 text-xs md:px-4 md:py-2 md:text-sm rounded-md font-medium transition-colors ${activeTab === 'books' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`} onClick={() => setActiveTab('books')}>Books</button>
+          <button className={`px-2 py-1 text-xs md:px-4 md:py-2 md:text-sm rounded-md font-medium transition-colors ${activeTab === 'chapters' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`} onClick={() => setActiveTab('chapters')}>Chapters</button>
+          <button className={`px-2 py-1 text-xs md:px-4 md:py-2 md:text-sm rounded-md font-medium transition-colors ${activeTab === 'topics' ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`} onClick={() => setActiveTab('topics')}>Topics</button>
         </div>
         
         {renderTable()}

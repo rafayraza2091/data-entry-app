@@ -24,7 +24,7 @@ export async function middleware(request: NextRequest) {
 
   // Redirect authenticated users trying to access login/register back to app
   if (isAuthenticated && (pathname === '/login' || pathname === '/register')) {
-    return NextResponse.redirect(new URL('/view-data', request.url));
+    return NextResponse.redirect(new URL('/task', request.url));
   }
 
   // Role-based access control
@@ -47,6 +47,14 @@ export async function middleware(request: NextRequest) {
 
       if (isAdminRoute && role !== 'OWNER') {
         // Only Owner can access admin routes
+        return NextResponse.redirect(new URL('/view-data', request.url));
+      }
+      
+      if (pathname.startsWith('/employee-record') && role !== 'OWNER' && role !== 'COORDINATOR') {
+        return NextResponse.redirect(new URL('/view-data', request.url));
+      }
+
+      if (pathname.startsWith('/view-employees') && role !== 'OWNER' && role !== 'COORDINATOR') {
         return NextResponse.redirect(new URL('/view-data', request.url));
       }
       

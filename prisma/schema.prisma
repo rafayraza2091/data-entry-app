@@ -217,3 +217,25 @@ model PendingUser {
   createdAt      DateTime @default(now())
   resolvedAt     DateTime?
 }
+
+model EmployeeRecord {
+  id               Int      @id @default(autoincrement())
+  firstName        String
+  secondName       String?
+  fatherName       String?
+  address          String?
+  firstContact     String
+  secondContact    String?
+  linkedinId       String?
+  status           String   @default("Pending")
+  gender           String   @default("Male")
+  emailAddress     String?
+  dateOfBirth      String?
+  latestDegree     String?
+  specialization   String?
+  fromDate         String?
+  toDate           String?
+  currentlyWorking Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}

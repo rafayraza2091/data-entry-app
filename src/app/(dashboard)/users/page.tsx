@@ -487,7 +487,7 @@ export default function UsersPage() {
                 <div style={{ gridColumn: '1 / -1', marginTop: '1rem', padding: '1.5rem', backgroundColor: 'var(--surface-color)', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}>
                   <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Login Credentials</h3>
                   
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem 1.5rem', animation: 'fadeIn 0.3s ease' }}>
+                  <div className="form-row">
                     <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: 0 }}>
                       <label htmlFor="username" className="form-label">Username</label>
                       <input
@@ -618,7 +618,7 @@ export default function UsersPage() {
               </button>
             </div>
             
-            <form onSubmit={submitEdit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <form onSubmit={submitEdit} className="form-row">
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">First Name</label>
                 <input type="text" name="firstName" value={editFormData.firstName} onChange={handleEditChange} className="form-control" required />

@@ -54,7 +54,7 @@ export default function LoginPage() {
         throw new Error(data.error || 'Failed to login');
       }
       
-      window.location.href = '/';
+      window.location.href = '/task';
     } catch (error: any) {
       setLoginError(error.message);
     } finally {

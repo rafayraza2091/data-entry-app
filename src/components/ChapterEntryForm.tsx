@@ -86,7 +86,6 @@ export default function ChapterEntryForm() {
 
   return (
     <form id="chapter-entry-form" onSubmit={handleSubmit} className="glass-panel animate-slide-up" style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      <h2 className="form-title">Add a Chapter</h2>
       
       <div className="form-row">
         <div className="form-group">
@@ -126,7 +125,7 @@ export default function ChapterEntryForm() {
           </select>
         </div>
 
-        <div className="form-group" style={{ gridColumn: '1 / span 2' }}>
+        <div className="form-group col-span-2">
           <label className="form-label" htmlFor="book">Book</label>
           <select 
             id="book" 

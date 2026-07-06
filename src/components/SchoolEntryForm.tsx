@@ -38,7 +38,6 @@ export default function SchoolEntryForm() {
 
   return (
     <form id="school-entry-form" onSubmit={handleSubmit} className="glass-panel animate-slide-up" style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      <h2 className="form-title">Add a School</h2>
       
       <div className="form-row">
         <div className="form-group">
@@ -62,7 +61,7 @@ export default function SchoolEntryForm() {
       </div>
 
       <div className="form-row">
-        <div className="form-group" style={{ gridColumn: '1 / span 2' }}>
+        <div className="form-group col-span-2">
           <label className="form-label" htmlFor="address">School Address</label>
           <input type="text" id="address" name="address" className="form-control" placeholder="e.g. 123 Education Lane..." required />
         </div>

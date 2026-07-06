@@ -134,7 +134,6 @@ export default function TopicEntryForm() {
 
   return (
     <form id="topic-entry-form" onSubmit={handleSubmit} className="glass-panel animate-slide-up" style={{ maxWidth: '1200px', margin: '0 auto' }}>
-      <h2 className="form-title">Add a Topic</h2>
       
       <div className="form-row">
         <div className="form-group">

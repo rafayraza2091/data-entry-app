@@ -13,11 +13,11 @@ export default async function TaskEntryPage() {
 
   return (
     <main className="container" style={{ maxWidth: '100%' }}>
-      <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '1rem', color: '#172b4d' }}>
+      <div className="text-center mb-1 md:mb-12">
+        <h1 className="text-2xl md:text-4xl font-bold mb-2 md:mb-4 text-primaryDark">
           Welcome, <span style={{ color: '#0d9488' }}>{uppercaseName}</span>!
         </h1>
-        <p style={{ color: '#94a3b8', fontSize: '1.1rem' }}>
+        <p className="text-gray-400 text-sm md:text-lg">
           Assign tasks to your students or colleagues.
         </p>
       </div>

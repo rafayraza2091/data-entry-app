@@ -122,14 +122,55 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
     return <span className="px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs font-semibold uppercase">{s}</span>;
   };
 
+  const copyImageToClipboard = async (imageUrl: string) => {
+    try {
+      const fetchImage = async () => {
+        const response = await fetch(imageUrl);
+        let blob = await response.blob();
+        
+        // Safari requires image/png for clipboard
+        if (blob.type !== 'image/png') {
+          blob = await new Promise<Blob>((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              canvas.width = img.width;
+              canvas.height = img.height;
+              const ctx = canvas.getContext('2d');
+              if (!ctx) return reject(new Error('No context'));
+              ctx.drawImage(img, 0, 0);
+              canvas.toBlob(b => b ? resolve(b) : reject(new Error('toBlob failed')), 'image/png');
+            };
+            img.onerror = () => reject(new Error('Image load failed'));
+            img.src = imageUrl;
+          });
+        }
+        return blob;
+      };
+
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'image/png': fetchImage()
+        })
+      ]);
+      alert('Image copied to clipboard!');
+    } catch (error) {
+      console.error('Failed to copy image:', error);
+      alert('Failed to copy image. Your browser might not support this feature.');
+    }
+  };
+
   if (loading) return <div style={{ padding: '2rem' }}>Loading queries...</div>;
   if (error) return <div style={{ padding: '2rem', color: 'red' }}>Error: {error}</div>;
 
   return (
-    <div className="animate-slide-up" style={{ padding: '2rem' }}>
-      <h1 className="text-2xl font-bold mb-6 text-gray-800">
-        {currentUser.role === 'STUDENT' ? 'My Queries' : 'All Student Queries'}
-      </h1>
+    <div className="animate-slide-up p-4 md:p-8">
+      {currentUser.role === 'STUDENT' && (
+        <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-gray-800">
+          My Queries
+        </h1>
+      )}
 
       {queries.length === 0 ? (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-center text-gray-500">
@@ -139,44 +180,44 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto">
           <table className="w-full text-left border-collapse whitespace-nowrap">
             <thead>
-              <tr className="border-b border-gray-200 text-teal-600 uppercase text-xs tracking-wider">
-                <th className="p-4 font-semibold">Date</th>
-                <th className="p-4 font-semibold">Created By</th>
-                <th className="p-4 font-semibold">Teacher</th>
-                <th className="p-4 font-semibold">Student</th>
-                <th className="p-4 font-semibold">Class</th>
-                <th className="p-4 font-semibold">Subject</th>
-                <th className="p-4 font-semibold">Book</th>
-                <th className="p-4 font-semibold">Chapter</th>
-                <th className="p-4 font-semibold">Topic</th>
-                <th className="p-4 font-semibold">Exercise</th>
-                <th className="p-4 font-semibold">Page Number</th>
-                <th className="p-4 font-semibold min-w-[200px]">Query Statement</th>
-                <th className="p-4 font-semibold">Attachments</th>
-                <th className="p-4 font-semibold">Status</th>
-                <th className="p-4 font-semibold">Actions</th>
+              <tr className="border-b border-gray-200 bg-teal-50 text-teal-700 uppercase text-xs tracking-wider">
+                <th className="p-2 md:p-4 font-semibold">Date</th>
+                <th className="p-2 md:p-4 font-semibold">Created By</th>
+                <th className="p-2 md:p-4 font-semibold">Teacher</th>
+                <th className="p-2 md:p-4 font-semibold">Student</th>
+                <th className="p-2 md:p-4 font-semibold">Class</th>
+                <th className="p-2 md:p-4 font-semibold">Subject</th>
+                <th className="p-2 md:p-4 font-semibold">Book</th>
+                <th className="p-2 md:p-4 font-semibold">Chapter</th>
+                <th className="p-2 md:p-4 font-semibold">Topic</th>
+                <th className="p-2 md:p-4 font-semibold">Exercise</th>
+                <th className="p-2 md:p-4 font-semibold">Page Number</th>
+                <th className="p-2 md:p-4 font-semibold min-w-[200px]">Query Statement</th>
+                <th className="p-2 md:p-4 font-semibold">Attachments</th>
+                <th className="p-2 md:p-4 font-semibold">Status</th>
+                <th className="p-2 md:p-4 font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
               {queries.map((q, idx) => (
                 <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                  <td className="p-4 text-sm text-gray-600">
+                  <td className="p-2 md:p-4 text-sm text-gray-600">
                     {new Date(q.createdAt).toLocaleDateString()}
                   </td>
-                  <td className="p-4 text-sm font-medium text-teal-700">{q.createdBy || '-'}</td>
-                  <td className="p-4 text-sm font-medium text-gray-900">{q.teacherName}</td>
-                  <td className="p-4 text-sm font-medium text-gray-900">{q.studentName}</td>
-                  <td className="p-4 text-sm text-gray-600">{q.className}</td>
-                  <td className="p-4 text-sm text-gray-600">{q.subject}</td>
-                  <td className="p-4 text-sm text-gray-600">{q.book || '-'}</td>
-                  <td className="p-4 text-sm text-gray-600">{q.chapter || '-'}</td>
-                  <td className="p-4 text-sm text-gray-600">{q.topic || '-'}</td>
-                  <td className="p-4 text-sm text-gray-600">{q.exercise || '-'}</td>
-                  <td className="p-4 text-sm text-gray-600">{q.pageNumber || '-'}</td>
-                  <td className="p-4 text-sm text-gray-700 max-w-[250px] truncate" title={q.queryStatement}>
+                  <td className="p-2 md:p-4 text-sm font-medium text-teal-700">{q.createdBy || '-'}</td>
+                  <td className="p-2 md:p-4 text-sm font-medium text-gray-900">{q.teacherName}</td>
+                  <td className="p-2 md:p-4 text-sm font-medium text-gray-900">{q.studentName}</td>
+                  <td className="p-2 md:p-4 text-sm text-gray-600">{q.className}</td>
+                  <td className="p-2 md:p-4 text-sm text-gray-600">{q.subject}</td>
+                  <td className="p-2 md:p-4 text-sm text-gray-600">{q.book || '-'}</td>
+                  <td className="p-2 md:p-4 text-sm text-gray-600">{q.chapter || '-'}</td>
+                  <td className="p-2 md:p-4 text-sm text-gray-600">{q.topic || '-'}</td>
+                  <td className="p-2 md:p-4 text-sm text-gray-600">{q.exercise || '-'}</td>
+                  <td className="p-2 md:p-4 text-sm text-gray-600">{q.pageNumber || '-'}</td>
+                  <td className="p-2 md:p-4 text-sm text-gray-700 max-w-[250px] truncate" title={q.queryStatement}>
                     {q.queryStatement}
                   </td>
-                  <td className="p-4 text-sm">
+                  <td className="p-2 md:p-4 text-sm">
                     {q.images && q.images.length > 0 ? (
                       <button 
                         onClick={() => { setViewingImages(q.images); setCurrentImageIndex(0); }}
@@ -188,10 +229,10 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
                       <span className="text-gray-400">-</span>
                     )}
                   </td>
-                  <td className="p-4 text-sm">
+                  <td className="p-2 md:p-4 text-sm">
                     {getStatusBadge(q.status)}
                   </td>
-                  <td className="p-4 text-sm text-gray-600">
+                  <td className="p-2 md:p-4 text-sm text-gray-600">
                     <button 
                       onClick={() => setEditingQuery({ ...q })}
                       className="px-3 py-1 bg-teal-50 text-teal-600 rounded border border-teal-100 hover:bg-teal-100 transition-colors"
@@ -331,7 +372,7 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
               </div>
 
               {/* Attachments Section */}
-              <div className="flex flex-col gap-2" style={{ gridColumn: '1 / span 2' }}>
+              <div className="flex flex-col gap-2 col-span-2">
                 <label className="text-sm font-medium text-gray-700">Add More Attachments</label>
                 
                 <input
@@ -415,13 +456,22 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
       {/* Image Viewer Modal */}
       {viewingImages.length > 0 && (
         <div className="fixed inset-0 bg-black/90 flex flex-col items-center justify-center z-[100] p-4">
-          <button 
-            onClick={() => setViewingImages([])}
-            className="absolute top-6 right-6 text-white hover:text-gray-300 text-4xl"
-            title="Close"
-          >
-            &times;
-          </button>
+          <div className="absolute top-6 right-6 flex items-center gap-6 z-50">
+            <button
+              onClick={() => copyImageToClipboard(viewingImages[currentImageIndex])}
+              className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded transition-colors font-medium text-sm border border-white/40 backdrop-blur-sm"
+              title="Copy Image"
+            >
+              Copy Image
+            </button>
+            <button 
+              onClick={() => setViewingImages([])}
+              className="text-white hover:text-gray-300 text-4xl leading-none"
+              title="Close"
+            >
+              &times;
+            </button>
+          </div>
           
           <div className="relative flex items-center justify-center w-full max-w-5xl h-full max-h-[80vh]">
             {viewingImages.length > 1 && (

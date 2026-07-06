@@ -214,7 +214,7 @@ export default function NotificationPage() {
               Edit Registration Info
             </h2>
             
-            <form onSubmit={handleSaveEdit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <form onSubmit={handleSaveEdit} className="form-row">
               <div className="form-group">
                 <label className="form-label">First Name</label>
                 <input type="text" className="form-input" value={editingUser.firstName} onChange={e => setEditingUser({...editingUser, firstName: e.target.value})} required />
