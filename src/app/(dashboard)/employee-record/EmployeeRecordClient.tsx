@@ -24,7 +24,7 @@ export default function EmployeeRecordClient() {
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ type: 'idle' | 'loading' | 'success' | 'error'; message: string }>({ type: 'idle', message: '' });
 
-  const statusOptions = ['Employed', 'Terminated', 'Left', 'Pending', 'Potential'];
+  const statusOptions = ['Employed', 'Terminated', 'Left', 'Pending', 'Potential', 'Hired', 'Not Hired'];
   const showDateFields = ['Employed', 'Terminated', 'Left'].includes(formData.status);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {

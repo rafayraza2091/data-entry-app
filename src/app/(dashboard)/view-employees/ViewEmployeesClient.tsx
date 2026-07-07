@@ -153,6 +153,8 @@ export default function ViewEmployeesClient({ role }: { role?: string }) {
                       emp.status === 'Employed' ? 'bg-green-100 text-green-800' :
                       emp.status === 'Terminated' ? 'bg-red-100 text-red-800' :
                       emp.status === 'Left' ? 'bg-orange-100 text-orange-800' :
+                      emp.status === 'Hired' ? 'bg-blue-100 text-blue-800' :
+                      emp.status === 'Not Hired' ? 'bg-gray-200 text-gray-800' :
                       'bg-gray-100 text-gray-800'
                     }`}>
                       {emp.status}
@@ -271,6 +273,8 @@ export default function ViewEmployeesClient({ role }: { role?: string }) {
                     <option value="Terminated">Terminated</option>
                     <option value="Left">Left</option>
                     <option value="Potential">Potential</option>
+                    <option value="Hired">Hired</option>
+                    <option value="Not Hired">Not Hired</option>
                   </select>
                 </div>
                 
