@@ -134,7 +134,7 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
   const userName = `${user.firstName} ${user.lastName}`.trim();
 
   let derivedClassName = user.className || '';
-  if (!isStudent && assignee) {
+  if (assignee) {
     const assignedStudent = studentsList.find(s => `${s.firstName} ${s.lastName}`.trim() === assignee);
     if (assignedStudent && assignedStudent.className) {
       derivedClassName = assignedStudent.className;
