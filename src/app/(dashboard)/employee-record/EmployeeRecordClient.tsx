@@ -103,7 +103,7 @@ export default function EmployeeRecordClient() {
 
         <div className="form-row">
           <div className="form-group">
-            <label className="form-label">First Name *</label>
+            <label className="form-label">First Name <span className="text-red-500">*</span></label>
             <input 
               type="text" 
               name="firstName"
@@ -156,7 +156,7 @@ export default function EmployeeRecordClient() {
 
         <div className="form-row">
           <div className="form-group">
-            <label className="form-label">First Contact *</label>
+            <label className="form-label">First Contact <span className="text-red-500">*</span></label>
             <input 
               type="text" 
               name="firstContact"
@@ -242,7 +242,7 @@ export default function EmployeeRecordClient() {
 
         <div className="form-row">
           <div className="form-group">
-            <label className="form-label">Gender</label>
+            <label className="form-label">Gender <span className="text-red-500">*</span></label>
             <select 
               name="gender"
               className="form-control" 
@@ -255,7 +255,7 @@ export default function EmployeeRecordClient() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Employee Status</label>
+            <label className="form-label">Employee Status <span className="text-red-500">*</span></label>
             <select 
               name="status"
               className="form-control" 

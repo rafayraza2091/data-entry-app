@@ -175,7 +175,7 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
         <div className="form-row">
           
           <div className="form-group">
-            <label className="form-label">Name</label>
+            <label className="form-label">Name <span className="text-red-500">*</span></label>
             <input 
               type="text" 
               className="form-control" 
@@ -199,7 +199,7 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
           <div className="form-group col-span-2">
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Reporter</label>
+                <label className="form-label">Reporter <span className="text-red-500">*</span></label>
                 <select 
                   className="form-control" 
                   value={reporter} 
@@ -214,7 +214,7 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Assignee</label>
+                <label className="form-label">Assignee <span className="text-red-500">*</span></label>
                 {isStudent ? (
                   <input 
                     type="text" 
@@ -241,7 +241,7 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Subject</label>
+            <label className="form-label">Subject <span className="text-red-500">*</span></label>
             <select 
               className="form-control" 
               value={subject} 
@@ -335,7 +335,7 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Status</label>
+          <label className="form-label">Status <span className="text-red-500">*</span></label>
           <select 
             className="form-control" 
             value={taskStatus} 
@@ -350,7 +350,7 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Description</label>
+          <label className="form-label">Description <span className="text-red-500">*</span></label>
           <textarea 
             className="form-control" 
             value={description} 
