@@ -196,6 +196,7 @@ model TaskEntry {
   reporter    String
   assignee    String
   status      String   @default("OPEN")
+  taskType    String   @default("Home Work")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

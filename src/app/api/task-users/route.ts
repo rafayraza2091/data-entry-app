@@ -24,7 +24,10 @@ export async function GET() {
     });
 
     const students = rawStudents.map(u => {
-      const studentData = studentsDb.find(s => s.firstName === u.firstName && s.secondName === u.lastName);
+      const studentData = studentsDb.find(s => 
+        s.firstName?.trim().toLowerCase() === u.firstName?.trim().toLowerCase() && 
+        (s.secondName || '')?.trim().toLowerCase() === (u.lastName || '')?.trim().toLowerCase()
+      );
       return {
         ...u,
         className: studentData?.className || '',

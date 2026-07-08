@@ -24,6 +24,7 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
   const [exercise, setExercise] = useState('');
   const [description, setDescription] = useState('');
   const [taskStatus, setTaskStatus] = useState('OPEN');
+  const [taskType, setTaskType] = useState('Home Work');
   const [reporter, setReporter] = useState('');
   const [assignee, setAssignee] = useState('');
   
@@ -98,7 +99,8 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
           description,
           reporter,
           assignee,
-          status: taskStatus
+          status: taskStatus,
+          taskType
         })
       });
 
@@ -115,6 +117,7 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
       setExercise('');
       setDescription('');
       setTaskStatus('OPEN');
+      setTaskType('Home Work');
       
       const userName = `${user.firstName} ${user.lastName}`.trim();
       if (user.role === 'STUDENT') {
@@ -135,9 +138,13 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
 
   let derivedClassName = user.className || '';
   if (assignee) {
-    const assignedStudent = studentsList.find(s => `${s.firstName} ${s.lastName}`.trim() === assignee);
+    const assignedStudent = studentsList.find(s => 
+      `${s.firstName} ${s.lastName}`.trim().toLowerCase() === assignee.trim().toLowerCase()
+    );
     if (assignedStudent && assignedStudent.className) {
       derivedClassName = assignedStudent.className;
+    } else {
+      derivedClassName = '';
     }
   }
 
@@ -168,7 +175,7 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
   };
 
   return (
-    <div className="glass-panel animate-slide-up" style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem' }}>
+    <div className="glass-panel animate-slide-up mx-auto max-w-4xl mt-4 md:mt-8 p-4 md:p-8">
 
 
       <form onSubmit={handleSubmit}>
@@ -334,19 +341,37 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
 
         </div>
 
-        <div className="form-group">
-          <label className="form-label">Status <span className="text-red-500">*</span></label>
-          <select 
-            className="form-control" 
-            value={taskStatus} 
-            onChange={e => setTaskStatus(e.target.value)} 
-            required
-          >
-            <option value="OPEN">OPEN</option>
-            <option value="IN_PROGRESS">IN_PROGRESS</option>
-            <option value="DONE">DONE</option>
-            <option value="PENDING">PENDING</option>
-          </select>
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Task Type <span className="text-red-500">*</span></label>
+            <select 
+              className="form-control" 
+              value={taskType} 
+              onChange={e => setTaskType(e.target.value)} 
+              required
+            >
+              <option value="Home Work">Home Work</option>
+              <option value="Tuition Work">Tuition Work</option>
+              <option value="Class Work">Class Work</option>
+              <option value="Test">Test</option>
+              <option value="Project">Project</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Status <span className="text-red-500">*</span></label>
+            <select 
+              className="form-control" 
+              value={taskStatus} 
+              onChange={e => setTaskStatus(e.target.value)} 
+              required
+            >
+              <option value="OPEN">OPEN</option>
+              <option value="IN_PROGRESS">IN_PROGRESS</option>
+              <option value="DONE">DONE</option>
+              <option value="PENDING">PENDING</option>
+            </select>
+          </div>
         </div>
 
         <div className="form-group">

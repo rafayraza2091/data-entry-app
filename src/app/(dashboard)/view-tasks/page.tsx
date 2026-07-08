@@ -105,6 +105,9 @@ export default function ViewTasksPage() {
     if (field === 'status') {
       isSelect = true;
       options = ['OPEN', 'IN_PROGRESS', 'DONE', 'PENDING'];
+    } else if (field === 'taskType') {
+      isSelect = true;
+      options = ['Home Work', 'Tuition Work', 'Class Work', 'Test', 'Project'];
     } else if (field === 'subject') {
       isSelect = true;
       options = subjectsList.map(s => s.name);
@@ -152,10 +155,10 @@ export default function ViewTasksPage() {
         );
       }
       
-      // For Subject, Book, Chapter, etc
+      // For Subject, Book, Chapter, taskType etc
       return (
         <select 
-          value={task[field] || ''} 
+          value={task[field] || (field === 'taskType' ? 'Home Work' : '')} 
           onChange={e => handleSaveEditDirect(task.id, field, e.target.value)}
           style={{ 
             background: 'transparent', 
@@ -217,6 +220,7 @@ export default function ViewTasksPage() {
       'Assignee',
       'Reporter',
       'Class', 
+      'Task Type',
       'Subject', 
       'Book', 
       'Chapter', 
@@ -243,6 +247,7 @@ export default function ViewTasksPage() {
                 <td className="p-2 md:p-4 text-sm text-gray-600">{item.assignee}</td>
                 <td className="p-2 md:p-4 text-sm text-gray-600">{item.reporter}</td>
                 <td className="p-2 md:p-4 text-sm text-gray-600">{item.className || '-'}</td>
+                <td className="p-2 md:p-4 text-sm text-gray-600">{renderEditableCell(item, 'taskType')}</td>
                 <td className="p-2 md:p-4 text-sm text-gray-600">{renderEditableCell(item, 'subject')}</td>
                 <td className="p-2 md:p-4 text-sm text-gray-600">{renderEditableCell(item, 'book')}</td>
                 <td className="p-2 md:p-4 text-sm text-gray-600">{renderEditableCell(item, 'chapter')}</td>

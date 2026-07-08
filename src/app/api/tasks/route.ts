@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     }
 
     const data = await request.json();
-    const { createdBy, className, subject, book, chapter, topic, exercise, description, reporter, assignee, status } = data;
+    const { createdBy, className, subject, book, chapter, topic, exercise, description, reporter, assignee, status, taskType } = data;
 
     if (!createdBy || !subject || !description || !reporter || !assignee) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -28,7 +28,8 @@ export async function POST(request: Request) {
         description,
         reporter,
         assignee,
-        status: status || 'OPEN'
+        status: status || 'OPEN',
+        taskType: taskType || 'Home Work'
       }
     });
 
@@ -100,7 +101,7 @@ export async function PATCH(request: Request) {
     }
 
     // Allowed fields
-    const allowedFields = ['description', 'status', 'subject', 'book', 'chapter', 'topic', 'exercise'];
+    const allowedFields = ['description', 'status', 'subject', 'book', 'chapter', 'topic', 'exercise', 'taskType'];
     if (!allowedFields.includes(fieldName)) {
       return NextResponse.json({ error: 'Invalid field' }, { status: 400 });
     }
