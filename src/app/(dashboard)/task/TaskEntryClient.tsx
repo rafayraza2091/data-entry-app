@@ -27,6 +27,7 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
   const [taskType, setTaskType] = useState('Home Work');
   const [reporter, setReporter] = useState('');
   const [assignee, setAssignee] = useState('');
+  const [dueDate, setDueDate] = useState(() => new Date().toISOString().split('T')[0]);
   
   const [status, setStatus] = useState({ type: '', message: '' });
 
@@ -100,7 +101,8 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
           reporter,
           assignee,
           status: taskStatus,
-          taskType
+          taskType,
+          dueDate: dueDate ? new Date(dueDate).toISOString() : null
         })
       });
 
@@ -118,6 +120,7 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
       setDescription('');
       setTaskStatus('OPEN');
       setTaskType('Home Work');
+      setDueDate(new Date().toISOString().split('T')[0]);
       
       const userName = `${user.firstName} ${user.lastName}`.trim();
       if (user.role === 'STUDENT') {
@@ -371,6 +374,17 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
               <option value="DONE">DONE</option>
               <option value="PENDING">PENDING</option>
             </select>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Due Date <span className="text-red-500">*</span></label>
+            <input 
+              type="date" 
+              className="form-control" 
+              value={dueDate} 
+              onChange={e => setDueDate(e.target.value)} 
+              required
+            />
           </div>
         </div>
 

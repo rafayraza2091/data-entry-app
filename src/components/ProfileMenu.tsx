@@ -36,7 +36,7 @@ export default function ProfileMenu({ firstName }: { firstName: string }) {
   return (
     <div className="relative" ref={menuRef}>
       <button 
-        className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primaryDark text-white flex items-center justify-center text-lg font-semibold border-none cursor-pointer transition-transform hover:scale-105 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/50" 
+        className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primaryDark text-white flex items-center justify-center text-sm font-semibold border-none cursor-pointer transition-transform hover:scale-105 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/50" 
         onClick={() => setIsOpen(!isOpen)}
         aria-label="User menu"
         style={{ pointerEvents: 'auto' }}

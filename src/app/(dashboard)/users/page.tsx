@@ -12,6 +12,7 @@ export default function UsersPage() {
   const [category, setCategory] = useState<string>('');
   const [classes, setClasses] = useState<{ id: number; name: string }[]>([]);
   const [schools, setSchools] = useState<{ id: number; name: string; branch: string }[]>([]);
+  const [subjectsList, setSubjectsList] = useState<{ id: number; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +35,7 @@ export default function UsersPage() {
     username: '',
     password: '',
     confirmPassword: '',
+    subjects: [] as string[],
   });
 
 
@@ -77,9 +79,21 @@ export default function UsersPage() {
         console.error(err);
       }
     };
+    const fetchSubjects = async () => {
+      try {
+        const response = await fetch('/api/subjects');
+        if (response.ok) {
+          const data = await response.json();
+          setSubjectsList(data);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
 
     fetchSchools();
     fetchClasses();
+    fetchSubjects();
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -132,6 +146,7 @@ export default function UsersPage() {
         username: '',
         password: '',
         confirmPassword: '',
+        subjects: [],
       });
       setCategory('');
       fetchUsers(); // Refresh the list
@@ -164,6 +179,7 @@ export default function UsersPage() {
       parentContact2: user.parentContact2 || '',
       className: user.className || '',
       schoolName: user.schoolName || '',
+      subjects: user.subjects || [],
       otherInfo: user.otherInfo || ''
     });
     setSelectedCategory(cat);
@@ -173,6 +189,47 @@ export default function UsersPage() {
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setEditFormData((prev: any) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubjectAdd = (e: React.ChangeEvent<HTMLSelectElement>, isEdit: boolean) => {
+    const subject = e.target.value;
+    if (!subject) return;
+
+    let subjectsToAdd: string[] = [];
+    if (subject === 'All Subjects Junior') {
+      subjectsToAdd = ["English", "Geography", "History", "Islamiat", "Mathematics", "Urdu", "Quran Translation", "Science"];
+    } else {
+      subjectsToAdd = [subject];
+    }
+
+    if (isEdit) {
+      setEditFormData((prev: any) => {
+        const currentSubjects = prev.subjects || [];
+        const newSubjects = subjectsToAdd.filter(s => !currentSubjects.includes(s));
+        if (newSubjects.length > 0) {
+          return { ...prev, subjects: [...currentSubjects, ...newSubjects] };
+        }
+        return prev;
+      });
+    } else {
+      setFormData((prev) => {
+        const currentSubjects = prev.subjects || [];
+        const newSubjects = subjectsToAdd.filter(s => !currentSubjects.includes(s));
+        if (newSubjects.length > 0) {
+          return { ...prev, subjects: [...currentSubjects, ...newSubjects] };
+        }
+        return prev;
+      });
+    }
+    e.target.value = "";
+  };
+
+  const handleSubjectRemove = (subject: string, isEdit: boolean) => {
+    if (isEdit) {
+      setEditFormData((prev: any) => ({ ...prev, subjects: (prev.subjects || []).filter((s: string) => s !== subject) }));
+    } else {
+      setFormData((prev) => ({ ...prev, subjects: prev.subjects.filter((s: string) => s !== subject) }));
+    }
   };
 
   const submitEdit = async (e: React.FormEvent) => {
@@ -197,15 +254,15 @@ export default function UsersPage() {
   };
 
   const renderUserTable = (userList: any[], cat: string) => (
-    <div style={{ overflowX: 'auto', backgroundColor: 'var(--surface-color)', borderRadius: '0.5rem', border: '1px solid var(--border-color)', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto mx-4 md:mx-8 mb-8">
+      <table className="w-full text-left border-collapse whitespace-nowrap">
         <thead>
-          <tr style={{ borderBottom: '1px solid var(--border-color)', backgroundColor: 'rgba(255, 255, 255, 0.02)' }}>
-            <th style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Name</th>
-            <th style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Contact</th>
-            <th style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Email</th>
-            {cat === 'student' && <th style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Parent</th>}
-            <th style={{ padding: '1rem', fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'center' }}>Actions</th>
+          <tr className="border-b border-gray-200 bg-teal-50 text-teal-700 uppercase text-xs tracking-wider">
+            <th className="p-2 md:p-4 font-semibold">Name</th>
+            <th className="p-2 md:p-4 font-semibold">Contact</th>
+            <th className="p-2 md:p-4 font-semibold">Email</th>
+            {cat === 'student' && <th className="p-2 md:p-4 font-semibold">Parent</th>}
+            <th className="p-2 md:p-4 font-semibold text-center">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -213,18 +270,16 @@ export default function UsersPage() {
             <tr 
               key={user.id} 
               onClick={() => openUserDetail(user, cat)}
-              style={{ borderBottom: '1px solid var(--border-color)', cursor: 'pointer', transition: 'background-color 0.2s' }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              className="border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer"
             >
-              <td style={{ padding: '1rem', fontWeight: 500 }}>{user.firstName} {user.secondName}</td>
-              <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{user.mobileNumber}</td>
-              <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{user.email}</td>
-              {cat === 'student' && <td style={{ padding: '1rem', color: 'var(--text-secondary)' }}>{user.parentContact1 || '-'}</td>}
-              <td style={{ padding: '1rem', textAlign: 'center' }}>
+              <td className="p-2 md:p-4 text-sm font-medium text-gray-800">{user.firstName} {user.secondName}</td>
+              <td className="p-2 md:p-4 text-sm text-gray-600">{user.mobileNumber}</td>
+              <td className="p-2 md:p-4 text-sm text-gray-600">{user.email}</td>
+              {cat === 'student' && <td className="p-2 md:p-4 text-sm text-gray-600">{user.parentContact1 || '-'}</td>}
+              <td className="p-2 md:p-4 text-sm text-center">
                 <button 
                   onClick={(e) => { e.stopPropagation(); openEditModal(user, cat); }}
-                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0.2rem' }}
+                  className="text-gray-400 hover:text-teal-600 transition-colors p-1"
                   title="Edit Profile"
                 >
                   ✏️
@@ -238,45 +293,47 @@ export default function UsersPage() {
   );
 
   return (
-    <div className="form-container" style={{ maxWidth: '1000px', margin: '0 auto', paddingBottom: '2rem' }}>
+    <main className="w-auto pb-8 -mt-4 md:-mt-8 -mx-4 md:-mx-8" style={{ maxWidth: 'none' }}>
       
       {/* ----------------- LIST VIEW ----------------- */}
       {view === 'list' && (
         <div style={{ animation: 'fadeIn 0.3s ease' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-            <h2 style={{ fontSize: '1.5rem', fontWeight: 600 }}>Users Management</h2>
-            <button 
-              onClick={() => { setView('add'); setSuccess(false); setError(null); }} 
-              style={{ backgroundColor: '#3b82f6', color: '#ffffff', padding: '0.5rem 1.5rem', borderRadius: '0.5rem', fontWeight: 600, border: 'none', cursor: 'pointer' }}
-            >
-              + Add User
-            </button>
+          <div className="py-2 px-4 md:px-8 mb-6" style={{ backgroundColor: '#0f766e' }}>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+              <h2 className="text-lg font-bold text-white whitespace-nowrap">Users Directory</h2>
+              <button 
+                onClick={() => { setView('add'); setSuccess(false); setError(null); }} 
+                className="bg-white text-teal-700 hover:bg-teal-50 px-4 py-1.5 rounded-md text-sm font-semibold transition-colors shadow-sm"
+              >
+                + Add User
+              </button>
+            </div>
           </div>
 
           {loadingUsers ? (
-            <p style={{ color: 'var(--text-secondary)' }}>Loading users...</p>
+            <p className="text-center text-gray-500 py-8">Loading users...</p>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            <div className="flex flex-col gap-2 mt-4">
               {/* Teachers */}
               <div>
-                <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>Teachers</h3>
-                {users.teachers.length === 0 ? <p style={{ color: 'var(--text-secondary)' }}>No teachers found.</p> : (
+                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mx-4 md:mx-8 mb-3">Teachers</h3>
+                {users.teachers.length === 0 ? <p className="text-gray-500 mx-4 md:mx-8 mb-6">No teachers found.</p> : (
                   renderUserTable(users.teachers, 'teacher')
                 )}
               </div>
 
               {/* Students */}
               <div>
-                <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>Students</h3>
-                {users.students.length === 0 ? <p style={{ color: 'var(--text-secondary)' }}>No students found.</p> : (
+                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mx-4 md:mx-8 mb-3">Students</h3>
+                {users.students.length === 0 ? <p className="text-gray-500 mx-4 md:mx-8 mb-6">No students found.</p> : (
                   renderUserTable(users.students, 'student')
                 )}
               </div>
 
               {/* Admins */}
               <div>
-                <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--border-color)' }}>Admins</h3>
-                {users.admins.length === 0 ? <p style={{ color: 'var(--text-secondary)' }}>No admins found.</p> : (
+                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mx-4 md:mx-8 mb-3">Admins</h3>
+                {users.admins.length === 0 ? <p className="text-gray-500 mx-4 md:mx-8 mb-6">No admins found.</p> : (
                   renderUserTable(users.admins, 'admin')
                 )}
               </div>
@@ -288,18 +345,21 @@ export default function UsersPage() {
       {/* ----------------- ADD VIEW ----------------- */}
       {view === 'add' && (
         <div style={{ animation: 'fadeIn 0.3s ease' }}>
-          <button 
-            onClick={() => setView('list')} 
-            style={{ background: 'transparent', border: 'none', color: 'var(--primary-color)', cursor: 'pointer', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}
-          >
-            ← Back to Users List
-          </button>
+          <div className="py-2 px-4 md:px-8 mb-6" style={{ backgroundColor: '#0f766e' }}>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-3">
+              <h2 className="text-lg font-bold text-white whitespace-nowrap">Add New User</h2>
+              <button 
+                onClick={() => setView('list')} 
+                className="bg-teal-800 text-teal-100 hover:bg-teal-900 px-4 py-1.5 rounded-md text-sm font-semibold transition-colors"
+              >
+                ← Back to List
+              </button>
+            </div>
+          </div>
           
-          <div className="card">
-            <h2 className="card-title">Add New Employee or Client</h2>
-            <p style={{ marginBottom: '1.5rem', color: 'var(--text-color)', opacity: 0.8 }}>
-              Owner Portal - Select a category to begin adding a new record.
-            </p>
+          <div className="mx-4 md:mx-8 bg-white p-6 md:p-8 rounded-xl shadow-sm border border-gray-200 max-w-4xl">
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Employee or Client Details</h3>
+            <p className="text-gray-500 text-sm mb-6">Owner Portal - Select a category to begin adding a new record.</p>
 
             {error && <div className="error-message" style={{ marginBottom: '1rem', color: 'var(--error-color)' }}>{error}</div>}
             {success && <div className="success-message" style={{ marginBottom: '1rem', color: '#10b981' }}>Successfully added!</div>}
@@ -462,7 +522,7 @@ export default function UsersPage() {
                         ))}
                       </select>
                     </div>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
+                    <div className="form-group col-span-1 md:col-span-2" style={{ marginBottom: 0 }}>
                       <label htmlFor="schoolName" className="form-label">School Name</label>
                       <select
                         id="schoolName"
@@ -480,51 +540,92 @@ export default function UsersPage() {
                         ))}
                       </select>
                     </div>
+                    <div className="form-group col-span-1 md:col-span-2" style={{ marginBottom: 0 }}>
+                      <label htmlFor="subjects" className="form-label">Assigned Subjects</label>
+                      <select
+                        id="subjects"
+                        name="subjects"
+                        onChange={(e) => handleSubjectAdd(e, false)}
+                        className="form-control mb-2"
+                        defaultValue=""
+                      >
+                        <option value="" disabled>Select subject to assign...</option>
+                        <option value="All Subjects Junior" className="font-semibold text-teal-600">All Subjects Junior</option>
+                        {subjectsList
+                          .filter(sub => !formData.subjects.includes(sub.name))
+                          .map((sub) => (
+                          <option key={sub.id} value={sub.name}>{sub.name}</option>
+                        ))}
+                      </select>
+                      
+                      {formData.subjects.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {formData.subjects.map(subject => (
+                            <span 
+                              key={subject} 
+                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800"
+                            >
+                              {subject}
+                              <button
+                                type="button"
+                                onClick={() => handleSubjectRemove(subject, false)}
+                                className="ml-1.5 inline-flex items-center justify-center text-teal-400 hover:text-teal-900 focus:outline-none"
+                              >
+                                <span className="sr-only">Remove subject</span>
+                                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </>
                 )}
 
                 {/* Account Creation Fields (Mandatory) */}
-                <div style={{ gridColumn: '1 / -1', marginTop: '1rem', padding: '1.5rem', backgroundColor: 'var(--surface-color)', borderRadius: '0.5rem', border: '1px solid var(--border-color)' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Login Credentials</h3>
+                <div className="col-span-1 md:col-span-2 mt-4 p-6 bg-gray-50 rounded-lg border border-gray-200">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-800">Login Credentials</h3>
                   
-                  <div className="form-row">
-                    <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: 0 }}>
-                      <label htmlFor="username" className="form-label">Username</label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="form-group col-span-1 md:col-span-2 mb-0">
+                      <label htmlFor="username" className="form-label font-medium text-gray-700">Username</label>
                       <input
                         type="text"
                         id="username"
                         name="username"
                         value={formData.username}
                         onChange={handleInputChange}
-                        className="form-control"
+                        className="form-control bg-white border-gray-300"
                         disabled={isDisabled}
                         style={inputStyle}
                         required={!isDisabled}
                       />
                     </div>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label htmlFor="password" className="form-label">Password</label>
+                    <div className="form-group mb-0">
+                      <label htmlFor="password" className="form-label font-medium text-gray-700">Password</label>
                       <input
                         type="password"
                         id="password"
                         name="password"
                         value={formData.password}
                         onChange={handleInputChange}
-                        className="form-control"
+                        className="form-control bg-white border-gray-300"
                         disabled={isDisabled}
                         style={inputStyle}
                         required={!isDisabled}
                       />
                     </div>
-                    <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label htmlFor="confirmPassword" className="form-label">Confirm Password</label>
+                    <div className="form-group mb-0">
+                      <label htmlFor="confirmPassword" className="form-label font-medium text-gray-700">Confirm Password</label>
                       <input
                         type="password"
                         id="confirmPassword"
                         name="confirmPassword"
                         value={formData.confirmPassword}
                         onChange={handleInputChange}
-                        className="form-control"
+                        className="form-control bg-white border-gray-300"
                         disabled={isDisabled}
                         style={inputStyle}
                         required={!isDisabled}
@@ -536,8 +637,12 @@ export default function UsersPage() {
 
                 <button
                   type="submit"
-                  className="btn-primary"
-                  style={{ gridColumn: '1 / -1', padding: '1rem', marginTop: '1rem', fontWeight: 600, opacity: isDisabled ? 0.5 : 1, cursor: isDisabled ? 'not-allowed' : 'pointer' }}
+                  className="col-span-1 md:col-span-2 px-6 py-3 mt-4 text-white font-semibold rounded-lg shadow-sm transition-colors"
+                  style={{ 
+                    backgroundColor: isDisabled ? '#9ca3af' : '#0d9488', 
+                    opacity: isDisabled ? 0.8 : 1, 
+                    cursor: isDisabled ? 'not-allowed' : 'pointer' 
+                  }}
                   disabled={loading || isDisabled}
                 >
                   {loading ? 'Processing...' : category ? `Add ${category.charAt(0).toUpperCase() + category.slice(1)}` : 'Add Record'}
@@ -607,12 +712,13 @@ export default function UsersPage() {
           backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)',
           zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
-          <div className="card" style={{ width: '90%', maxWidth: '600px', animation: 'fadeIn 0.2s ease', border: '1px solid var(--border-color)', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div className="bg-white p-6 md:p-8 rounded-xl shadow-2xl relative" style={{ width: '90%', maxWidth: '600px', animation: 'fadeIn 0.2s ease', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)' }}>Edit {selectedCategory} Profile</h3>
+              <h3 className="text-xl md:text-2xl font-bold text-gray-800">Edit {selectedCategory} Profile</h3>
               <button 
                 onClick={() => setShowEditModal(false)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: '1.5rem', cursor: 'pointer' }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+                style={{ background: 'transparent', border: 'none', fontSize: '1.75rem', cursor: 'pointer', lineHeight: 1 }}
               >
                 &times;
               </button>
@@ -662,12 +768,53 @@ export default function UsersPage() {
                     <label className="form-label">School</label>
                     <input type="text" name="schoolName" value={editFormData.schoolName} onChange={handleEditChange} className="form-control" />
                   </div>
+                  <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: 0 }}>
+                    <label className="form-label">Assigned Subjects</label>
+                    <select
+                      id="editSubjects"
+                      name="editSubjects"
+                      onChange={(e) => handleSubjectAdd(e, true)}
+                      className="form-control mb-2"
+                      defaultValue=""
+                    >
+                      <option value="" disabled>Select subject to assign...</option>
+                      <option value="All Subjects Junior" className="font-semibold text-teal-600">All Subjects Junior</option>
+                      {subjectsList
+                        .filter(sub => !(editFormData.subjects || []).includes(sub.name))
+                        .map((sub) => (
+                        <option key={sub.id} value={sub.name}>{sub.name}</option>
+                      ))}
+                    </select>
+                    
+                    {(editFormData.subjects || []).length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {(editFormData.subjects || []).map((subject: string) => (
+                          <span 
+                            key={subject} 
+                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800"
+                          >
+                            {subject}
+                            <button
+                              type="button"
+                              onClick={() => handleSubjectRemove(subject, true)}
+                              className="ml-1.5 inline-flex items-center justify-center text-teal-400 hover:text-teal-900 focus:outline-none"
+                            >
+                              <span className="sr-only">Remove subject</span>
+                              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
 
-              <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
-                <button type="button" onClick={() => setShowEditModal(false)} className="btn-secondary" style={{ padding: '0.5rem 1.5rem', backgroundColor: 'transparent', border: '1px solid var(--border-color)', borderRadius: '0.5rem', cursor: 'pointer' }}>Cancel</button>
-                <button type="submit" className="btn-primary" style={{ padding: '0.5rem 1.5rem', borderRadius: '0.5rem', cursor: 'pointer' }} disabled={savingEdit}>
+              <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+                <button type="button" onClick={() => setShowEditModal(false)} className="px-5 py-2.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors font-medium">Cancel</button>
+                <button type="submit" className="px-5 py-2.5 bg-teal-600 text-white hover:bg-teal-700 rounded-lg transition-colors font-medium" disabled={savingEdit}>
                   {savingEdit ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
@@ -683,23 +830,24 @@ export default function UsersPage() {
           backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)',
           zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
-          <div className="card" style={{ width: '90%', maxWidth: '600px', animation: 'fadeIn 0.2s ease', border: '1px solid var(--border-color)' }}>
+          <div className="bg-white p-6 md:p-8 rounded-xl shadow-2xl relative" style={{ width: '90%', maxWidth: '600px', animation: 'fadeIn 0.2s ease' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
               <div>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>{selectedUser.firstName} {selectedUser.secondName}</h3>
+                <h3 className="text-xl md:text-2xl font-bold text-gray-800 mb-2">{selectedUser.firstName} {selectedUser.secondName}</h3>
                 <span style={{ display: 'inline-block', backgroundColor: 'var(--primary-color)', color: '#fff', padding: '0.25rem 0.75rem', borderRadius: '1rem', fontSize: '0.8rem', fontWeight: 600, textTransform: 'capitalize' }}>
                   {selectedCategory}
                 </span>
               </div>
               <button 
                 onClick={() => setSelectedUser(null)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: '1.5rem', cursor: 'pointer' }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+                style={{ background: 'transparent', border: 'none', fontSize: '1.75rem', cursor: 'pointer', lineHeight: 1 }}
               >
                 &times;
               </button>
             </div>
             
-            <div style={{ backgroundColor: 'var(--bg-color)', padding: '1.5rem', borderRadius: '0.5rem', maxHeight: '60vh', overflowY: 'auto' }}>
+            <div className="bg-gray-50 border border-gray-100" style={{ padding: '1.5rem', borderRadius: '0.5rem', maxHeight: '60vh', overflowY: 'auto' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1rem', fontSize: '1rem' }}>
                 <strong style={{ color: 'var(--text-secondary)' }}>Email:</strong> <span>{selectedUser.email}</span>
                 <strong style={{ color: 'var(--text-secondary)' }}>Mobile:</strong> <span>{selectedUser.mobileNumber}</span>
@@ -713,6 +861,21 @@ export default function UsersPage() {
                   <>
                     <strong style={{ color: 'var(--text-secondary)' }}>Class:</strong> <span>{selectedUser.className}</span>
                     <strong style={{ color: 'var(--text-secondary)' }}>School:</strong> <span>{selectedUser.schoolName}</span>
+                    {selectedUser.subjects && selectedUser.subjects.length > 0 && (
+                      <>
+                        <strong style={{ color: 'var(--text-secondary)' }}>Subjects:</strong> 
+                        <div className="flex flex-wrap gap-2">
+                          {selectedUser.subjects.map((subject: string) => (
+                            <span 
+                              key={subject} 
+                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800"
+                            >
+                              {subject}
+                            </span>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
                 
@@ -726,8 +889,7 @@ export default function UsersPage() {
               <button 
                 type="button" 
                 onClick={() => setSelectedUser(null)}
-                className="btn-primary"
-                style={{ padding: '0.5rem 1.5rem', borderRadius: '0.5rem', cursor: 'pointer' }}
+                className="px-5 py-2.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors font-medium"
               >
                 Close
               </button>
@@ -735,6 +897,6 @@ export default function UsersPage() {
           </div>
         </div>
       )}
-    </div>
+    </main>
   );
 }

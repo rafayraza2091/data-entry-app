@@ -46,8 +46,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
 # Install Prisma globally so we can run db push
-RUN npm install -g prisma@5.14.0
-
+RUN npm install -g prisma@5.14.0 && \
+    mkdir -p /usr/local/lib/node_modules/prisma/node_modules/@prisma/engines && \
+    chown -R nextjs:nodejs /usr/local/lib/node_modules/prisma
 # Copy start script
 COPY --chown=nextjs:nodejs start.sh ./start.sh
 RUN chmod +x ./start.sh

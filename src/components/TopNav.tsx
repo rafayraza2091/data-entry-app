@@ -31,7 +31,7 @@ export default function TopNav({
   else if (pathname === '/view-employees') pageTitle = 'Employed Staff';
 
   return (
-    <header className="h-[70px] bg-white border-b border-gray-200 flex items-center px-6 shrink-0 shadow-sm z-10 relative">
+    <header className="h-[40px] bg-white border-b border-gray-200 flex items-center px-6 shrink-0 shadow-sm z-10 relative">
       {/* Left side: Hamburger */}
       <div className="flex-none">
         <button 
@@ -44,7 +44,7 @@ export default function TopNav({
       
       {/* Center: Title */}
       <div className="flex-1 flex justify-center overflow-hidden px-4">
-        <h1 className="text-3xl md:text-4xl font-bold text-primaryDark truncate tracking-tight leading-none pt-1">
+        <h1 className="text-xl md:text-2xl font-bold text-primaryDark truncate tracking-tight leading-none pt-1">
           {pageTitle}
         </h1>
       </div>

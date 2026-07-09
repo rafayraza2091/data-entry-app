@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     }
 
     const data = await request.json();
-    const { createdBy, className, subject, book, chapter, topic, exercise, description, reporter, assignee, status, taskType } = data;
+    const { createdBy, className, subject, book, chapter, topic, exercise, description, reporter, assignee, status, taskType, dueDate } = data;
 
     if (!createdBy || !subject || !description || !reporter || !assignee) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -29,7 +29,8 @@ export async function POST(request: Request) {
         reporter,
         assignee,
         status: status || 'OPEN',
-        taskType: taskType || 'Home Work'
+        taskType: taskType || 'Home Work',
+        dueDate: dueDate ? new Date(dueDate) : null
       }
     });
 

@@ -55,6 +55,7 @@ export async function POST(request: Request) {
           otherInfo: userData.otherInfo,
           className: userData.class,
           schoolName: userData.schoolName,
+          subjects: userData.subjects || [],
         },
       });
       return NextResponse.json(student, { status: 201 });

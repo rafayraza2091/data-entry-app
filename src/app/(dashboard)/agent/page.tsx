@@ -84,7 +84,7 @@ export default function AgentChatPage() {
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm animate-slide-up flex flex-col flex-1 w-full max-w-5xl mx-auto p-3 md:p-6">
+    <div className="bg-white border border-gray-200 rounded-lg shadow-sm animate-slide-up flex flex-col flex-1 w-full mx-auto p-3 md:p-6">
       <h2 className="text-xl md:text-2xl font-semibold mb-3 md:mb-6 text-primaryDark px-2">
         Agent Assistant
       </h2>
