@@ -29,6 +29,7 @@ export default function TopNav({
   else if (pathname === '/view-tasks') pageTitle = 'Task Viewer';
   else if (pathname === '/employee-record') pageTitle = 'Employee Record';
   else if (pathname === '/view-employees') pageTitle = 'Employed Staff';
+  else if (pathname === '/bird-view') pageTitle = 'Bird View';
 
   return (
     <header className="h-[40px] bg-white border-b border-gray-200 flex items-center px-6 shrink-0 shadow-sm z-10 relative">

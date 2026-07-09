@@ -101,19 +101,24 @@ export default function Sidebar({
           <div className="mt-2 pt-2 border-t border-white/10">
             {isExpanded && <div className="text-xs uppercase text-subtextGray font-bold mb-1 px-2 tracking-wider">View</div>}
             
-            <Link href="/view-data" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/view-data' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="View Data">
+            <Link href="/bird-view" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/bird-view' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Bird View">
+              <i className="fa-solid fa-chart-pie w-6 text-center"></i>
+              {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Bird View</span>}
+            </Link>
+
+            <Link href="/view-data" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/view-data' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Data View">
               <i className="fa-solid fa-table w-6 text-center"></i>
-              {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">View Data</span>}
+              {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Data View</span>}
             </Link>
 
-            <Link href="/view-queries" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/view-queries' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="View Queries">
+            <Link href="/view-queries" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/view-queries' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Query View">
               <i className="fa-solid fa-clipboard-question w-6 text-center"></i>
-              {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">View Queries</span>}
+              {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Query View</span>}
             </Link>
 
-            <Link href="/view-tasks" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/view-tasks' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="View Tasks">
+            <Link href="/view-tasks" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/view-tasks' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Task View">
               <i className="fa-solid fa-tasks w-6 text-center"></i>
-              {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">View Tasks</span>}
+              {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Task View</span>}
             </Link>
           </div>
 
