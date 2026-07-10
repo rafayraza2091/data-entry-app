@@ -2,7 +2,17 @@
 
 import { useState, useEffect } from 'react';
 
-export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
+export default function TaskEntryClient({ 
+  currentUser, 
+  initialValues, 
+  onClose, 
+  onSuccess 
+}: { 
+  currentUser: any; 
+  initialValues?: any; 
+  onClose?: () => void; 
+  onSuccess?: () => void; 
+}) {
   const [user, setUser] = useState<any>(currentUser);
   
   const [teachers, setTeachers] = useState<any[]>([]);
@@ -17,7 +27,7 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
   const [loading, setLoading] = useState(true);
 
   // Form State
-  const [subject, setSubject] = useState('');
+  const [subject, setSubject] = useState(initialValues?.subject || '');
   const [book, setBook] = useState('');
   const [chapter, setChapter] = useState('');
   const [topic, setTopic] = useState('');
@@ -26,8 +36,8 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
   const [taskStatus, setTaskStatus] = useState('OPEN');
   const [taskType, setTaskType] = useState('Home Work');
   const [reporter, setReporter] = useState('');
-  const [assignee, setAssignee] = useState('');
-  const [dueDate, setDueDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [assignee, setAssignee] = useState(initialValues?.assignee || '');
+  const [dueDate, setDueDate] = useState(() => initialValues?.dueDate || new Date().toISOString().split('T')[0]);
   
   const [status, setStatus] = useState({ type: '', message: '' });
 
@@ -128,6 +138,13 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
       } else {
         setAssignee('');
       }
+
+      if (onSuccess) {
+        onSuccess();
+      }
+      if (onClose) {
+        onClose();
+      }
     } catch (err: any) {
       setStatus({ type: 'error', message: err.message });
     }
@@ -178,7 +195,16 @@ export default function TaskEntryClient({ currentUser }: { currentUser: any }) {
   };
 
   return (
-    <div className="glass-panel animate-slide-up mx-auto max-w-4xl mt-4 md:mt-8 p-4 md:p-8">
+    <div className="glass-panel animate-slide-up mx-auto max-w-4xl mt-4 md:mt-8 p-4 md:p-8" style={{ position: 'relative', maxHeight: onClose ? '90vh' : 'auto', overflowY: onClose ? 'auto' : 'visible' }}>
+      {onClose && (
+        <button 
+          onClick={onClose}
+          type="button"
+          style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', zIndex: 10, color: '#6b7280' }}
+        >
+          <i className="fa-solid fa-xmark"></i>
+        </button>
+      )}
 
 
       <form onSubmit={handleSubmit}>

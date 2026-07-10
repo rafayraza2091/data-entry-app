@@ -3,7 +3,17 @@
 import { useState, useEffect } from 'react';
 import ImageCropper from '@/components/ImageCropper';
 
-export default function QueryEntryClient({ currentUser }: { currentUser: any }) {
+export default function QueryEntryClient({ 
+  currentUser, 
+  initialValues, 
+  onClose, 
+  onSuccess 
+}: { 
+  currentUser: any; 
+  initialValues?: any; 
+  onClose?: () => void; 
+  onSuccess?: () => void; 
+}) {
   const [user, setUser] = useState<any>(currentUser);
   
   const [teachers, setTeachers] = useState<any[]>([]);
@@ -15,9 +25,9 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
   const [loading, setLoading] = useState(true);
 
   // Form State
-  const [studentName, setStudentName] = useState('');
+  const [studentName, setStudentName] = useState(initialValues?.studentName || '');
   const [teacherName, setTeacherName] = useState('');
-  const [subject, setSubject] = useState('');
+  const [subject, setSubject] = useState(initialValues?.subject || '');
   const [book, setBook] = useState('');
   const [topic, setTopic] = useState('');
   const [chapter, setChapter] = useState('');
@@ -147,6 +157,12 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
       setQueryStatus('open');
       setCroppedImages([]);
       
+      if (onSuccess) {
+        onSuccess();
+      }
+      if (onClose) {
+        onClose();
+      }
       if (user.role !== 'STUDENT') {
         setStudentName('');
         setTeacherName('');
@@ -187,7 +203,23 @@ export default function QueryEntryClient({ currentUser }: { currentUser: any }) 
   const availableExercises = topic ? Array.from(new Set(availableTopics.filter(t => t.topicName === topic).map(t => t.exercise).filter(Boolean))) : [];
 
   return (
-    <div className="glass-panel animate-slide-up mx-auto max-w-4xl mt-4 md:mt-8 p-4 md:p-8">
+    <div className="glass-panel animate-slide-up mx-auto max-w-4xl mt-4 md:mt-8 p-4 md:p-8" style={{ position: 'relative', maxHeight: onClose ? '90vh' : 'auto', overflowY: onClose ? 'auto' : 'visible' }}>
+      {onClose && (
+        <button 
+          onClick={onClose}
+          type="button"
+          style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', zIndex: 10, color: '#6b7280' }}
+        >
+          <i className="fa-solid fa-xmark"></i>
+        </button>
+      )}
+
+      {status.message && (
+        <div className={`p-4 mb-4 rounded ${status.type === 'error' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+          {status.message}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit}>
         <div className="form-row">
           

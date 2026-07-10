@@ -1,5 +1,6 @@
 import { getSession } from '@/lib/auth';
 import ClientLayout from './ClientLayout';
+import { redirect } from 'next/navigation';
 
 export default async function DashboardLayout({
   children,
@@ -8,10 +9,14 @@ export default async function DashboardLayout({
 }) {
   const session = await getSession();
   
+  if (!session) {
+    redirect('/login');
+  }
+  
   return (
     <ClientLayout 
-      initialFirstName={session?.firstName || ''} 
-      initialRole={session?.role || 'STUDENT'}
+      initialFirstName={session.firstName} 
+      initialRole={session.role}
     >
       {children}
     </ClientLayout>

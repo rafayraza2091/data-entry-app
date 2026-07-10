@@ -4,8 +4,12 @@ import { getSession } from '@/lib/auth';
 
 const prisma = new PrismaClient();
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const dateStr = searchParams.get('date');
+    const viewType = searchParams.get('view'); // 'task' or 'query'
+    
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -25,7 +29,7 @@ export async function GET() {
     let students;
     if (session.role === 'STUDENT') {
       students = await prisma.$queryRaw`
-        SELECT id, "firstName", "secondName", subjects 
+        SELECT id, "firstName", "secondName", subjects, "className" 
         FROM "Student" 
         WHERE status = 'Active' 
         AND "firstName" = ${session.firstName} 
@@ -34,14 +38,55 @@ export async function GET() {
       `;
     } else {
       students = await prisma.$queryRaw`
-        SELECT id, "firstName", "secondName", subjects 
+        SELECT id, "firstName", "secondName", subjects, "className" 
         FROM "Student" 
         WHERE status = 'Active' 
         ORDER BY "firstName" ASC
       `;
     }
 
-    return NextResponse.json({ subjects, students });
+    let cellData: any[] = [];
+    if (dateStr && viewType) {
+      const startOfDay = new Date(dateStr);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(dateStr);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      if (viewType === 'task') {
+        cellData = await prisma.taskEntry.findMany({
+          where: {
+            dueDate: {
+              gte: startOfDay,
+              lte: endOfDay
+            }
+          },
+          select: {
+            id: true,
+            assignee: true,
+            subject: true,
+            status: true,
+            taskType: true
+          }
+        });
+      } else if (viewType === 'query') {
+        cellData = await prisma.queryEntry.findMany({
+          where: {
+            createdAt: {
+              gte: startOfDay,
+              lte: endOfDay
+            }
+          },
+          select: {
+            id: true,
+            studentName: true,
+            subject: true,
+            status: true
+          }
+        });
+      }
+    }
+
+    return NextResponse.json({ subjects, students, cellData });
     } catch (error: any) {
       console.error('Error fetching bird view data:', error);
       try {

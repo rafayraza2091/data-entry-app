@@ -12,13 +12,10 @@ export default function ProfileMenu({ firstName }: { firstName: string }) {
 
   const handleLogout = async () => {
     try {
-      // Force navigation first for better UX
-      router.push('/login');
       await fetch('/api/auth/logout', { method: 'POST' });
-      router.refresh();
+      window.location.href = '/login';
     } catch (error) {
       console.error('Logout failed', error);
-      // Fallback
       window.location.href = '/login';
     }
   };

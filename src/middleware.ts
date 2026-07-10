@@ -19,7 +19,7 @@ export async function middleware(request: NextRequest) {
 
   // Redirect unauthenticated users to login
   if (!isAuthenticated && pathname !== '/login' && pathname !== '/register') {
-    // return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   // Redirect authenticated users trying to access login/register back to app
