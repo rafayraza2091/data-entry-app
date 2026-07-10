@@ -42,22 +42,20 @@ export async function POST(request: Request) {
 
     // Now create the actual category record
     if (category === 'student') {
-      const student = await prisma.student.create({
-        data: {
-          firstName: userData.firstName,
-          secondName: userData.secondName,
-          address: userData.address,
-          mobileNumber: userData.mobileNumber,
-          email: userData.email,
-          fatherName: userData.fatherName,
-          parentContact1: userData.parentContact1,
-          parentContact2: userData.parentContact2,
-          otherInfo: userData.otherInfo,
-          className: userData.class,
-          schoolName: userData.schoolName,
-          subjects: userData.subjects || [],
-        },
-      });
+      const res = await prisma.$queryRaw`
+        INSERT INTO "Student" (
+          "firstName", "secondName", "address", "mobileNumber", "email",
+          "fatherName", "parentContact1", "parentContact2", "otherInfo",
+          "className", "schoolName", "status", "subjects",
+          "createdAt", "updatedAt"
+        ) VALUES (
+          ${userData.firstName}, ${userData.secondName}, ${userData.address}, ${userData.mobileNumber}, ${userData.email},
+          ${userData.fatherName || null}, ${userData.parentContact1 || null}, ${userData.parentContact2 || null}, ${userData.otherInfo || null},
+          ${userData.class}, ${userData.schoolName}, ${userData.status || 'Active'}, ${userData.subjects || []},
+          NOW(), NOW()
+        ) RETURNING *
+      `;
+      const student = Array.isArray(res) ? res[0] : res;
       return NextResponse.json(student, { status: 201 });
     } else if (category === 'teacher') {
       const teacher = await prisma.teacher.create({
@@ -100,17 +98,11 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    const students = await prisma.student.findMany({
-      orderBy: { createdAt: 'desc' }
-    });
-    const teachers = await prisma.teacher.findMany({
-      orderBy: { createdAt: 'desc' }
-    });
-    const admins = await prisma.admin.findMany({
-      orderBy: { createdAt: 'desc' }
-    });
-
-    return NextResponse.json({ students, teachers, admins }, { status: 200 });
+    const [students, teachers, admins] = await Promise.all([
+      prisma.$queryRaw`SELECT * FROM "Student" ORDER BY "createdAt" DESC`,
+      prisma.teacher.findMany({ orderBy: { createdAt: 'desc' } }),
+      prisma.admin.findMany({ orderBy: { createdAt: 'desc' } })
+    ]); return NextResponse.json({ students, teachers, admins }, { status: 200 });
   } catch (error: any) {
     console.error('Error fetching users:', error);
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
@@ -129,19 +121,52 @@ export async function PUT(request: Request) {
     let updatedRecord;
 
     if (category === 'student') {
-      updatedRecord = await prisma.student.update({
-        where: { id: Number(id) },
-        data: updateData
-      });
+      updatedRecord = await prisma.$executeRaw`
+        UPDATE "Student"
+        SET "firstName" = ${updateData.firstName},
+            "secondName" = ${updateData.secondName},
+            "address" = ${updateData.address},
+            "mobileNumber" = ${updateData.mobileNumber},
+            "email" = ${updateData.email},
+            "fatherName" = ${updateData.fatherName},
+            "parentContact1" = ${updateData.parentContact1},
+            "parentContact2" = ${updateData.parentContact2},
+            "otherInfo" = ${updateData.otherInfo},
+            "className" = ${updateData.className},
+            "schoolName" = ${updateData.schoolName},
+            "status" = ${updateData.status},
+            "subjects" = ${updateData.subjects}
+        WHERE id = ${Number(id)}
+      `;
     } else if (category === 'teacher') {
       updatedRecord = await prisma.teacher.update({
         where: { id: Number(id) },
-        data: updateData
+        data: {
+          firstName: updateData.firstName,
+          secondName: updateData.secondName,
+          address: updateData.address,
+          mobileNumber: updateData.mobileNumber,
+          email: updateData.email,
+          fatherName: updateData.fatherName,
+          parentContact1: updateData.parentContact1,
+          parentContact2: updateData.parentContact2,
+          otherInfo: updateData.otherInfo,
+        }
       });
     } else if (category === 'admin') {
       updatedRecord = await prisma.admin.update({
         where: { id: Number(id) },
-        data: updateData
+        data: {
+          firstName: updateData.firstName,
+          secondName: updateData.secondName,
+          address: updateData.address,
+          mobileNumber: updateData.mobileNumber,
+          email: updateData.email,
+          fatherName: updateData.fatherName,
+          parentContact1: updateData.parentContact1,
+          parentContact2: updateData.parentContact2,
+          otherInfo: updateData.otherInfo,
+        }
       });
     } else {
       return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
@@ -150,6 +175,13 @@ export async function PUT(request: Request) {
     return NextResponse.json({ success: true, updatedRecord }, { status: 200 });
   } catch (error: any) {
     console.error('Error updating profile:', error);
+    try {
+      require('fs').writeFileSync('/tmp/prisma-update-error.log', JSON.stringify({
+        message: error.message,
+        stack: error.stack,
+        requestData: data
+      }, null, 2));
+    } catch(e) {}
     return NextResponse.json({ error: 'Failed to update profile', details: error.message }, { status: 500 });
   }
 }

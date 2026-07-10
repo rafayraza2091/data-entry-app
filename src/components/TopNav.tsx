@@ -32,7 +32,7 @@ export default function TopNav({
   else if (pathname === '/bird-view') pageTitle = 'Bird View';
 
   return (
-    <header className="h-[40px] bg-white border-b border-gray-200 flex items-center px-6 shrink-0 shadow-sm z-10 relative">
+    <header className="h-[40px] bg-white border-b border-gray-200 flex items-center px-6 shrink-0 shadow-sm z-50 relative">
       {/* Left side: Hamburger */}
       <div className="flex-none">
         <button 

@@ -23,6 +23,8 @@ const config: Config = {
         borderGray: '#dfe1e6',
         kanbanBg1: '#f4f5f7',
         kanbanBg2: '#f8fafc',
+        customTeal: '#254245',
+        customMustard: '#edab30',
       },
       fontFamily: {
         sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],

@@ -140,6 +140,7 @@ model Student {
   otherInfo      String?
   className      String
   schoolName     String
+  status         String   @default("Active")
   subjects       String[] @default([])
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

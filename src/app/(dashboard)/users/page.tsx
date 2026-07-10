@@ -14,8 +14,7 @@ export default function UsersPage() {
   const [schools, setSchools] = useState<{ id: number; name: string; branch: string }[]>([]);
   const [subjectsList, setSubjectsList] = useState<{ id: number; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editFormData, setEditFormData] = useState<any>({});
@@ -36,6 +35,7 @@ export default function UsersPage() {
     password: '',
     confirmPassword: '',
     subjects: [] as string[],
+    status: 'Active',
   });
 
 
@@ -104,7 +104,7 @@ export default function UsersPage() {
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      showToast('Passwords do not match', 'error');
       return;
     }
     if (category) {
@@ -112,11 +112,15 @@ export default function UsersPage() {
     }
   };
 
+  const showToast = (message: string, type: 'success' | 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 5000);
+  };
+
   const confirmSubmit = async () => {
     setShowModal(false);
     setLoading(true);
-    setError(null);
-    setSuccess(false);
+    setToast(null);
 
     try {
       const payload = { category, ...formData };
@@ -131,7 +135,7 @@ export default function UsersPage() {
         throw new Error(errorData.error || 'Failed to create entry');
       }
 
-      setSuccess(true);
+      showToast('Successfully added user!', 'success');
       setFormData({
         firstName: '',
         secondName: '',
@@ -147,12 +151,13 @@ export default function UsersPage() {
         password: '',
         confirmPassword: '',
         subjects: [],
+        status: 'Active',
       });
       setCategory('');
       fetchUsers(); // Refresh the list
       setView('list'); // Go back to list view
     } catch (err: any) {
-      setError(err.message);
+      showToast(err.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -180,7 +185,8 @@ export default function UsersPage() {
       className: user.className || '',
       schoolName: user.schoolName || '',
       subjects: user.subjects || [],
-      otherInfo: user.otherInfo || ''
+      otherInfo: user.otherInfo || '',
+      status: user.status || 'Active'
     });
     setSelectedCategory(cat);
     setShowEditModal(true);
@@ -242,12 +248,20 @@ export default function UsersPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      if (!response.ok) throw new Error('Failed to update');
+      if (!response.ok) {
+        let errStr = 'Failed to update';
+        try {
+          const errData = await response.json();
+          errStr = errData.details || errData.error || 'Failed to update';
+        } catch(e){}
+        throw new Error(errStr);
+      }
       setShowEditModal(false);
+      showToast('Profile updated successfully!', 'success');
       fetchUsers();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('Error saving profile');
+      showToast('Error saving profile: ' + err.message, 'error');
     } finally {
       setSavingEdit(false);
     }
@@ -262,6 +276,7 @@ export default function UsersPage() {
             <th className="p-2 md:p-4 font-semibold">Contact</th>
             <th className="p-2 md:p-4 font-semibold">Email</th>
             {cat === 'student' && <th className="p-2 md:p-4 font-semibold">Parent</th>}
+            {cat === 'student' && <th className="p-2 md:p-4 font-semibold">Status</th>}
             <th className="p-2 md:p-4 font-semibold text-center">Actions</th>
           </tr>
         </thead>
@@ -276,6 +291,17 @@ export default function UsersPage() {
               <td className="p-2 md:p-4 text-sm text-gray-600">{user.mobileNumber}</td>
               <td className="p-2 md:p-4 text-sm text-gray-600">{user.email}</td>
               {cat === 'student' && <td className="p-2 md:p-4 text-sm text-gray-600">{user.parentContact1 || '-'}</td>}
+              {cat === 'student' && (
+                <td className="p-2 md:p-4 text-sm">
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                    user.status === 'Active' ? 'bg-green-100 text-green-800' :
+                    user.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {user.status || 'Active'}
+                  </span>
+                </td>
+              )}
               <td className="p-2 md:p-4 text-sm text-center">
                 <button 
                   onClick={(e) => { e.stopPropagation(); openEditModal(user, cat); }}
@@ -295,6 +321,23 @@ export default function UsersPage() {
   return (
     <main className="w-auto pb-8 -mt-4 md:-mt-8 -mx-4 md:-mx-8" style={{ maxWidth: 'none' }}>
       
+      {/* ----------------- TOAST NOTIFICATION ----------------- */}
+      {toast && (
+        <div className={`fixed top-6 right-6 z-[99999] px-6 py-3.5 rounded-lg shadow-xl font-medium text-white transition-all duration-300 transform translate-y-0 opacity-100 flex items-center gap-3 ${
+          toast.type === 'success' ? 'bg-teal-600 shadow-teal-500/25' : 'bg-red-500 shadow-red-500/25'
+        }`}>
+          {toast.type === 'success' ? (
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+          ) : (
+            <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          )}
+          {toast.message}
+          <button onClick={() => setToast(null)} className="ml-2 text-white/80 hover:text-white transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+      )}
+
       {/* ----------------- LIST VIEW ----------------- */}
       {view === 'list' && (
         <div style={{ animation: 'fadeIn 0.3s ease' }}>
@@ -302,7 +345,7 @@ export default function UsersPage() {
             <div className="flex flex-col md:flex-row items-center justify-between gap-3">
               <h2 className="text-lg font-bold text-white whitespace-nowrap">Users Directory</h2>
               <button 
-                onClick={() => { setView('add'); setSuccess(false); setError(null); }} 
+                onClick={() => { setView('add'); setToast(null); }} 
                 className="bg-white text-teal-700 hover:bg-teal-50 px-4 py-1.5 rounded-md text-sm font-semibold transition-colors shadow-sm"
               >
                 + Add User
@@ -360,9 +403,6 @@ export default function UsersPage() {
           <div className="mx-4 md:mx-8 bg-white p-6 md:p-8 rounded-xl shadow-sm border border-gray-200 max-w-4xl">
             <h3 className="text-xl font-bold text-gray-800 mb-2">Employee or Client Details</h3>
             <p className="text-gray-500 text-sm mb-6">Owner Portal - Select a category to begin adding a new record.</p>
-
-            {error && <div className="error-message" style={{ marginBottom: '1rem', color: 'var(--error-color)' }}>{error}</div>}
-            {success && <div className="success-message" style={{ marginBottom: '1rem', color: '#10b981' }}>Successfully added!</div>}
 
             <form onSubmit={handleFormSubmit}>
               <div className="form-group" style={{ marginBottom: '2rem' }}>
@@ -506,6 +546,23 @@ export default function UsersPage() {
                 {/* Student Specific Fields */}
                 {category === 'student' && (
                   <>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label htmlFor="status" className="form-label">Status</label>
+                      <select
+                        id="status"
+                        name="status"
+                        value={formData.status}
+                        onChange={handleInputChange}
+                        className="form-control"
+                        required
+                      >
+                        <option value="Active">Active</option>
+                        <option value="Terminated">Terminated</option>
+                        <option value="Left">Left</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Long leave">Long leave</option>
+                      </select>
+                    </div>
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label htmlFor="class" className="form-label">Class</label>
                       <select
@@ -677,6 +734,7 @@ export default function UsersPage() {
                     <>
                       <strong className="text-gray-600">Class:</strong> <span className="text-gray-900">{formData.class}</span>
                       <strong className="text-gray-600">School:</strong> <span className="text-gray-900">{formData.schoolName}</span>
+                      <strong className="text-gray-600">Status:</strong> <span className="text-gray-900">{formData.status}</span>
                     </>
                   )}
                   <div className="col-span-2 h-px bg-gray-200 my-2"></div>
@@ -767,6 +825,16 @@ export default function UsersPage() {
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label className="form-label">School</label>
                     <input type="text" name="schoolName" value={editFormData.schoolName} onChange={handleEditChange} className="form-control" />
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label">Status</label>
+                    <select name="status" value={editFormData.status} onChange={handleEditChange} className="form-control" required>
+                      <option value="Active">Active</option>
+                      <option value="Terminated">Terminated</option>
+                      <option value="Left">Left</option>
+                      <option value="Pending">Pending</option>
+                      <option value="Long leave">Long leave</option>
+                    </select>
                   </div>
                   <div className="form-group" style={{ gridColumn: '1 / -1', marginBottom: 0 }}>
                     <label className="form-label">Assigned Subjects</label>
