@@ -7,6 +7,21 @@ const getLocalDateString = (d: Date) => {
   return `${year}-${month}-${day}`;
 };
 
+const getVibrantColor = (str: string) => {
+  const colors = [
+    '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', 
+    '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ff9800', 
+    '#ff5722', '#f44336', '#d81b60', '#8e24aa', '#5e35b1', '#3949ab',
+    '#1e88e5', '#039be5', '#00acc1', '#00897b', '#43a047', '#7cb342',
+    '#fb8c00', '#f4511e', '#e53935'
+  ];
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+};
+
 import { useState, useEffect, useRef } from 'react';
 import TaskEntryClient from '../task/TaskEntryClient';
 import QueryEntryClient from '../query/QueryEntryClient';
@@ -351,7 +366,7 @@ export default function BirdViewPage() {
               <tr>
                 <th className="px-4 py-4 text-center border-b border-gray-200">
                   <div className="flex flex-col items-center">
-                    <div className="w-8 h-8 rounded-full bg-roleStudent text-white flex items-center justify-center font-bold mb-2 shadow-sm">
+                    <div className="w-8 h-8 rounded-full text-white flex items-center justify-center font-bold mb-2 shadow-sm" style={{ backgroundColor: getVibrantColor(students[draggedStudentIdx].firstName + ' ' + students[draggedStudentIdx].secondName) }}>
                       {students[draggedStudentIdx].firstName.charAt(0)}{students[draggedStudentIdx].secondName.charAt(0)}
                     </div>
                     <span className="truncate max-w-[100px]">
@@ -522,7 +537,7 @@ export default function BirdViewPage() {
                 {students.filter(s => studentCategoryFilter === 'All' || getStudentCategory(s.className || '') === studentCategoryFilter).map(student => (
                   <label key={student.id} className="flex items-center justify-between py-1.5 px-2 hover:bg-gray-50 cursor-pointer rounded transition-colors group border border-transparent hover:border-gray-100">
                     <div className="flex items-center space-x-3 overflow-hidden pr-2">
-                      <div className="w-6 h-6 shrink-0 rounded-full bg-roleStudent text-white flex items-center justify-center font-bold text-[9px]">
+                      <div className="w-6 h-6 shrink-0 rounded-full text-white flex items-center justify-center font-bold text-[9px]" style={{ backgroundColor: getVibrantColor(student.firstName + ' ' + student.secondName) }}>
                         {student.firstName.charAt(0)}{student.secondName.charAt(0)}
                       </div>
                       <span className="text-xs font-semibold text-gray-700 group-hover:text-[#254245] transition-colors truncate">
@@ -604,7 +619,7 @@ export default function BirdViewPage() {
                           onDragEnd={handleStudentDragEnd}
                         >
                           <div className={`flex flex-col items-center relative ${isDragged ? 'opacity-50' : ''}`}>
-                            <div className="w-8 h-8 rounded-full bg-roleStudent text-white flex items-center justify-center font-bold mb-2 shadow-sm">
+                            <div className="w-8 h-8 rounded-full text-white flex items-center justify-center font-bold mb-2 shadow-sm" style={{ backgroundColor: getVibrantColor(student.firstName + ' ' + student.secondName) }}>
                               {student.firstName.charAt(0)}{student.secondName.charAt(0)}
                             </div>
                             <span className="truncate max-w-[100px]" title={`${student.firstName} ${student.secondName}`}>

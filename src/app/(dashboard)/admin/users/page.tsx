@@ -14,6 +14,21 @@ type User = {
 
 const ROLES = ['OWNER', 'COORDINATOR', 'TEACHER', 'ASSISTANT', 'STUDENT', 'PARENT'];
 
+const getVibrantColor = (str: string) => {
+  const colors = [
+    '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', 
+    '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ff9800', 
+    '#ff5722', '#f44336', '#d81b60', '#8e24aa', '#5e35b1', '#3949ab',
+    '#1e88e5', '#039be5', '#00acc1', '#00897b', '#43a047', '#7cb342',
+    '#fb8c00', '#f4511e', '#e53935'
+  ];
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+};
+
 export default function UserManagementPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,13 +114,16 @@ export default function UserManagementPage() {
                     className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-100 transition-colors gap-4 md:gap-0"
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`w-10 h-10 md:w-12 md:h-12 flex-shrink-0 rounded-full flex items-center justify-center text-white font-bold text-lg ${
-                        user.role === 'OWNER' ? 'bg-roleOwner' :
-                        user.role === 'COORDINATOR' ? 'bg-roleCoordinator' :
-                        user.role === 'TEACHER' ? 'bg-roleTeacher' :
-                        user.role === 'STUDENT' ? 'bg-roleStudent' :
-                        'bg-gray-500'
-                      }`}>
+                      <div 
+                        className={`w-10 h-10 md:w-12 md:h-12 flex-shrink-0 rounded-full flex items-center justify-center text-white font-bold text-lg ${
+                          user.role === 'OWNER' ? 'bg-roleOwner' :
+                          user.role === 'COORDINATOR' ? 'bg-roleCoordinator' :
+                          user.role === 'TEACHER' ? 'bg-roleTeacher' :
+                          user.role === 'STUDENT' ? '' :
+                          'bg-gray-500'
+                        }`}
+                        style={user.role === 'STUDENT' ? { backgroundColor: getVibrantColor(user.firstName + ' ' + user.lastName) } : undefined}
+                      >
                         {user.firstName ? user.firstName.charAt(0).toUpperCase() : user.username.charAt(0).toUpperCase()}
                       </div>
                       <div>
