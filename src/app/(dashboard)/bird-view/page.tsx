@@ -8,18 +8,17 @@ const getLocalDateString = (d: Date) => {
 };
 
 const getVibrantColor = (str: string) => {
-  // Earthy, premium color palette from user's choice
+  // Palette based on the 9 color cards (Blue, Green, Yellow, Orange, Red, Pink, Purple, Maroon, Gray)
   const colors = [
-    '#40150A',
-    '#5B1F0F',
-    '#7B3311',
-    '#934C1A',
-    '#AB6422',
-    '#BB8130',
-    '#756A34',
-    '#474E30',
-    '#2F3C29',
-    '#162A22'
+    '#1976D2', '#0D47A1', // Blue
+    '#388E3C', '#1B5E20', // Green
+    '#FBC02D', '#F57F17', // Yellow (Gold/Amber)
+    '#F57C00', '#E65100', // Orange
+    '#D32F2F', '#B71C1C', // Red
+    '#D81B60', '#C2185B', // Pink
+    '#7B1FA2', '#4A148C', // Purple
+    '#880E4F', '#4A0024', // Maroon
+    '#546E7A', '#263238'  // Gray
   ];
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
