@@ -561,8 +561,8 @@ export default function BirdViewPage() {
           </div>
         ) : (
           <div className="flex-1 overflow-auto custom-scrollbar relative">
-            <div style={{ width: `${80 + (students.filter(s => selectedStudentIds.includes(s.id)).length * 120)}px` }}>
-              <table className="w-full text-sm text-left border-separate border-spacing-0 table-fixed">
+            <div className="w-max" style={{ width: `${80 + (students.filter(s => selectedStudentIds.includes(s.id)).length * 120)}px` }}>
+              <table style={{ width: `${80 + (students.filter(s => selectedStudentIds.includes(s.id)).length * 120)}px` }} className="w-full text-sm text-left border-separate border-spacing-0 table-fixed">
                 <colgroup>
                 <col style={{ width: '80px', minWidth: '80px', maxWidth: '80px' }} />
                 {students.map((student) => {
@@ -752,7 +752,7 @@ export default function BirdViewPage() {
 
       {newEntryModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-5xl max-h-[95vh] bg-[#f9fafb] rounded-lg shadow-xl relative overflow-hidden" style={{ minHeight: '80vh' }}>
+          <div className="w-full max-w-4xl relative">
             {newEntryModal.type === 'task' ? (
               <TaskEntryClient 
                 currentUser={currentUser} 
