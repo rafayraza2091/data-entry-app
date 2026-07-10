@@ -209,8 +209,7 @@ export default function QueryEntryClient({
   const availableExercises = topic ? Array.from(new Set(availableTopics.filter(t => t.topicName === topic).map(t => t.exercise).filter(Boolean))) : [];
 
   const isPreFilledModal = !!(onClose && subject && studentName);
-  const showBeautifulHeader = isPreFilledModal && user.role === 'TEACHER';
-  const showBeautifulHeaderForOwner = isPreFilledModal && (user.role === 'OWNER' || user.role === 'COORDINATOR');
+  const showBeautifulHeader = isPreFilledModal;
 
   const renderBeautifulHeader = () => {
     return (

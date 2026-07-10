@@ -214,7 +214,7 @@ export default function TaskEntryClient({
     return (
       <div className="bg-teal-50 border-l-4 border-teal-500 p-4 mb-6 rounded shadow-sm flex flex-wrap gap-4 md:gap-8">
         <div>
-          <span className="block text-xs uppercase tracking-wider text-teal-700 font-semibold mb-1">Reporter</span>
+          <span className="block text-xs uppercase tracking-wider text-teal-700 font-semibold mb-1">Created By</span>
           <span className="text-gray-800 font-medium">{userName}</span>
         </div>
         <div>
@@ -225,10 +225,14 @@ export default function TaskEntryClient({
           <span className="block text-xs uppercase tracking-wider text-teal-700 font-semibold mb-1">Subject</span>
           <span className="text-gray-800 font-medium">{subject}</span>
         </div>
+        <div>
+          <span className="block text-xs uppercase tracking-wider text-teal-700 font-semibold mb-1">Assignee</span>
+          <span className="text-gray-800 font-medium">{assignee}</span>
+        </div>
         {user.role === 'TEACHER' && (
           <div>
-            <span className="block text-xs uppercase tracking-wider text-teal-700 font-semibold mb-1">Assignee</span>
-            <span className="text-gray-800 font-medium">{assignee}</span>
+            <span className="block text-xs uppercase tracking-wider text-teal-700 font-semibold mb-1">Reporter</span>
+            <span className="text-gray-800 font-medium">{reporter}</span>
           </div>
         )}
       </div>
@@ -346,15 +350,15 @@ export default function TaskEntryClient({
 
           {showBeautifulHeaderForOwner && (
             <div className="form-group col-span-2 md:col-span-1">
-              <label className="form-label">Assignee <span className="text-red-500">*</span></label>
+              <label className="form-label">Reporter <span className="text-red-500">*</span></label>
               <select 
                 className="form-control" 
-                value={assignee} 
-                onChange={e => setAssignee(e.target.value)} 
+                value={reporter} 
+                onChange={e => setReporter(e.target.value)} 
                 required
               >
-                <option value="" disabled>Select Assignee</option>
-                {allUsers.map((u, i) => (
+                <option value="" disabled>Select Reporter</option>
+                {teachers.map((u, i) => (
                   <option key={i} value={u}>{u}</option>
                 ))}
               </select>
