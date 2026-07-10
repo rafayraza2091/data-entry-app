@@ -65,6 +65,7 @@ export default function BirdViewPage() {
   const [hoveredSubjectIdx, setHoveredSubjectIdx] = useState<number | null>(null);
   
   const [clickedCellId, setClickedCellId] = useState<string | null>(null);
+  const [highlightedStudentId, setHighlightedStudentId] = useState<number | null>(null);
 
   const [activeView, setActiveView] = useState<'task' | 'query'>('task');
   const [currentDate, setCurrentDate] = useState('');
@@ -617,11 +618,13 @@ export default function BirdViewPage() {
                         className="p-0 text-center border-b border-r border-gray-200 whitespace-nowrap w-[120px] min-w-[120px] max-w-[120px]"
                       >
                         <div 
-                          className={`w-full h-full px-4 py-4 cursor-grab active:cursor-grabbing hover:bg-gray-100 transition-all group flex flex-col items-center relative
+                          className={`w-full h-full px-4 py-4 cursor-pointer active:cursor-grabbing hover:bg-gray-100 transition-all group flex flex-col items-center relative
                             ${isDragged ? 'dragged-column' : ''}
                             ${showLeftIndicator ? 'drop-target-left' : ''}
                             ${showRightIndicator ? 'drop-target-right' : ''}
+                            ${highlightedStudentId === student.id ? 'bg-gray-100' : ''}
                           `}
+                          onClick={() => setHighlightedStudentId(highlightedStudentId === student.id ? null : student.id)}
                           draggable
                           onDragStart={(e) => handleStudentDragStart(e, index)}
                           onDragEnter={(e) => handleStudentDragEnter(e, index)}
@@ -691,6 +694,7 @@ export default function BirdViewPage() {
                         
                         const cellId = `${subject.id}-${student.id}`;
                         const isClicked = clickedCellId === cellId;
+                        const isHighlightedColumn = highlightedStudentId === student.id;
                         
                         return (
                           <td 
@@ -717,9 +721,10 @@ export default function BirdViewPage() {
                                   setClickedCellId(isClicked ? null : cellId);
                                 }
                               }}
+                              style={isHighlightedColumn ? { backgroundColor: getVibrantColor(student.firstName + ' ' + student.secondName) + '26' } : undefined}
                               className={`
                                 w-full h-full transition-all duration-300 min-h-[100px] flex items-center justify-center p-1 overflow-hidden
-                                ${!isAssigned && !isDragged && !isStudentDragged ? 'unassigned-cell' : 'bg-white'}
+                                ${(!isAssigned && !isDragged && !isStudentDragged && !isHighlightedColumn) ? 'unassigned-cell' : (isHighlightedColumn ? '' : 'bg-white')}
                                 ${isAssigned ? 'cursor-pointer hover:bg-gray-50' : ''}
                                 ${isClicked ? 'transform scale-[2] origin-center z-[60] shadow-[0_0_30px_rgba(0,0,0,0.3)] relative bg-white' : 'transform scale-100 z-0 relative'}
                                 ${isDragged || isStudentDragged ? 'dragged-column dragged-row' : ''}
