@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function ProfileMenu({ firstName }: { firstName: string }) {
+export default function ProfileMenu({ firstName, role }: { firstName: string, role?: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -30,10 +30,16 @@ export default function ProfileMenu({ firstName }: { firstName: string }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  let roleColorClass = 'bg-gradient-to-br from-primary to-primaryDark';
+  if (role === 'OWNER') roleColorClass = 'bg-roleOwner';
+  else if (role === 'COORDINATOR') roleColorClass = 'bg-roleCoordinator';
+  else if (role === 'TEACHER') roleColorClass = 'bg-roleTeacher';
+  else if (role === 'STUDENT') roleColorClass = 'bg-roleStudent';
+
   return (
     <div className="relative" ref={menuRef}>
       <button 
-        className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-primaryDark text-white flex items-center justify-center text-sm font-semibold border-none cursor-pointer transition-transform hover:scale-105 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/50" 
+        className={`w-8 h-8 rounded-full ${roleColorClass} text-white flex items-center justify-center text-sm font-semibold border-none cursor-pointer transition-transform hover:scale-105 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/50`} 
         onClick={() => setIsOpen(!isOpen)}
         aria-label="User menu"
         style={{ pointerEvents: 'auto' }}

@@ -43,7 +43,7 @@ export default function ClientLayout({
         isMobile={isMobile}
       />
       <div className={`main-content ${isSidebarExpanded ? 'expanded' : ''}`}>
-        <TopNav firstName={initialFirstName} toggleSidebar={() => setIsSidebarExpanded(!isSidebarExpanded)} />
+        <TopNav firstName={initialFirstName} role={initialRole} toggleSidebar={() => setIsSidebarExpanded(!isSidebarExpanded)} />
         <div className="dashboard-content">
           {children}
         </div>

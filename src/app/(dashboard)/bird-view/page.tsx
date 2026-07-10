@@ -174,7 +174,8 @@ export default function BirdViewPage() {
     
     async function fetchCellData() {
       try {
-        const dateStr = getLocalDateString(selectedDate);
+        const dateToUse = selectedDate || new Date();
+        const dateStr = getLocalDateString(dateToUse);
         const response = await fetch(`/api/bird-view?date=${dateStr}&view=${activeView}`);
         if (response.ok) {
           const data = await response.json();
@@ -350,7 +351,7 @@ export default function BirdViewPage() {
               <tr>
                 <th className="px-4 py-4 text-center border-b border-gray-200">
                   <div className="flex flex-col items-center">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold mb-2 shadow-sm">
+                    <div className="w-8 h-8 rounded-full bg-roleStudent text-white flex items-center justify-center font-bold mb-2 shadow-sm">
                       {students[draggedStudentIdx].firstName.charAt(0)}{students[draggedStudentIdx].secondName.charAt(0)}
                     </div>
                     <span className="truncate max-w-[100px]">
@@ -521,7 +522,7 @@ export default function BirdViewPage() {
                 {students.filter(s => studentCategoryFilter === 'All' || getStudentCategory(s.className || '') === studentCategoryFilter).map(student => (
                   <label key={student.id} className="flex items-center justify-between py-1.5 px-2 hover:bg-gray-50 cursor-pointer rounded transition-colors group border border-transparent hover:border-gray-100">
                     <div className="flex items-center space-x-3 overflow-hidden pr-2">
-                      <div className="w-6 h-6 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-[9px]">
+                      <div className="w-6 h-6 shrink-0 rounded-full bg-roleStudent text-white flex items-center justify-center font-bold text-[9px]">
                         {student.firstName.charAt(0)}{student.secondName.charAt(0)}
                       </div>
                       <span className="text-xs font-semibold text-gray-700 group-hover:text-[#254245] transition-colors truncate">
@@ -603,7 +604,7 @@ export default function BirdViewPage() {
                           onDragEnd={handleStudentDragEnd}
                         >
                           <div className={`flex flex-col items-center relative ${isDragged ? 'opacity-50' : ''}`}>
-                            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold mb-2 shadow-sm">
+                            <div className="w-8 h-8 rounded-full bg-roleStudent text-white flex items-center justify-center font-bold mb-2 shadow-sm">
                               {student.firstName.charAt(0)}{student.secondName.charAt(0)}
                             </div>
                             <span className="truncate max-w-[100px]" title={`${student.firstName} ${student.secondName}`}>

@@ -5,9 +5,11 @@ import ProfileMenu from './ProfileMenu';
 
 export default function TopNav({ 
   firstName, 
+  role,
   toggleSidebar 
 }: { 
   firstName: string,
+  role?: string,
   toggleSidebar: () => void 
 }) {
   const pathname = usePathname();
@@ -52,7 +54,7 @@ export default function TopNav({
 
       {/* Right side: ProfileMenu */}
       <div className="flex-none">
-        <ProfileMenu firstName={firstName} />
+        <ProfileMenu firstName={firstName} role={role} />
       </div>
     </header>
   );

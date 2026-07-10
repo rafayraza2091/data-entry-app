@@ -25,6 +25,10 @@ const config: Config = {
         kanbanBg2: '#f8fafc',
         customTeal: '#254245',
         customMustard: '#edab30',
+        roleOwner: '#134E4A',
+        roleCoordinator: '#7C3AED',
+        roleTeacher: '#EA580C',
+        roleStudent: '#0284C7',
       },
       fontFamily: {
         sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],

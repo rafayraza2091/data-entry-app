@@ -99,7 +99,13 @@ export default function UserManagementPage() {
                     className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-100 transition-colors gap-4 md:gap-0"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 md:w-12 md:h-12 flex-shrink-0 rounded-full bg-gradient-to-br from-primary to-primaryDark flex items-center justify-center text-white font-bold text-lg">
+                      <div className={`w-10 h-10 md:w-12 md:h-12 flex-shrink-0 rounded-full flex items-center justify-center text-white font-bold text-lg ${
+                        user.role === 'OWNER' ? 'bg-roleOwner' :
+                        user.role === 'COORDINATOR' ? 'bg-roleCoordinator' :
+                        user.role === 'TEACHER' ? 'bg-roleTeacher' :
+                        user.role === 'STUDENT' ? 'bg-roleStudent' :
+                        'bg-gray-500'
+                      }`}>
                         {user.firstName ? user.firstName.charAt(0).toUpperCase() : user.username.charAt(0).toUpperCase()}
                       </div>
                       <div>
