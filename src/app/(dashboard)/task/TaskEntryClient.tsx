@@ -206,6 +206,35 @@ export default function TaskEntryClient({
     }
   };
 
+  const isPreFilledModal = !!(onClose && subject && assignee);
+  const showBeautifulHeader = isPreFilledModal && user.role === 'TEACHER';
+  const showBeautifulHeaderForOwner = isPreFilledModal && (user.role === 'OWNER' || user.role === 'COORDINATOR');
+
+  const renderBeautifulHeader = () => {
+    return (
+      <div className="bg-teal-50 border-l-4 border-teal-500 p-4 mb-6 rounded shadow-sm flex flex-wrap gap-4 md:gap-8">
+        <div>
+          <span className="block text-xs uppercase tracking-wider text-teal-700 font-semibold mb-1">Reporter</span>
+          <span className="text-gray-800 font-medium">{userName}</span>
+        </div>
+        <div>
+          <span className="block text-xs uppercase tracking-wider text-teal-700 font-semibold mb-1">Class</span>
+          <span className="text-gray-800 font-medium">{derivedClassName || 'N/A'}</span>
+        </div>
+        <div>
+          <span className="block text-xs uppercase tracking-wider text-teal-700 font-semibold mb-1">Subject</span>
+          <span className="text-gray-800 font-medium">{subject}</span>
+        </div>
+        {user.role === 'TEACHER' && (
+          <div>
+            <span className="block text-xs uppercase tracking-wider text-teal-700 font-semibold mb-1">Assignee</span>
+            <span className="text-gray-800 font-medium">{assignee}</span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="glass-panel animate-slide-up mx-auto max-w-4xl mt-4 md:mt-8 p-4 md:p-8" style={{ position: 'relative', maxHeight: onClose ? '90vh' : 'auto', overflowY: onClose ? 'auto' : 'visible' }}>
       {onClose && (
@@ -219,95 +248,118 @@ export default function TaskEntryClient({
       )}
 
 
+      {(showBeautifulHeader || showBeautifulHeaderForOwner) && renderBeautifulHeader()}
+
       <form onSubmit={handleSubmit}>
         <div className="form-row">
           
-          <div className="form-group">
-            <label className="form-label">Name <span className="text-red-500">*</span></label>
-            <input 
-              type="text" 
-              className="form-control" 
-              value={userName} 
-              disabled 
-              style={{ backgroundColor: 'var(--border-color)' }}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Class</label>
-            <input 
-              type="text" 
-              className="form-control" 
-              value={derivedClassName || 'N/A'} 
-              disabled 
-              style={{ backgroundColor: 'var(--border-color)' }}
-            />
-          </div>
-
-          <div className="form-group col-span-2">
-            <div className="form-row">
+          {!(showBeautifulHeader || showBeautifulHeaderForOwner) && (
+            <>
               <div className="form-group">
-                <label className="form-label">Reporter <span className="text-red-500">*</span></label>
+                <label className="form-label">Name <span className="text-red-500">*</span></label>
+                <input 
+                  type="text" 
+                  className="form-control" 
+                  value={userName} 
+                  disabled 
+                  style={{ backgroundColor: 'var(--border-color)' }}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Class</label>
+                <input 
+                  type="text" 
+                  className="form-control" 
+                  value={derivedClassName || 'N/A'} 
+                  disabled 
+                  style={{ backgroundColor: 'var(--border-color)' }}
+                />
+              </div>
+
+              <div className="form-group col-span-2">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Reporter <span className="text-red-500">*</span></label>
+                    <select 
+                      className="form-control" 
+                      value={reporter} 
+                      onChange={e => setReporter(e.target.value)} 
+                      required
+                    >
+                      <option value="" disabled>Select Reporter</option>
+                      {teachers.map((u, i) => (
+                        <option key={i} value={u}>{u}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Assignee <span className="text-red-500">*</span></label>
+                    {isStudent ? (
+                      <input 
+                        type="text" 
+                        className="form-control" 
+                        value={assignee} 
+                        disabled 
+                        style={{ backgroundColor: 'var(--border-color)' }}
+                      />
+                    ) : (
+                      <select 
+                        className="form-control" 
+                        value={assignee} 
+                        onChange={e => setAssignee(e.target.value)} 
+                        required
+                      >
+                        <option value="" disabled>Select Assignee</option>
+                        {allUsers.map((u, i) => (
+                          <option key={i} value={u}>{u}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Subject <span className="text-red-500">*</span></label>
                 <select 
                   className="form-control" 
-                  value={reporter} 
-                  onChange={e => setReporter(e.target.value)} 
+                  value={subject} 
+                  onChange={e => {
+                    setSubject(e.target.value);
+                    setBook('');
+                    setChapter('');
+                    setTopic('');
+                    setExercise('');
+                  }} 
                   required
                 >
-                  <option value="" disabled>Select Reporter</option>
-                  {teachers.map((u, i) => (
-                    <option key={i} value={u}>{u}</option>
+                  <option value="" disabled>Select Subject</option>
+                  {subjectsList.map(s => (
+                    <option key={s.id} value={s.name}>{s.name}</option>
                   ))}
                 </select>
               </div>
+            </>
+          )}
 
-              <div className="form-group">
-                <label className="form-label">Assignee <span className="text-red-500">*</span></label>
-                {isStudent ? (
-                  <input 
-                    type="text" 
-                    className="form-control" 
-                    value={assignee} 
-                    disabled 
-                    style={{ backgroundColor: 'var(--border-color)' }}
-                  />
-                ) : (
-                  <select 
-                    className="form-control" 
-                    value={assignee} 
-                    onChange={e => setAssignee(e.target.value)} 
-                    required
-                  >
-                    <option value="" disabled>Select Assignee</option>
-                    {allUsers.map((u, i) => (
-                      <option key={i} value={u}>{u}</option>
-                    ))}
-                  </select>
-                )}
-              </div>
+          {showBeautifulHeaderForOwner && (
+            <div className="form-group col-span-2 md:col-span-1">
+              <label className="form-label">Assignee <span className="text-red-500">*</span></label>
+              <select 
+                className="form-control" 
+                value={assignee} 
+                onChange={e => setAssignee(e.target.value)} 
+                required
+              >
+                <option value="" disabled>Select Assignee</option>
+                {allUsers.map((u, i) => (
+                  <option key={i} value={u}>{u}</option>
+                ))}
+              </select>
             </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Subject <span className="text-red-500">*</span></label>
-            <select 
-              className="form-control" 
-              value={subject} 
-              onChange={e => {
-                setSubject(e.target.value);
-                setBook('');
-                setChapter('');
-                setTopic('');
-                setExercise('');
-              }} 
-              required
-            >
-              <option value="" disabled>Select Subject</option>
-              {subjectsList.map(s => (
-                <option key={s.id} value={s.name}>{s.name}</option>
-              ))}
-            </select>
-          </div>
+          )}
 
           <div className="form-group">
             <label className="form-label">Book</label>

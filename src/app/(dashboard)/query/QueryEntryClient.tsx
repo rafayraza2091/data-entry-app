@@ -208,6 +208,29 @@ export default function QueryEntryClient({
   const uniqueTopicNames = Array.from(new Set(availableTopics.map(t => t.topicName).filter(Boolean)));
   const availableExercises = topic ? Array.from(new Set(availableTopics.filter(t => t.topicName === topic).map(t => t.exercise).filter(Boolean))) : [];
 
+  const isPreFilledModal = !!(onClose && subject && studentName);
+  const showBeautifulHeader = isPreFilledModal && user.role === 'TEACHER';
+  const showBeautifulHeaderForOwner = isPreFilledModal && (user.role === 'OWNER' || user.role === 'COORDINATOR');
+
+  const renderBeautifulHeader = () => {
+    return (
+      <div className="bg-teal-50 border-l-4 border-teal-500 p-4 mb-6 rounded shadow-sm flex flex-wrap gap-4 md:gap-8">
+        <div>
+          <span className="block text-xs uppercase tracking-wider text-teal-700 font-semibold mb-1">Student</span>
+          <span className="text-gray-800 font-medium">{studentName}</span>
+        </div>
+        <div>
+          <span className="block text-xs uppercase tracking-wider text-teal-700 font-semibold mb-1">Class</span>
+          <span className="text-gray-800 font-medium">{derivedClassName || 'N/A'}</span>
+        </div>
+        <div>
+          <span className="block text-xs uppercase tracking-wider text-teal-700 font-semibold mb-1">Subject</span>
+          <span className="text-gray-800 font-medium">{subject}</span>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="glass-panel animate-slide-up mx-auto max-w-4xl mt-4 md:mt-8 p-4 md:p-8" style={{ position: 'relative', maxHeight: onClose ? '90vh' : 'auto', overflowY: onClose ? 'auto' : 'visible' }}>
       {onClose && (
@@ -226,65 +249,71 @@ export default function QueryEntryClient({
         </div>
       )}
 
+      {showBeautifulHeader && renderBeautifulHeader()}
+
       <form onSubmit={handleSubmit}>
         <div className="form-row">
           
-          <div className="form-group">
-            <label className="form-label">Student Name</label>
-            {isStudent ? (
-              <input 
-                type="text" 
-                className="form-control" 
-                value={studentName} 
-                disabled 
-                style={{ backgroundColor: 'var(--border-color)' }}
-              />
-            ) : (
-              <select 
-                className="form-control" 
-                value={studentName} 
-                onChange={e => setStudentName(e.target.value)} 
-                required
-              >
-                <option value="" disabled>Select Student</option>
-                {studentsList.map((s, i) => (
-                  <option key={i} value={`${s.firstName} ${s.lastName}`.trim()}>
-                    {s.firstName} {s.lastName}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
+          {!showBeautifulHeader && (
+            <>
+              <div className="form-group">
+                <label className="form-label">Student Name</label>
+                {isStudent ? (
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    value={studentName} 
+                    disabled 
+                    style={{ backgroundColor: 'var(--border-color)' }}
+                  />
+                ) : (
+                  <select 
+                    className="form-control" 
+                    value={studentName} 
+                    onChange={e => setStudentName(e.target.value)} 
+                    required
+                  >
+                    <option value="" disabled>Select Student</option>
+                    {studentsList.map((s, i) => (
+                      <option key={i} value={`${s.firstName} ${s.lastName}`.trim()}>
+                        {s.firstName} {s.lastName}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
 
-          <div className="form-group">
-            <label className="form-label">Class</label>
-            <input 
-              type="text" 
-              className="form-control" 
-              value={derivedClassName || 'N/A'} 
-              disabled 
-              style={{ backgroundColor: 'var(--border-color)' }}
-            />
-          </div>
+              <div className="form-group">
+                <label className="form-label">Class</label>
+                <input 
+                  type="text" 
+                  className="form-control" 
+                  value={derivedClassName || 'N/A'} 
+                  disabled 
+                  style={{ backgroundColor: 'var(--border-color)' }}
+                />
+              </div>
 
-          <div className="form-group">
-            <label className="form-label">Subject</label>
-            <select 
-              className="form-control" 
-              value={subject} 
-              onChange={e => {
-                setSubject(e.target.value);
-                setBook('');
-                setTopic('');
-              }} 
-              required
-            >
-              <option value="" disabled>Select Subject</option>
-              {subjectsList.map(s => (
-                <option key={s.id} value={s.name}>{s.name}</option>
-              ))}
-            </select>
-          </div>
+              <div className="form-group">
+                <label className="form-label">Subject</label>
+                <select 
+                  className="form-control" 
+                  value={subject} 
+                  onChange={e => {
+                    setSubject(e.target.value);
+                    setBook('');
+                    setTopic('');
+                  }} 
+                  required
+                >
+                  <option value="" disabled>Select Subject</option>
+                  {subjectsList.map(s => (
+                    <option key={s.id} value={s.name}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
 
           {/* Dynamic Fields Section based on Subject */}
           <div className="form-group">
