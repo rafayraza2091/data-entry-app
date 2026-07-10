@@ -12,9 +12,6 @@ When modifying the Bird View grid, strictly follow these layout and functionalit
    - Student columns are constrained by `min-w-[120px]`.
    - **CRITICAL**: Do NOT use Tailwind flexible width classes (`w-full`, `w-max`, `min-w-max`) on the `<table>` element. Safari will completely miscalculate the layout and push columns around. You MUST dynamically calculate the explicit pixel width of the table (e.g., `style={{ width: \`${80 + (activeStudentsCount * 120)}px\` }}`) and apply `mx-0 mr-auto` to force Safari to respect the constraints.
 
-3. **Layout Alignment**:
-   - The `.dashboard-content` has a global padding of `4px`.
-   - Elements (like the top navigation buttons div AND the main table container) that need to touch the left sidebar must use negative margins to compensate for the padding: `w-[calc(100%+4px)] ml-[-4px]`.
 
 4. **Custom Colors**:
    - Due to Next.js dev server caching with Tailwind JIT, use inline styles for highly specific custom hex colors (e.g., `style={{ backgroundColor: '#254245' }}`) to prevent them from vanishing during hot-reloads.

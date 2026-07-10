@@ -392,7 +392,7 @@ export default function BirdViewPage() {
                   return (
                     <td 
                       key={student.id} 
-                      className={`px-4 py-3 text-center border-r border-gray-100 min-w-[120px] h-[100px] ${!isAssigned ? 'unassigned-cell' : 'bg-white'}`}
+                      className={`px-4 py-3 text-center border-r border-gray-100 min-w-[120px] w-[120px] h-[100px] ${!isAssigned ? 'unassigned-cell' : 'bg-white'}`}
                     >
                     </td>
                   );
@@ -404,7 +404,7 @@ export default function BirdViewPage() {
       )}
 
       {/* 35px Div element between top nav and table */}
-      <div className="h-[35px] w-[calc(100%+4px)] ml-[-4px] mb-[4px] shadow-sm flex items-center px-8 space-x-3" style={{ backgroundColor: '#254245' }}>
+      <div className="h-[35px] w-full mb-[4px] shadow-sm flex items-center px-8 space-x-3" style={{ backgroundColor: '#254245' }}>
         <button 
           onClick={() => setActiveView('task')}
           className={`h-[22px] px-6 text-xs font-bold uppercase tracking-wider text-white rounded-none transition-all shadow-sm ${activeView === 'task' ? 'opacity-100' : 'opacity-60 hover:opacity-80'}`}
@@ -552,7 +552,7 @@ export default function BirdViewPage() {
         </div>
       </div>
 
-      <div className="w-[calc(100%+4px)] ml-[-4px] h-full bg-white rounded-none shadow-sm border border-gray-100 border-t-4 border-t-teal-700 flex flex-col animate-fadeIn overflow-hidden">
+      <div className="w-full h-full bg-white rounded-none shadow-sm border border-gray-100 border-t-4 border-t-teal-700 flex flex-col animate-fadeIn overflow-hidden">
         
         {loading ? (
           <div className="flex-1 flex flex-col items-center justify-center">
@@ -561,7 +561,10 @@ export default function BirdViewPage() {
           </div>
         ) : (
           <div className="flex-1 overflow-auto custom-scrollbar relative">
-            <table style={{ width: `${80 + (students.filter(s => selectedStudentIds.includes(s.id)).length * 120)}px` }} className="mx-0 mr-auto text-sm text-left border-separate border-spacing-0 table-fixed">
+            <table style={{ 
+              width: `${80 + (students.filter(s => selectedStudentIds.includes(s.id)).length * 120)}px`,
+              minWidth: `${80 + (students.filter(s => selectedStudentIds.includes(s.id)).length * 120)}px` 
+            }} className="text-sm text-left border-separate border-spacing-0 table-fixed">
               <colgroup>
                 <col style={{ width: '80px', minWidth: '80px', maxWidth: '80px' }} />
                 {students.map((student) => {
