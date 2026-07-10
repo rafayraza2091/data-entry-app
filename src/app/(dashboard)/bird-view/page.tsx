@@ -355,7 +355,7 @@ export default function BirdViewPage() {
             </thead>
             <tbody>
               {subjects.map((subject, idx) => {
-                const isAssigned = students[draggedStudentIdx].subjects.includes(subject.name);
+                const isAssigned = students[draggedStudentIdx].subjects.some(s => s.trim().toLowerCase() === subject.name.trim().toLowerCase());
                 return (
                   <tr key={subject.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
                     <td className={`px-4 py-3 text-center border-b border-gray-100 h-[100px] ${!isAssigned ? 'unassigned-cell' : 'bg-white'}`}>
@@ -545,7 +545,7 @@ export default function BirdViewPage() {
         </div>
       </div>
 
-      <div className="w-full h-full bg-white rounded-none shadow-sm border border-gray-100 border-t-4 border-t-teal-700 flex flex-col animate-fadeIn overflow-hidden">
+      <div className="w-[calc(100%+4px)] ml-[-4px] h-full bg-white rounded-none shadow-sm border border-gray-100 border-t-4 border-t-teal-700 flex flex-col animate-fadeIn overflow-hidden">
         
         {loading ? (
           <div className="flex-1 flex flex-col items-center justify-center">
@@ -554,7 +554,14 @@ export default function BirdViewPage() {
           </div>
         ) : (
           <div className="flex-1 overflow-auto custom-scrollbar relative">
-            <table className="w-max text-sm text-left border-separate border-spacing-0 table-fixed min-w-max">
+            <table style={{ width: `${80 + (students.filter(s => selectedStudentIds.includes(s.id)).length * 120)}px` }} className="mx-0 mr-auto text-sm text-left border-separate border-spacing-0 table-fixed">
+              <colgroup>
+                <col style={{ width: '80px', minWidth: '80px', maxWidth: '80px' }} />
+                {students.map((student) => {
+                  if (!selectedStudentIds.includes(student.id)) return null;
+                  return <col key={student.id} style={{ width: '120px', minWidth: '120px', maxWidth: '120px' }} />;
+                })}
+              </colgroup>
               <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0 z-20 shadow-sm">
                 <tr>
                   <th scope="col" className="w-20 min-w-[5rem] max-w-[5rem] px-2 py-4 sticky left-0 bg-gray-100 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-b border-r border-gray-200">
@@ -571,15 +578,14 @@ export default function BirdViewPage() {
                       <th 
                         key={student.id} 
                         scope="col" 
-                        className={`
-                          p-0 text-center border-b border-r border-gray-200 whitespace-nowrap w-[120px] min-w-[120px] max-w-[120px]
-                          ${isDragged ? 'dragged-column' : ''}
-                          ${showLeftIndicator ? 'drop-target-left' : ''}
-                          ${showRightIndicator ? 'drop-target-right' : ''}
-                        `}
+                        className="p-0 text-center border-b border-r border-gray-200 whitespace-nowrap w-[120px] min-w-[120px] max-w-[120px]"
                       >
                         <div 
-                          className="w-full h-full px-4 py-4 cursor-grab active:cursor-grabbing hover:bg-gray-100 transition-all group flex flex-col items-center relative"
+                          className={`w-full h-full px-4 py-4 cursor-grab active:cursor-grabbing hover:bg-gray-100 transition-all group flex flex-col items-center relative
+                            ${isDragged ? 'dragged-column' : ''}
+                            ${showLeftIndicator ? 'drop-target-left' : ''}
+                            ${showRightIndicator ? 'drop-target-right' : ''}
+                          `}
                           draggable
                           onDragStart={(e) => handleStudentDragStart(e, index)}
                           onDragEnter={(e) => handleStudentDragEnter(e, index)}
@@ -589,9 +595,6 @@ export default function BirdViewPage() {
                           onDragEnd={handleStudentDragEnd}
                         >
                           <div className={`flex flex-col items-center relative ${isDragged ? 'opacity-50' : ''}`}>
-                            <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400">
-                              <i className="fa-solid fa-grip-vertical"></i>
-                            </div>
                             <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold mb-2 shadow-sm">
                               {student.firstName.charAt(0)}{student.secondName.charAt(0)}
                             </div>
@@ -618,7 +621,6 @@ export default function BirdViewPage() {
                       className={`
                         ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} 
                         group
-                        ${isDragged ? 'dragged-row' : ''}
                       `}
                       onDragEnter={(e) => handleSubjectDragEnter(e, index)}
                       onDragOver={(e) => { e.preventDefault(); handleDrag(e); }}
@@ -626,14 +628,14 @@ export default function BirdViewPage() {
                     >
                       <th 
                         scope="row" 
-                        className={`
-                          w-20 min-w-[5rem] max-w-[5rem] p-0 font-medium text-gray-900 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-gray-200 bg-inherit whitespace-nowrap align-middle h-[100px]
-                          ${showTopIndicator ? 'drop-target-top' : ''}
-                          ${showBottomIndicator ? 'drop-target-bottom' : ''}
-                        `}
+                        className="w-20 min-w-[5rem] max-w-[5rem] p-0 font-medium text-gray-900 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-gray-200 bg-inherit whitespace-nowrap align-middle h-[100px]"
                       >
                         <div 
-                          className="flex items-center justify-center w-full h-full px-2 cursor-grab active:cursor-grabbing hover:bg-gray-100 transition-all"
+                          className={`flex items-center justify-center w-full h-full px-2 cursor-grab active:cursor-grabbing hover:bg-gray-100 transition-all
+                            ${isDragged ? 'dragged-row' : ''}
+                            ${showTopIndicator ? 'drop-target-top' : ''}
+                            ${showBottomIndicator ? 'drop-target-bottom' : ''}
+                          `}
                           draggable
                           onDragStart={(e) => handleSubjectDragStart(e, index)}
                           onDrag={(e) => handleDrag(e)}
@@ -645,7 +647,7 @@ export default function BirdViewPage() {
                       
                       {students.map((student, studentIndex) => {
                         if (!selectedStudentIds.includes(student.id)) return null;
-                        const isAssigned = student.subjects.includes(subject.name);
+                        const isAssigned = student.subjects.some(s => s.trim().toLowerCase() === subject.name.trim().toLowerCase());
                         const isStudentDragged = draggedStudentIdx === studentIndex;
                         const isStudentHovered = hoveredStudentIdx === studentIndex && !isStudentDragged;
                         const showLeftIndicator = isStudentHovered && draggedStudentIdx !== null && studentIndex < draggedStudentIdx;
@@ -657,14 +659,7 @@ export default function BirdViewPage() {
                         return (
                           <td 
                             key={cellId} 
-                            className={`
-                              p-0 text-center border-b border-r border-gray-200 last:border-r-0 h-[100px] w-[120px] min-w-[120px] max-w-[120px]
-                              ${isDragged || isStudentDragged ? 'dragged-column' : ''}
-                              ${showLeftIndicator ? 'drop-target-left' : ''}
-                              ${showRightIndicator ? 'drop-target-right' : ''}
-                              ${showTopIndicator ? 'drop-target-top' : ''}
-                              ${showBottomIndicator ? 'drop-target-bottom' : ''}
-                            `}
+                            className="p-0 text-center border-b border-r border-gray-200 last:border-r-0 h-[100px] w-[120px] min-w-[120px] max-w-[120px]"
                           >
                             <div 
                               onClick={() => {
@@ -691,6 +686,11 @@ export default function BirdViewPage() {
                                 ${!isAssigned && !isDragged && !isStudentDragged ? 'unassigned-cell' : 'bg-white'}
                                 ${isAssigned ? 'cursor-pointer hover:bg-gray-50' : ''}
                                 ${isClicked ? 'transform scale-[2] origin-center z-[60] shadow-[0_0_30px_rgba(0,0,0,0.3)] relative bg-white' : 'transform scale-100 z-0 relative'}
+                                ${isDragged || isStudentDragged ? 'dragged-column dragged-row' : ''}
+                                ${showLeftIndicator ? 'drop-target-left' : ''}
+                                ${showRightIndicator ? 'drop-target-right' : ''}
+                                ${showTopIndicator ? 'drop-target-top' : ''}
+                                ${showBottomIndicator ? 'drop-target-bottom' : ''}
                               `}
                             >
                               {isAssigned && cellData && cellData.length > 0 && (() => {
