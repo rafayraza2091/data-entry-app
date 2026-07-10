@@ -8,16 +8,29 @@ const getLocalDateString = (d: Date) => {
 };
 
 const getVibrantColor = (str: string) => {
+  // A curated palette of highly distinct, vibrant colors
   const colors = [
-    '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', 
-    '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ff9800', 
-    '#ff5722', '#f44336', '#d81b60', '#8e24aa', '#5e35b1', '#3949ab',
-    '#1e88e5', '#039be5', '#00acc1', '#00897b', '#43a047', '#7cb342',
-    '#fb8c00', '#f4511e', '#e53935'
+    '#EF476F', // Red-Pink
+    '#FB5607', // Vivid Orange
+    '#FFD166', // Bright Yellow
+    '#06D6A0', // Mint Green
+    '#118AB2', // Blue
+    '#9D4EDD', // Purple
+    '#F15BB5', // Hot Pink
+    '#00F5D4', // Aqua
+    '#8338EC', // Violet
+    '#3A86FF', // Bright Blue
+    '#FF006E', // Neon Pink
+    '#8AC926', // Lime Green
+    '#1982C4', // Azure
+    '#6A4C93', // Dark Violet
+    '#F78C6B', // Soft Orange
+    '#073B4C'  // Dark Blue
   ];
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    hash = (hash * 31) + str.charCodeAt(i);
+    hash = hash & hash; // Convert to 32bit integer
   }
   return colors[Math.abs(hash) % colors.length];
 };
