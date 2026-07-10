@@ -8,24 +8,18 @@ const getLocalDateString = (d: Date) => {
 };
 
 const getVibrantColor = (str: string) => {
-  // A curated palette of highly distinct, vibrant colors with good white text contrast
+  // Earthy, premium color palette from user's choice
   const colors = [
-    '#EF476F', // Red-Pink
-    '#FB5607', // Vivid Orange
-    '#2A9D8F', // Emerald
-    '#118AB2', // Blue
-    '#9D4EDD', // Purple
-    '#F15BB5', // Hot Pink
-    '#028090', // Deep Aqua
-    '#8338EC', // Violet
-    '#3A86FF', // Bright Blue
-    '#FF006E', // Neon Pink
-    '#55A630', // Deep Green
-    '#1982C4', // Azure
-    '#6A4C93', // Dark Violet
-    '#E76F51', // Burnt Orange
-    '#073B4C', // Dark Blue
-    '#D62828'  // Deep Red
+    '#40150A',
+    '#5B1F0F',
+    '#7B3311',
+    '#934C1A',
+    '#AB6422',
+    '#BB8130',
+    '#756A34',
+    '#474E30',
+    '#2F3C29',
+    '#162A22'
   ];
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
