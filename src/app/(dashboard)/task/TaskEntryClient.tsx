@@ -30,6 +30,7 @@ export default function TaskEntryClient({
   const [booksList, setBooksList] = useState<any[]>([]);
   const [chaptersList, setChaptersList] = useState<any[]>([]);
   const [topicsList, setTopicsList] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [loading, setLoading] = useState(true);
 
@@ -100,7 +101,9 @@ export default function TaskEntryClient({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setStatus({ type: '', message: '' });
+    setIsSubmitting(true);
 
     try {
       const res = await fetch('/api/tasks', {
@@ -154,6 +157,8 @@ export default function TaskEntryClient({
       }
     } catch (err: any) {
       setStatus({ type: 'error', message: err.message });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -440,8 +445,11 @@ export default function TaskEntryClient({
           </div>
         )}
 
-        <button type="submit" className="btn-submit">
-          Save Task
+        <button type="submit" className="btn-submit flex justify-center items-center" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <i className="fa-solid fa-spinner fa-spin mr-2"></i>
+          ) : null}
+          {isSubmitting ? 'Saving...' : 'Save Task'}
         </button>
       </form>
     </div>

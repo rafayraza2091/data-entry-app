@@ -21,6 +21,7 @@ export default function QueryEntryClient({
   const [subjectsList, setSubjectsList] = useState<any[]>([]);
   const [booksList, setBooksList] = useState<any[]>([]);
   const [topicsList, setTopicsList] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [loading, setLoading] = useState(true);
 
@@ -93,7 +94,9 @@ export default function QueryEntryClient({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStatus({ type: 'loading', message: 'Uploading and submitting...' });
+    if (isSubmitting) return;
+    setStatus({ type: '', message: '' });
+    setIsSubmitting(true);
 
     try {
       let imageUrls: string[] = [];
@@ -168,7 +171,10 @@ export default function QueryEntryClient({
         setTeacherName('');
       }
     } catch (err: any) {
-      setStatus({ type: 'error', message: err.message });
+      console.error(err);
+      setStatus({ type: 'error', message: err.message || 'Failed to submit query' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -446,12 +452,15 @@ export default function QueryEntryClient({
 
         </div>
 
-        <button type="submit" className="btn-submit" disabled={status.type === 'loading'}>
-          {status.type === 'loading' ? 'Submitting...' : 'Submit Query'}
+        <button type="submit" className="btn-submit flex justify-center items-center" disabled={isSubmitting}>
+          {isSubmitting ? (
+            <i className="fa-solid fa-spinner fa-spin mr-2"></i>
+          ) : null}
+          {isSubmitting ? 'Submitting...' : 'Submit Query'}
         </button>
 
-        {status.message && status.type !== 'loading' && (
-          <div className={`status-message ${status.type === 'success' ? 'status-success' : 'status-error'}`}>
+        {status.message && (
+          <div className={`status-message ${status.type === 'error' ? 'status-error' : 'status-success'}`} style={{ marginTop: '1rem' }}>
             {status.message}
           </div>
         )}
