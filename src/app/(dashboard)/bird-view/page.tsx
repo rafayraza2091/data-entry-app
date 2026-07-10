@@ -751,8 +751,9 @@ export default function BirdViewPage() {
       </div>
 
       {newEntryModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-4xl relative">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setNewEntryModal(null)}></div>
+          <div className="w-full max-w-4xl relative z-10">
             {newEntryModal.type === 'task' ? (
               <TaskEntryClient 
                 currentUser={currentUser} 
