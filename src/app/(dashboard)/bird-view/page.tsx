@@ -66,6 +66,7 @@ export default function BirdViewPage() {
   
   const [clickedCellId, setClickedCellId] = useState<string | null>(null);
   const [highlightedStudentId, setHighlightedStudentId] = useState<number | null>(null);
+  const [highlightedSubjectId, setHighlightedSubjectId] = useState<number | null>(null);
 
   const [activeView, setActiveView] = useState<'task' | 'query'>('task');
   const [currentDate, setCurrentDate] = useState('');
@@ -125,6 +126,24 @@ export default function BirdViewPage() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape' || event.key === 'Esc') {
+        if (newEntryModal !== null || clickedCellId !== null) {
+          // If a modal or floating cell is open, close only them
+          setNewEntryModal(null);
+          setClickedCellId(null);
+        } else {
+          // Otherwise, turn off the row/column highlighting
+          setHighlightedStudentId(null);
+          setHighlightedSubjectId(null);
+        }
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [newEntryModal, clickedCellId]);
 
   const formattedDate = selectedDate 
     ? selectedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -670,11 +689,13 @@ export default function BirdViewPage() {
                         className="w-20 min-w-[5rem] max-w-[5rem] p-0 font-medium text-gray-900 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-gray-200 bg-inherit whitespace-nowrap align-middle h-[100px]"
                       >
                         <div 
-                          className={`flex items-center justify-center w-full h-full px-2 cursor-grab active:cursor-grabbing hover:bg-gray-100 transition-all
+                          className={`flex items-center justify-center w-full h-full px-2 cursor-pointer active:cursor-grabbing hover:bg-gray-100 transition-all
                             ${isDragged ? 'dragged-row' : ''}
                             ${showTopIndicator ? 'drop-target-top' : ''}
                             ${showBottomIndicator ? 'drop-target-bottom' : ''}
+                            ${highlightedSubjectId === subject.id ? 'bg-gray-100' : ''}
                           `}
+                          onClick={() => setHighlightedSubjectId(highlightedSubjectId === subject.id ? null : subject.id)}
                           draggable
                           onDragStart={(e) => handleSubjectDragStart(e, index)}
                           onDrag={(e) => handleDrag(e)}
@@ -695,6 +716,7 @@ export default function BirdViewPage() {
                         const cellId = `${subject.id}-${student.id}`;
                         const isClicked = clickedCellId === cellId;
                         const isHighlightedColumn = highlightedStudentId === student.id;
+                        const isHighlightedRow = highlightedSubjectId === subject.id;
                         
                         return (
                           <td 
@@ -703,7 +725,11 @@ export default function BirdViewPage() {
                           >
                             <div 
                               onClick={() => {
+                                // Always toggle highlight for this column when clicking any cell
+                                setHighlightedStudentId(highlightedStudentId === student.id ? null : student.id);
+                                
                                 if (!isAssigned) return;
+                                
                                 const studentFullName = `${student.firstName} ${student.secondName}`.trim();
                                 const items = cellData.filter(d => 
                                   (d.assignee === studentFullName || d.studentName === studentFullName) && 
@@ -721,11 +747,11 @@ export default function BirdViewPage() {
                                   setClickedCellId(isClicked ? null : cellId);
                                 }
                               }}
-                              style={isHighlightedColumn ? { backgroundColor: getVibrantColor(student.firstName + ' ' + student.secondName) + '26' } : undefined}
+                              style={(isHighlightedColumn && !isClicked) ? { backgroundColor: getVibrantColor(student.firstName + ' ' + student.secondName) + '26' } : undefined}
                               className={`
-                                w-full h-full transition-all duration-300 min-h-[100px] flex items-center justify-center p-1 overflow-hidden
-                                ${(!isAssigned && !isDragged && !isStudentDragged && !isHighlightedColumn) ? 'unassigned-cell' : (isHighlightedColumn ? '' : 'bg-white')}
-                                ${isAssigned ? 'cursor-pointer hover:bg-gray-50' : ''}
+                                w-full h-full transition-all duration-300 min-h-[100px] flex items-center justify-center p-1 overflow-hidden cursor-pointer
+                                ${(!isAssigned && !isDragged && !isStudentDragged && !(isHighlightedColumn && !isClicked) && !(isHighlightedRow && !isClicked)) ? 'unassigned-cell' : ((isHighlightedColumn && !isClicked) ? '' : ((isHighlightedRow && !isClicked) ? 'bg-[#edab30]/15' : 'bg-white'))}
+                                ${isAssigned ? 'hover:bg-gray-50' : ''}
                                 ${isClicked ? 'transform scale-[2] origin-center z-[60] shadow-[0_0_30px_rgba(0,0,0,0.3)] relative bg-white' : 'transform scale-100 z-0 relative'}
                                 ${isDragged || isStudentDragged ? 'dragged-column dragged-row' : ''}
                                 ${showLeftIndicator ? 'drop-target-left' : ''}
