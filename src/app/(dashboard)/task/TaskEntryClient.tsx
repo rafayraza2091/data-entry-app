@@ -1,5 +1,12 @@
 'use client';
 
+const getLocalDateString = (d: Date) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 import { useState, useEffect } from 'react';
 
 export default function TaskEntryClient({ 
@@ -37,7 +44,7 @@ export default function TaskEntryClient({
   const [taskType, setTaskType] = useState('Home Work');
   const [reporter, setReporter] = useState('');
   const [assignee, setAssignee] = useState(initialValues?.assignee || '');
-  const [dueDate, setDueDate] = useState(() => initialValues?.dueDate || new Date().toISOString().split('T')[0]);
+  const [dueDate, setDueDate] = useState(() => initialValues?.dueDate || getLocalDateString(new Date()));
   
   const [status, setStatus] = useState({ type: '', message: '' });
 
@@ -130,7 +137,7 @@ export default function TaskEntryClient({
       setDescription('');
       setTaskStatus('OPEN');
       setTaskType('Home Work');
-      setDueDate(new Date().toISOString().split('T')[0]);
+      setDueDate(getLocalDateString(new Date()));
       
       const userName = `${user.firstName} ${user.lastName}`.trim();
       if (user.role === 'STUDENT') {

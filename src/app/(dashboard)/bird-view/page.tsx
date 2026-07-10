@@ -1,5 +1,12 @@
 'use client';
 
+const getLocalDateString = (d: Date) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 import { useState, useEffect, useRef } from 'react';
 import TaskEntryClient from '../task/TaskEntryClient';
 import QueryEntryClient from '../query/QueryEntryClient';
@@ -111,7 +118,7 @@ export default function BirdViewPage() {
     setSelectedDate(new Date());
     async function fetchData() {
       try {
-        const initialDateStr = new Date().toISOString().split('T')[0];
+        const initialDateStr = getLocalDateString(new Date());
         const response = await fetch(`/api/bird-view?date=${initialDateStr}&view=task`);
         if (response.ok) {
           const data = await response.json();
@@ -167,7 +174,7 @@ export default function BirdViewPage() {
     
     async function fetchCellData() {
       try {
-        const dateStr = selectedDate.toISOString().split('T')[0];
+        const dateStr = getLocalDateString(selectedDate);
         const response = await fetch(`/api/bird-view?date=${dateStr}&view=${activeView}`);
         if (response.ok) {
           const data = await response.json();
@@ -183,7 +190,7 @@ export default function BirdViewPage() {
     }
     
     // Skip initial fetch since the first useEffect handles it
-    if (selectedDate.toISOString().split('T')[0] === new Date().toISOString().split('T')[0] && activeView === 'task' && refreshTrigger === 0) {
+    if (selectedDate && getLocalDateString(selectedDate) === getLocalDateString(new Date()) && activeView === 'task' && refreshTrigger === 0) {
       // It might have already fetched, but let's just fetch it anyway to be safe, it's fast
     }
     fetchCellData();
@@ -675,7 +682,7 @@ export default function BirdViewPage() {
                                     type: activeView,
                                     subject: subject.name,
                                     studentName: studentFullName,
-                                    date: selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
+                                    date: selectedDate ? getLocalDateString(selectedDate) : getLocalDateString(new Date())
                                   });
                                 } else {
                                   setClickedCellId(isClicked ? null : cellId);
