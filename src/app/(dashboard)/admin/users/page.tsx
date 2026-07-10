@@ -15,24 +15,24 @@ type User = {
 const ROLES = ['OWNER', 'COORDINATOR', 'TEACHER', 'ASSISTANT', 'STUDENT', 'PARENT'];
 
 const getVibrantColor = (str: string) => {
-  // A curated palette of highly distinct, vibrant colors
+  // A curated palette of highly distinct, vibrant colors with good white text contrast
   const colors = [
     '#EF476F', // Red-Pink
     '#FB5607', // Vivid Orange
-    '#FFD166', // Bright Yellow
-    '#06D6A0', // Mint Green
+    '#2A9D8F', // Emerald
     '#118AB2', // Blue
     '#9D4EDD', // Purple
     '#F15BB5', // Hot Pink
-    '#00F5D4', // Aqua
+    '#028090', // Deep Aqua
     '#8338EC', // Violet
     '#3A86FF', // Bright Blue
     '#FF006E', // Neon Pink
-    '#8AC926', // Lime Green
+    '#55A630', // Deep Green
     '#1982C4', // Azure
     '#6A4C93', // Dark Violet
-    '#F78C6B', // Soft Orange
-    '#073B4C'  // Dark Blue
+    '#E76F51', // Burnt Orange
+    '#073B4C', // Dark Blue
+    '#D62828'  // Deep Red
   ];
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
