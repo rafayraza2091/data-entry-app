@@ -561,11 +561,9 @@ export default function BirdViewPage() {
           </div>
         ) : (
           <div className="flex-1 overflow-auto custom-scrollbar relative">
-            <table style={{ 
-              width: `${80 + (students.filter(s => selectedStudentIds.includes(s.id)).length * 120)}px`,
-              minWidth: `${80 + (students.filter(s => selectedStudentIds.includes(s.id)).length * 120)}px` 
-            }} className="text-sm text-left border-separate border-spacing-0 table-fixed">
-              <colgroup>
+            <div style={{ width: `${80 + (students.filter(s => selectedStudentIds.includes(s.id)).length * 120)}px` }}>
+              <table className="w-full text-sm text-left border-separate border-spacing-0 table-fixed">
+                <colgroup>
                 <col style={{ width: '80px', minWidth: '80px', maxWidth: '80px' }} />
                 {students.map((student) => {
                   if (!selectedStudentIds.includes(student.id)) return null;
@@ -747,6 +745,7 @@ export default function BirdViewPage() {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>
