@@ -8,22 +8,28 @@ const getLocalDateString = (d: Date) => {
 };
 
 const getVibrantColor = (str: string) => {
-  // Palette based on the 9 color cards (Blue, Green, Yellow, Orange, Red, Pink, Purple, Maroon, Gray)
+  // Kelly's 22 colors of maximum contrast (filtered for white text legibility) + robust additions
   const colors = [
-    '#1976D2', '#0D47A1', // Blue
-    '#388E3C', '#1B5E20', // Green
-    '#FBC02D', '#F57F17', // Yellow (Gold/Amber)
-    '#F57C00', '#E65100', // Orange
-    '#D32F2F', '#B71C1C', // Red
-    '#D81B60', '#C2185B', // Pink
-    '#7B1FA2', '#4A148C', // Purple
-    '#880E4F', '#4A0024', // Maroon
-    '#546E7A', '#263238'  // Gray
+    '#e6194b', // Vivid Red
+    '#3cb44b', // Green
+    '#4363d8', // Blue
+    '#f58231', // Orange
+    '#911eb4', // Purple
+    '#f032e6', // Magenta
+    '#469990', // Teal
+    '#9a6324', // Brown
+    '#800000', // Maroon
+    '#808000', // Olive
+    '#000075', // Navy
+    '#D81B60', // Pink/Rose
+    '#3949AB', // Indigo
+    '#2E7D32', // Forest
+    '#D84315', // Rust/Brick
+    '#00838F'  // Dark Cyan
   ];
-  let hash = 0;
+  let hash = 5381;
   for (let i = 0; i < str.length; i++) {
-    hash = (hash * 31) + str.charCodeAt(i);
-    hash = hash & hash; // Convert to 32bit integer
+    hash = ((hash << 5) + hash) + str.charCodeAt(i); /* hash * 33 + c */
   }
   return colors[Math.abs(hash) % colors.length];
 };
