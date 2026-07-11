@@ -206,33 +206,35 @@ export default function TaskEntryClient({
     }
   };
 
-  const isPreFilledModal = !!(onClose && subject && assignee);
+  const isPreFilledModal = !!(onClose && assignee);
   const showBeautifulHeader = isPreFilledModal && user.role === 'TEACHER';
   const showBeautifulHeaderForOwner = isPreFilledModal && (user.role === 'OWNER' || user.role === 'COORDINATOR');
 
   const renderBeautifulHeader = () => {
     return (
-      <div className="bg-teal-50 border-l-4 border-teal-500 p-4 mb-6 rounded shadow-sm flex flex-wrap gap-4 md:gap-8">
-        <div>
-          <span className="block text-xs uppercase tracking-wider text-teal-700 font-semibold mb-1">Created By</span>
-          <span className="text-gray-800 font-medium">{userName}</span>
+      <div className="bg-teal-50 border-l-[3px] md:border-l-4 border-teal-500 p-2 md:p-5 mb-3 md:mb-8 rounded shadow-sm grid grid-cols-2 md:flex md:flex-wrap gap-2 md:gap-12">
+        <div className="w-full md:w-auto">
+          <span className="block text-[8px] md:text-xs uppercase tracking-wider text-teal-700/60 font-bold mb-0 md:mb-1">Created By</span>
+          <span className="text-xs md:text-base text-gray-900 font-semibold truncate block leading-tight">{userName}</span>
         </div>
-        <div>
-          <span className="block text-xs uppercase tracking-wider text-teal-700 font-semibold mb-1">Class</span>
-          <span className="text-gray-800 font-medium">{derivedClassName || 'N/A'}</span>
+        <div className="w-full md:w-auto">
+          <span className="block text-[8px] md:text-xs uppercase tracking-wider text-teal-700/60 font-bold mb-0 md:mb-1">Class</span>
+          <span className="text-xs md:text-base text-gray-900 font-semibold truncate block leading-tight">{derivedClassName || 'N/A'}</span>
         </div>
-        <div>
-          <span className="block text-xs uppercase tracking-wider text-teal-700 font-semibold mb-1">Subject</span>
-          <span className="text-gray-800 font-medium">{subject}</span>
-        </div>
-        <div>
-          <span className="block text-xs uppercase tracking-wider text-teal-700 font-semibold mb-1">Assignee</span>
-          <span className="text-gray-800 font-medium">{assignee}</span>
+        {initialValues?.subject && (
+          <div className="w-full md:w-auto">
+            <span className="block text-[8px] md:text-xs uppercase tracking-wider text-teal-700/60 font-bold mb-0 md:mb-1">Subject</span>
+            <span className="text-xs md:text-base text-gray-900 font-semibold truncate block leading-tight">{subject}</span>
+          </div>
+        )}
+        <div className="w-full md:w-auto">
+          <span className="block text-[8px] md:text-xs uppercase tracking-wider text-teal-700/60 font-bold mb-0 md:mb-1">Assignee</span>
+          <span className="text-xs md:text-base text-gray-900 font-semibold truncate block leading-tight">{assignee}</span>
         </div>
         {user.role === 'TEACHER' && (
-          <div>
-            <span className="block text-xs uppercase tracking-wider text-teal-700 font-semibold mb-1">Reporter</span>
-            <span className="text-gray-800 font-medium">{reporter}</span>
+          <div className="w-full md:w-auto">
+            <span className="block text-[8px] md:text-xs uppercase tracking-wider text-teal-700/60 font-bold mb-0 md:mb-1">Reporter</span>
+            <span className="text-xs md:text-base text-gray-900 font-semibold truncate block leading-tight">{reporter}</span>
           </div>
         )}
       </div>
@@ -240,7 +242,7 @@ export default function TaskEntryClient({
   };
 
   return (
-    <div className="glass-panel animate-slide-up mx-auto max-w-4xl mt-4 md:mt-8 p-4 md:p-8" style={{ position: 'relative', maxHeight: onClose ? '90vh' : 'auto', overflowY: onClose ? 'auto' : 'visible' }}>
+    <div className="glass-panel animate-slide-up mx-auto max-w-4xl mt-0 md:mt-8 p-4 md:p-8 w-full" style={{ position: 'relative', maxHeight: onClose ? '85vh' : 'auto', overflowY: onClose ? 'auto' : 'visible' }}>
       {onClose && (
         <button 
           onClick={onClose}
@@ -299,7 +301,7 @@ export default function TaskEntryClient({
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Assignee <span className="text-red-500">*</span></label>
+                    <label className="form-label">Assignee <span className="text-red-500 ml-1">*</span></label>
                     {isStudent ? (
                       <input 
                         type="text" 
@@ -325,31 +327,34 @@ export default function TaskEntryClient({
                 </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Subject <span className="text-red-500">*</span></label>
-                <select 
-                  className="form-control" 
-                  value={subject} 
-                  onChange={e => {
-                    setSubject(e.target.value);
-                    setBook('');
-                    setChapter('');
-                    setTopic('');
-                    setExercise('');
-                  }} 
-                  required
-                >
-                  <option value="" disabled>Select Subject</option>
-                  {subjectsList.map(s => (
-                    <option key={s.id} value={s.name}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
             </>
           )}
 
+          {(!(showBeautifulHeader || showBeautifulHeaderForOwner) || !initialValues?.subject) && (
+            <div className="form-group">
+              <label className="form-label">Subject <span className="text-red-500 ml-1">*</span></label>
+              <select 
+                className="form-control" 
+                value={subject} 
+                onChange={e => {
+                  setSubject(e.target.value);
+                  setBook('');
+                  setChapter('');
+                  setTopic('');
+                  setExercise('');
+                }} 
+                required
+              >
+                <option value="" disabled>Select Subject</option>
+                {subjectsList.map(s => (
+                  <option key={s.id} value={s.name}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {showBeautifulHeaderForOwner && (
-            <div className="form-group col-span-2 md:col-span-1">
+            <div className="form-group">
               <label className="form-label">Reporter <span className="text-red-500">*</span></label>
               <select 
                 className="form-control" 
@@ -402,6 +407,7 @@ export default function TaskEntryClient({
                 <option key={c.id} value={c.chapterTitle || c.chapterName}>{c.chapterTitle || c.chapterName}</option>
               ))}
             </select>
+            {!book && <p className="text-[10px] text-gray-400 mt-1 italic">Please select a book first.</p>}
           </div>
 
           <div className="form-group">
@@ -417,6 +423,7 @@ export default function TaskEntryClient({
                 <option key={i} value={tName as string}>{tName as string}</option>
               ))}
             </select>
+            {!chapter && <p className="text-[10px] text-gray-400 mt-1 italic">Please select a chapter first.</p>}
           </div>
 
           {uniqueExercises.length > 0 && (
@@ -438,9 +445,9 @@ export default function TaskEntryClient({
 
         </div>
 
-        <div className="form-row">
+        <div className="form-row mt-2 md:mt-4">
           <div className="form-group">
-            <label className="form-label">Task Type <span className="text-red-500">*</span></label>
+            <label className="form-label">Task Type <span className="text-red-500 ml-1">*</span></label>
             <select 
               className="form-control" 
               value={taskType} 
@@ -456,34 +463,37 @@ export default function TaskEntryClient({
           </div>
 
           <div className="form-group">
-            <label className="form-label">Status <span className="text-red-500">*</span></label>
+            <label className="form-label">Status <span className="text-red-500 ml-1">*</span></label>
             <select 
               className="form-control" 
               value={taskStatus} 
               onChange={e => setTaskStatus(e.target.value)} 
               required
             >
-              <option value="OPEN">OPEN</option>
-              <option value="IN_PROGRESS">IN_PROGRESS</option>
-              <option value="DONE">DONE</option>
-              <option value="PENDING">PENDING</option>
+              <option value="OPEN">Open</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="DONE">Done</option>
+              <option value="PENDING">Pending</option>
             </select>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Due Date <span className="text-red-500">*</span></label>
-            <input 
-              type="date" 
-              className="form-control" 
-              value={dueDate} 
-              onChange={e => setDueDate(e.target.value)} 
-              required
-            />
+            <label className="form-label">Due Date <span className="text-red-500 ml-1">*</span></label>
+            <div className="relative">
+              <input 
+                type="date" 
+                className="form-control pl-10" 
+                value={dueDate} 
+                onChange={e => setDueDate(e.target.value)} 
+                required
+              />
+              <i className="fa-regular fa-calendar absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+            </div>
           </div>
         </div>
 
-        <div className="form-group">
-          <label className="form-label">Description <span className="text-red-500">*</span></label>
+        <div className="form-group mt-2 md:mt-4">
+          <label className="form-label">Description <span className="text-red-500 ml-1">*</span></label>
           <textarea 
             className="form-control" 
             value={description} 
@@ -501,12 +511,24 @@ export default function TaskEntryClient({
           </div>
         )}
 
-        <button type="submit" className="btn-submit flex justify-center items-center" disabled={isSubmitting}>
-          {isSubmitting ? (
-            <i className="fa-solid fa-spinner fa-spin mr-2"></i>
-          ) : null}
-          {isSubmitting ? 'Saving...' : 'Save Task'}
-        </button>
+        <div className="flex justify-end items-center gap-3 mt-8 pt-4 border-t border-gray-100">
+          {onClose && (
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="px-6 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors font-medium text-sm"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+          )}
+          <button type="submit" className="btn-submit m-0 px-8 py-2 w-auto flex justify-center items-center" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <i className="fa-solid fa-spinner fa-spin mr-2"></i>
+            ) : null}
+            {isSubmitting ? 'Saving...' : 'Save Task'}
+          </button>
+        </div>
       </form>
     </div>
   );

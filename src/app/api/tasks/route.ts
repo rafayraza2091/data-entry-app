@@ -102,19 +102,64 @@ export async function PATCH(request: Request) {
     }
 
     // Allowed fields
-    const allowedFields = ['description', 'status', 'subject', 'book', 'chapter', 'topic', 'exercise', 'taskType'];
+    const allowedFields = ['description', 'status', 'subject', 'book', 'chapter', 'topic', 'exercise', 'taskType', 'dueDate', 'assignee', 'reporter'];
     if (!allowedFields.includes(fieldName)) {
       return NextResponse.json({ error: 'Invalid field' }, { status: 400 });
     }
 
+    let parsedValue = newValue;
+    if (fieldName === 'dueDate') {
+      parsedValue = newValue ? new Date(newValue) : null;
+    }
+
     const updatedTask = await prisma.taskEntry.update({
       where: { id: Number(id) },
-      data: { [fieldName]: newValue }
+      data: { [fieldName]: parsedValue }
     });
 
     return NextResponse.json(updatedTask, { status: 200 });
   } catch (error: any) {
     console.error('Error updating task:', error);
     return NextResponse.json({ error: 'Failed to update task', details: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+    }
+
+    const existingTask = await prisma.taskEntry.findUnique({
+      where: { id: Number(id) }
+    });
+
+    if (!existingTask) {
+      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+    }
+
+    if (session.role === 'STUDENT') {
+      const userName = `${session.firstName} ${session.lastName}`.trim();
+      if (existingTask.assignee !== userName && existingTask.createdBy !== userName) {
+        return NextResponse.json({ error: 'Not authorized to delete this task' }, { status: 403 });
+      }
+    }
+
+    await prisma.taskEntry.delete({
+      where: { id: Number(id) }
+    });
+
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (error: any) {
+    console.error('Error deleting task:', error);
+    return NextResponse.json({ error: 'Failed to delete task', details: error.message }, { status: 500 });
   }
 }

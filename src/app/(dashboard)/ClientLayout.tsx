@@ -7,31 +7,49 @@ import { useEffect, useState } from 'react';
 export default function ClientLayout({
   children,
   initialFirstName,
-  initialRole
+  initialRole,
+  initialSidebarExpanded
 }: {
   children: React.ReactNode;
   initialFirstName: string;
   initialRole: string;
+  initialSidebarExpanded?: boolean;
 }) {
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(initialSidebarExpanded ?? true);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
+    const isDesktop = window.innerWidth >= 768;
+    setIsMobile(!isDesktop);
+    
+    // State is already initialized synchronously in useState, so no need to set it here initially.
+
     const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setIsMobile(true);
+      const desktop = window.innerWidth >= 768;
+      setIsMobile(!desktop);
+      if (!desktop) {
         setIsSidebarExpanded(false);
       } else {
-        setIsMobile(false);
-        setIsSidebarExpanded(true);
+        const savedState = localStorage.getItem('sidebarExpanded');
+        if (savedState !== null) {
+          setIsSidebarExpanded(savedState === 'true');
+        } else {
+          setIsSidebarExpanded(true);
+        }
       }
     };
     
-    // Initial check
-    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const handleSetSidebarExpanded = (expanded: boolean) => {
+    setIsSidebarExpanded(expanded);
+    if (!isMobile) {
+      document.cookie = `sidebarExpanded=${expanded}; path=/; max-age=31536000`; // 1 year
+      localStorage.setItem('sidebarExpanded', String(expanded));
+    }
+  };
 
   return (
     <div className="app-container">
@@ -39,11 +57,11 @@ export default function ClientLayout({
         firstName={initialFirstName} 
         role={initialRole} 
         isExpanded={isSidebarExpanded} 
-        setIsExpanded={setIsSidebarExpanded}
+        setIsExpanded={handleSetSidebarExpanded}
         isMobile={isMobile}
       />
       <div className={`main-content ${isSidebarExpanded ? 'expanded' : ''}`}>
-        <TopNav firstName={initialFirstName} role={initialRole} toggleSidebar={() => setIsSidebarExpanded(!isSidebarExpanded)} />
+        <TopNav firstName={initialFirstName} role={initialRole} toggleSidebar={() => handleSetSidebarExpanded(!isSidebarExpanded)} />
         <div className="dashboard-content">
           {children}
         </div>

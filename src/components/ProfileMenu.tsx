@@ -53,8 +53,17 @@ export default function ProfileMenu({ firstName, role }: { firstName: string, ro
         setIsOpen(false);
       }
     };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' || event.key === 'Esc') {
+        setIsOpen(false);
+      }
+    };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   let roleColorClass = 'bg-gradient-to-br from-primary to-primaryDark';
@@ -69,10 +78,9 @@ export default function ProfileMenu({ firstName, role }: { firstName: string, ro
     <div className="relative" ref={menuRef}>
       <button 
         className={`w-8 h-8 rounded-full ${roleColorClass} text-white flex items-center justify-center text-sm font-semibold border-none cursor-pointer transition-transform hover:scale-105 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/50`} 
-        style={studentStyle}
         onClick={() => setIsOpen(!isOpen)}
         aria-label="User menu"
-        style={{ pointerEvents: 'auto' }}
+        style={{ ...studentStyle, pointerEvents: 'auto' }}
       >
         {initial}
       </button>

@@ -65,10 +65,10 @@ export default function ViewTasksPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'IN_PROGRESS': return '#3b82f6';
-      case 'DONE': return '#22c55e';
-      case 'PENDING': return '#eab308';
-      case 'OPEN': default: return '#94a3b8';
+      case 'IN_PROGRESS': return '#007AFF';
+      case 'DONE': return '#237f5d';
+      case 'PENDING': return '#f0be39';
+      case 'OPEN': default: return '#64748b';
     }
   };
 
@@ -121,6 +121,7 @@ export default function ViewTasksPage() {
 
   const renderEditableCell = (task: any, field: string) => {
     let isSelect = false;
+    let isDate = false;
     let options: string[] = [];
 
     if (field === 'status') {
@@ -146,6 +147,8 @@ export default function ViewTasksPage() {
       isSelect = true;
       const availableTopics = topicsList.filter(t => t.subject === task.subject && t.book === task.book && (t.chapterTitle === task.chapter || t.chapterName === task.chapter));
       options = Array.from(new Set(availableTopics.map(t => t.exercise).filter(Boolean)));
+    } else if (field === 'dueDate') {
+      isDate = true;
     }
     
     // For Select Dropdowns, render the native select always, styled nicely!
@@ -204,10 +207,19 @@ export default function ViewTasksPage() {
     // For Text Inputs (Description)
     const isEditing = editingTask === task.id && editingField === field;
     if (isEditing) {
+      let inputValue = editValue;
+      if (isDate && editValue) {
+        try {
+          inputValue = new Date(editValue).toISOString().split('T')[0];
+        } catch {
+          inputValue = '';
+        }
+      }
+
       return (
         <input 
-          type="text" 
-          value={editValue} 
+          type={isDate ? "date" : "text"} 
+          value={inputValue} 
           onChange={e => setEditValue(e.target.value)}
           onBlur={() => handleSaveEdit(task.id, field)}
           onKeyDown={e => { if (e.key === 'Enter') handleSaveEdit(task.id, field) }}
@@ -222,7 +234,7 @@ export default function ViewTasksPage() {
         onClick={() => handleEditClick(task, field)} 
         style={{ cursor: 'pointer', display: 'inline-block', minWidth: '30px', minHeight: '20px' }}
       >
-        {task[field] || '-'}
+        {field === 'dueDate' && task[field] ? new Date(task[field]).toLocaleDateString() : (task[field] || '-')}
       </span>
     );
   };
@@ -310,7 +322,7 @@ export default function ViewTasksPage() {
                   {renderEditableCell(item, 'description')}
                 </td>
                 <td className="p-2 md:p-4 text-sm text-gray-600">{renderEditableCell(item, 'status')}</td>
-                <td className="p-2 md:p-4 text-sm text-gray-600">{item.dueDate ? new Date(item.dueDate).toLocaleDateString() : '-'}</td>
+                <td className="p-2 md:p-4 text-sm text-gray-600">{renderEditableCell(item, 'dueDate')}</td>
                 <td className="p-2 md:p-4 text-sm text-gray-600">{item.createdBy}</td>
                 <td className="p-2 md:p-4 text-sm text-gray-600">{new Date(item.createdAt).toLocaleDateString()}</td>
               </tr>

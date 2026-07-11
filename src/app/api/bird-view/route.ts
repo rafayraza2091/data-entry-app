@@ -65,7 +65,16 @@ export async function GET(request: Request) {
             assignee: true,
             subject: true,
             status: true,
-            taskType: true
+            taskType: true,
+            book: true,
+            chapter: true,
+            topic: true,
+            exercise: true,
+            description: true,
+            reporter: true,
+            createdBy: true,
+            className: true,
+            dueDate: true
           }
         });
       } else if (viewType === 'query') {

@@ -49,3 +49,31 @@ export async function GET() {
     return NextResponse.json({ error: 'Failed to fetch queries', details: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Missing id' }, { status: 400 });
+    }
+
+    const existingQuery = await prisma.queryEntry.findUnique({
+      where: { id: Number(id) }
+    });
+
+    if (!existingQuery) {
+      return NextResponse.json({ error: 'Query not found' }, { status: 404 });
+    }
+
+    await prisma.queryEntry.delete({
+      where: { id: Number(id) }
+    });
+
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (error: any) {
+    console.error('Error deleting query:', error);
+    return NextResponse.json({ error: 'Failed to delete query', details: error.message }, { status: 500 });
+  }
+}

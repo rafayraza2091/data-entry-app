@@ -213,25 +213,27 @@ export default function QueryEntryClient({
 
   const renderBeautifulHeader = () => {
     return (
-      <div className="bg-teal-50 border-l-4 border-teal-500 p-4 mb-6 rounded shadow-sm flex flex-wrap gap-4 md:gap-8">
-        <div>
-          <span className="block text-xs uppercase tracking-wider text-teal-700 font-semibold mb-1">Student</span>
-          <span className="text-gray-800 font-medium">{studentName}</span>
+      <div className="bg-teal-50 border-l-[3px] md:border-l-4 border-teal-500 p-2 md:p-5 mb-3 md:mb-8 rounded shadow-sm grid grid-cols-2 md:flex md:flex-wrap gap-2 md:gap-12">
+        <div className="w-full md:w-auto">
+          <span className="block text-[8px] md:text-xs uppercase tracking-wider text-teal-700/60 font-bold mb-0 md:mb-1">Student</span>
+          <span className="text-xs md:text-base text-gray-900 font-semibold truncate block leading-tight">{studentName}</span>
         </div>
-        <div>
-          <span className="block text-xs uppercase tracking-wider text-teal-700 font-semibold mb-1">Class</span>
-          <span className="text-gray-800 font-medium">{derivedClassName || 'N/A'}</span>
+        <div className="w-full md:w-auto">
+          <span className="block text-[8px] md:text-xs uppercase tracking-wider text-teal-700/60 font-bold mb-0 md:mb-1">Class</span>
+          <span className="text-xs md:text-base text-gray-900 font-semibold truncate block leading-tight">{derivedClassName || 'N/A'}</span>
         </div>
-        <div>
-          <span className="block text-xs uppercase tracking-wider text-teal-700 font-semibold mb-1">Subject</span>
-          <span className="text-gray-800 font-medium">{subject}</span>
-        </div>
+        {subject && (
+          <div className="w-full md:w-auto">
+            <span className="block text-[8px] md:text-xs uppercase tracking-wider text-teal-700/60 font-bold mb-0 md:mb-1">Subject</span>
+            <span className="text-xs md:text-base text-gray-900 font-semibold truncate block leading-tight">{subject}</span>
+          </div>
+        )}
       </div>
     );
   };
 
   return (
-    <div className="glass-panel animate-slide-up mx-auto max-w-4xl mt-4 md:mt-8 p-4 md:p-8" style={{ position: 'relative', maxHeight: onClose ? '90vh' : 'auto', overflowY: onClose ? 'auto' : 'visible' }}>
+    <div className="glass-panel animate-slide-up mx-auto max-w-4xl mt-0 md:mt-8 p-4 md:p-8 w-full" style={{ position: 'relative', maxHeight: onClose ? '85vh' : 'auto', overflowY: onClose ? 'auto' : 'visible' }}>
       {onClose && (
         <button 
           onClick={onClose}
@@ -480,12 +482,24 @@ export default function QueryEntryClient({
 
         </div>
 
-        <button type="submit" className="btn-submit flex justify-center items-center" disabled={isSubmitting}>
-          {isSubmitting ? (
-            <i className="fa-solid fa-spinner fa-spin mr-2"></i>
-          ) : null}
-          {isSubmitting ? 'Submitting...' : 'Submit Query'}
-        </button>
+        <div className="flex justify-end items-center gap-3 mt-8 pt-4 border-t border-gray-100">
+          {onClose && (
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="px-6 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors font-medium text-sm"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+          )}
+          <button type="submit" className="btn-submit m-0 px-8 py-2 w-auto flex justify-center items-center" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <i className="fa-solid fa-spinner fa-spin mr-2"></i>
+            ) : null}
+            {isSubmitting ? 'Submitting...' : 'Submit Query'}
+          </button>
+        </div>
 
         {status.message && (
           <div className={`status-message ${status.type === 'error' ? 'status-error' : 'status-success'}`} style={{ marginTop: '1rem' }}>
