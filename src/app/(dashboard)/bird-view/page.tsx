@@ -65,7 +65,7 @@ const getStatusInitials = (statusStr: string) => {
   return 'O';
 };
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import TaskEntryClient from '../task/TaskEntryClient';
 import QueryEntryClient from '../query/QueryEntryClient';
 
@@ -96,8 +96,37 @@ export default function BirdViewPage() {
   const [hoveredSubjectIdx, setHoveredSubjectIdx] = useState<number | null>(null);
   
   const [clickedCellId, setClickedCellId] = useState<string | null>(null);
-  const [highlightedStudentId, setHighlightedStudentId] = useState<number | null>(null);
-  const [highlightedSubjectId, setHighlightedSubjectId] = useState<number | null>(null);
+  const activeStudentIdRef = useRef<number | null>(null);
+  const activeSubjectIdRef = useRef<number | null>(null);
+  const gridContainerRef = useRef<HTMLDivElement>(null);
+  
+  const updateHighlight = useCallback((subjectId: number | null, studentId: number | null, shouldScroll: boolean = false) => {
+    activeSubjectIdRef.current = subjectId;
+    activeStudentIdRef.current = studentId;
+    if (gridContainerRef.current) {
+      if (subjectId !== null) gridContainerRef.current.setAttribute('data-active-subject', subjectId.toString());
+      else gridContainerRef.current.removeAttribute('data-active-subject');
+      
+      if (studentId !== null) gridContainerRef.current.setAttribute('data-active-student', studentId.toString());
+      else gridContainerRef.current.removeAttribute('data-active-student');
+    }
+    
+    if (shouldScroll) {
+      if (subjectId !== null) {
+        const el = document.getElementById(`subject-row-${subjectId}`);
+        if (el) el.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
+      }
+      if (studentId !== null) {
+        const el = document.getElementById(`student-col-${studentId}`);
+        if (el) el.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
+      }
+    }
+  }, []);
+  
+  // Edit Mode States
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [currentRow, setCurrentRow] = useState<number | null>(null);
+  const [currentCol, setCurrentCol] = useState<number | null>(null);
 
   const [activeView, setActiveView] = useState<'task' | 'query'>('task');
   const [currentDate, setCurrentDate] = useState('');
@@ -105,6 +134,9 @@ export default function BirdViewPage() {
   // Custom dropdown states
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isStudentPickerOpen, setIsStudentPickerOpen] = useState(false);
+  const [isFilterStatusOpen, setIsFilterStatusOpen] = useState(false);
+  const [isFilterTypeOpen, setIsFilterTypeOpen] = useState(false);
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
   
@@ -140,7 +172,7 @@ export default function BirdViewPage() {
     date: string;
   } | null>(null);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-
+  const copiedTaskRef = useRef<any>(null);
   const [chaptersList, setChaptersList] = useState<any[]>([]);
   const [topicsList, setTopicsList] = useState<any[]>([]);
 
@@ -297,6 +329,11 @@ export default function BirdViewPage() {
   
   const datePickerRef = useRef<HTMLDivElement>(null);
   const studentPickerRef = useRef<HTMLDivElement>(null);
+  const filterStatusRef = useRef<HTMLDivElement>(null);
+  const filterTypeRef = useRef<HTMLDivElement>(null);
+  const studentSearchInputRef = useRef<HTMLInputElement>(null);
+  const numberBufferRef = useRef<string>('');
+  const numberTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     async function fetchUser() {
@@ -319,6 +356,12 @@ export default function BirdViewPage() {
       if (studentPickerRef.current && !studentPickerRef.current.contains(event.target as Node)) {
         setIsStudentPickerOpen(false);
       }
+      if (filterStatusRef.current && !filterStatusRef.current.contains(event.target as Node)) {
+        setIsFilterStatusOpen(false);
+      }
+      if (filterTypeRef.current && !filterTypeRef.current.contains(event.target as Node)) {
+        setIsFilterTypeOpen(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -326,19 +369,35 @@ export default function BirdViewPage() {
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'f') {
+        event.preventDefault();
+        if (document.activeElement === studentSearchInputRef.current) {
+          studentSearchInputRef.current?.blur();
+          setStudentSearchQuery('');
+          updateHighlight(activeSubjectIdRef.current, null);
+        } else {
+          studentSearchInputRef.current?.focus();
+        }
+        return;
+      }
       if (event.key === 'Escape' || event.key === 'Esc') {
-        if (activeDropdown !== null) {
+        if (document.activeElement === studentSearchInputRef.current || studentSearchQuery !== '') {
+          studentSearchInputRef.current?.blur();
+          setStudentSearchQuery('');
+          updateHighlight(activeSubjectIdRef.current, null);
+        } else if (activeDropdown !== null) {
           setActiveDropdown(null);
-        } else if (newEntryModal !== null || clickedCellId !== null || isDatePickerOpen || isStudentPickerOpen) {
+        } else if (newEntryModal !== null || clickedCellId !== null || isDatePickerOpen || isStudentPickerOpen || isFilterStatusOpen || isFilterTypeOpen) {
           // If a modal, floating cell, or dropdown is open, close only them
           setNewEntryModal(null);
           setClickedCellId(null);
           setIsDatePickerOpen(false);
           setIsStudentPickerOpen(false);
+          setIsFilterStatusOpen(false);
+          setIsFilterTypeOpen(false);
         } else {
           // Otherwise, turn off the row/column highlighting
-          setHighlightedStudentId(null);
-          setHighlightedSubjectId(null);
+          updateHighlight(null, null);
         }
       }
     }
@@ -346,9 +405,54 @@ export default function BirdViewPage() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [newEntryModal, clickedCellId, isDatePickerOpen, isStudentPickerOpen, activeDropdown]);
 
-  const formattedDate = selectedDate 
-    ? selectedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-    : currentDate;
+  useEffect(() => {
+    function handleShortcutM(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'm') {
+        event.preventDefault();
+        
+        let studentName = '';
+        if (activeStudentIdRef.current !== null) {
+          const student = students.find(s => s.id === activeStudentIdRef.current);
+          if (student) {
+            studentName = `${student.firstName} ${student.secondName}`.trim();
+          }
+        }
+        
+        setNewEntryModal({
+          type: activeView,
+          subject: '',
+          studentName,
+          date: selectedDate ? getLocalDateString(selectedDate) : getLocalDateString(new Date())
+        });
+      }
+    }
+    document.addEventListener("keydown", handleShortcutM);
+    return () => document.removeEventListener("keydown", handleShortcutM);
+  }, [students, activeView, selectedDate]);
+
+  let formattedDate = selectedDate ? currentDate : 'Today';
+  if (selectedDate) {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const isSameDay = (d1: Date, d2: Date) => 
+      d1.getDate() === d2.getDate() && 
+      d1.getMonth() === d2.getMonth() && 
+      d1.getFullYear() === d2.getFullYear();
+
+    if (isSameDay(selectedDate, today)) {
+      formattedDate = 'Today';
+    } else if (isSameDay(selectedDate, yesterday)) {
+      formattedDate = 'Yesterday';
+    } else if (isSameDay(selectedDate, tomorrow)) {
+      formattedDate = 'Tomorrow';
+    } else {
+      formattedDate = selectedDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+  }
 
   const daysInMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0).getDate();
   const firstDayOfMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1).getDay();
@@ -487,7 +591,7 @@ export default function BirdViewPage() {
   };
 
   // ----- Student (Column) Drag Handlers -----
-  const handleStudentDragStart = (e: React.DragEvent<HTMLTableHeaderCellElement>, index: number) => {
+  const handleStudentDragStart = (e: React.DragEvent<any>, index: number) => {
     setDraggedStudentIdx(index);
     setMousePos({ x: e.clientX, y: e.clientY });
     if (e.dataTransfer) {
@@ -496,15 +600,15 @@ export default function BirdViewPage() {
     }
   };
 
-  const handleStudentDragEnter = (e: React.DragEvent<HTMLTableHeaderCellElement>, index: number) => {
+  const handleStudentDragEnter = (e: React.DragEvent<any>, index: number) => {
     e.preventDefault();
     if (draggedStudentIdx === null) return;
     setHoveredStudentIdx(index);
   };
 
-  const handleStudentDrop = (e: React.DragEvent<HTMLTableHeaderCellElement>, index: number) => {
+  const handleStudentDrop = (e: React.DragEvent<any>, dropIndex: number) => {
     e.preventDefault();
-    if (draggedStudentIdx === null || draggedStudentIdx === index) {
+    if (draggedStudentIdx === null || draggedStudentIdx === dropIndex) {
       setDraggedStudentIdx(null);
       setHoveredStudentIdx(null);
       return;
@@ -513,7 +617,7 @@ export default function BirdViewPage() {
     const newStudents = [...students];
     const draggedItem = newStudents[draggedStudentIdx];
     newStudents.splice(draggedStudentIdx, 1);
-    newStudents.splice(index, 0, draggedItem);
+    newStudents.splice(dropIndex, 0, draggedItem);
     
     setStudents(newStudents);
     saveOrder(subjects, newStudents);
@@ -527,7 +631,7 @@ export default function BirdViewPage() {
   };
 
   // ----- Subject (Row) Drag Handlers -----
-  const handleSubjectDragStart = (e: React.DragEvent<HTMLTableRowElement>, index: number) => {
+  const handleSubjectDragStart = (e: React.DragEvent<any>, index: number) => {
     setDraggedSubjectIdx(index);
     setMousePos({ x: e.clientX, y: e.clientY });
     if (e.dataTransfer) {
@@ -536,7 +640,7 @@ export default function BirdViewPage() {
     }
   };
 
-  const handleSubjectDragEnter = (e: React.DragEvent<HTMLTableRowElement>, index: number) => {
+  const handleSubjectDragEnter = (e: React.DragEvent<any>, index: number) => {
     e.preventDefault();
     if (draggedSubjectIdx === null) return;
     setHoveredSubjectIdx(index);
@@ -583,9 +687,349 @@ export default function BirdViewPage() {
     ? subjects.map((subject, index) => ({ type: 'grid', id: subject.id, index, subject }))
     : Array.from({ length: stackedRowCount }).map((_, index) => ({ type: 'stacked', id: `stacked-${index}`, index, subject: null }));
 
+  const visibleStudentIds = useMemo(() => {
+    const searchLower = studentSearchQuery.toLowerCase().trim();
+    return selectedStudentIds.filter(id => {
+      const student = students.find(s => s.id === id);
+      if (!student) return false;
+      if (searchLower === '') return true;
+      const fullName = `${student.firstName} ${student.secondName}`.toLowerCase();
+      return fullName.includes(searchLower);
+    });
+  }, [students, selectedStudentIds, studentSearchQuery]);
+
+  useEffect(() => {
+    if (studentSearchQuery.trim() !== '') {
+      if (visibleStudentIds.length === 1) {
+        updateHighlight(activeSubjectIdRef.current, visibleStudentIds[0] || null);
+      } else {
+        updateHighlight(activeSubjectIdRef.current, null);
+      }
+    }
+  }, [visibleStudentIds, studentSearchQuery]);
+
+
+
+  useEffect(() => {
+    function handleNumberShortcut(event: KeyboardEvent) {
+      if (event.key.toLowerCase() === 'e' && !event.metaKey && !event.ctrlKey) {
+        if (!['INPUT', 'TEXTAREA', 'SELECT'].includes((event.target as HTMLElement).tagName)) {
+          event.preventDefault();
+          setIsFilterStatusOpen(false);
+          setIsFilterTypeOpen(false);
+          setIsDatePickerOpen(false);
+          setIsStudentPickerOpen(false);
+          if (document.activeElement instanceof HTMLElement) {
+            document.activeElement.blur();
+          }
+          setIsEditMode(prev => {
+            const next = !prev;
+            if (next) {
+              setCurrentRow(0);
+              setCurrentCol(0);
+            } else {
+              setCurrentRow(null);
+              setCurrentCol(null);
+            }
+            return next;
+          });
+          return;
+        }
+      }
+
+      if (event.key === 'Escape') {
+        if (isBatchMode) {
+          event.preventDefault();
+          setIsBatchMode(false);
+          setSelectedTaskIds([]);
+        }
+        setIsFilterStatusOpen(false);
+        setIsFilterTypeOpen(false);
+        setIsDatePickerOpen(false);
+        setIsStudentPickerOpen(false);
+        setClickedCellId(null);
+        setNewEntryModal(null);
+      }
+      
+      if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes((event.target as HTMLElement).tagName)) return;
+      
+      const digitMatch = event.code.match(/^Digit([0-9])$/);
+      if (digitMatch) {
+        if (event.metaKey || event.ctrlKey || event.altKey) return;
+        
+        const digit = digitMatch[1];
+        numberBufferRef.current += digit;
+        
+        const index = parseInt(numberBufferRef.current, 10) - 1;
+        if (!isNaN(index) && index >= 0) {
+          if (event.shiftKey) {
+            if (viewMode === 'grid' && index < subjects.length) {
+              updateHighlight(subjects[index].id, activeStudentIdRef.current);
+            }
+          } else {
+            if (index < visibleStudentIds.length) {
+              updateHighlight(activeSubjectIdRef.current, visibleStudentIds[index]);
+            }
+          }
+        }
+        
+        if (numberTimeoutRef.current) {
+          clearTimeout(numberTimeoutRef.current);
+        }
+        
+        numberTimeoutRef.current = setTimeout(() => {
+          numberBufferRef.current = '';
+        }, 200);
+      }
+      if (isEditMode) {
+        if (event.key === '+' || (event.key.toLowerCase() === 'c' && (event.metaKey || event.ctrlKey))) {
+          if (currentRow !== null && currentCol !== null && subjects[currentRow]) {
+            const studentId = visibleStudentIds[currentCol];
+            const student = students.find(s => s.id === studentId);
+            if (student) {
+              const subject = subjects[currentRow];
+              const studentFullName = `${student.firstName} ${student.secondName}`.trim();
+              
+              const cellTasks = filteredCellData.filter(d => 
+                (d.assignee === studentFullName || d.studentName === studentFullName) && 
+                d.subject === subject.name
+              );
+              
+              if (cellTasks.length > 0) {
+                copiedTaskRef.current = cellTasks[0];
+              }
+            }
+          }
+          if (event.key.toLowerCase() === 'c') event.preventDefault();
+          return;
+        }
+
+        if (event.key.toLowerCase() === 'v' && (event.metaKey || event.ctrlKey)) {
+          const copiedTask = copiedTaskRef.current;
+          if (copiedTask && currentRow !== null && currentCol !== null && subjects[currentRow]) {
+            const studentId = visibleStudentIds[currentCol];
+            const student = students.find(s => s.id === studentId);
+            if (student) {
+              const subject = subjects[currentRow];
+              const studentFullName = `${student.firstName} ${student.secondName}`.trim();
+              
+              if (subject.name !== copiedTask.subject) {
+                alert("Tasks can only be pasted horizontally within the same subject row.");
+              } else {
+                handleCloneTask(copiedTask, studentFullName);
+              }
+            }
+          }
+          event.preventDefault();
+          return;
+        }
+
+        if (event.key === 'Backspace' || event.key === 'Delete') {
+          if (currentRow !== null && currentCol !== null && subjects[currentRow]) {
+            const studentId = visibleStudentIds[currentCol];
+            const student = students.find(s => s.id === studentId);
+            if (student) {
+              const subject = subjects[currentRow];
+              const studentFullName = `${student.firstName} ${student.secondName}`.trim();
+              
+              const cellTasks = filteredCellData.filter(d => 
+                (d.assignee === studentFullName || d.studentName === studentFullName) && 
+                d.subject === subject.name
+              );
+              
+              if (cellTasks.length > 0) {
+                handleDeleteInitiate(cellTasks[0].id);
+              }
+            }
+          }
+          event.preventDefault();
+          return;
+        }
+
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+          event.preventDefault();
+          
+          setCurrentRow(prevRow => {
+            let newRow = prevRow === null ? 0 : prevRow;
+            if (event.key === 'ArrowUp') newRow = Math.max(0, newRow - 1);
+            if (event.key === 'ArrowDown') newRow = Math.min(subjects.length - 1, newRow + 1);
+            return newRow;
+          });
+
+          setCurrentCol(prevCol => {
+            let newCol = prevCol === null ? 0 : prevCol;
+            if (event.key === 'ArrowLeft') newCol = Math.max(0, newCol - 1);
+            if (event.key === 'ArrowRight') newCol = Math.min(visibleStudentIds.length - 1, newCol + 1);
+            return newCol;
+          });
+          return;
+        }
+
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          if (currentRow !== null && currentCol !== null && subjects[currentRow]) {
+            const studentId = visibleStudentIds[currentCol];
+            const student = students.find(s => s.id === studentId);
+            if (student) {
+              const subject = subjects[currentRow];
+              const studentFullName = `${student.firstName} ${student.secondName}`.trim();
+              
+              const cellHasTasks = filteredCellData.some(d => 
+                (d.assignee === studentFullName || d.studentName === studentFullName) && 
+                d.subject === subject.name
+              );
+
+              if (!cellHasTasks) {
+                const isAssigned = student.subjects && student.subjects.some((s: string) => subject && s.trim().toLowerCase() === subject.name.trim().toLowerCase());
+                if (isAssigned) {
+                  setNewEntryModal({
+                    type: activeView,
+                    subject: subject.name,
+                    studentName: studentFullName,
+                    date: selectedDate ? getLocalDateString(selectedDate) : getLocalDateString(new Date())
+                  });
+                }
+              } else {
+                const cellId = `${subject.id}-${student.id}`;
+                setClickedCellId(clickedCellId === cellId ? null : cellId);
+              }
+            }
+          }
+        }
+        return;
+      }
+
+      if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+        event.preventDefault();
+        const prev = activeStudentIdRef.current;
+        let newId = prev;
+        if (!prev) newId = visibleStudentIds.length > 0 ? visibleStudentIds[0] : null;
+        else {
+          const currentIndex = visibleStudentIds.indexOf(prev);
+          if (currentIndex === -1) newId = visibleStudentIds.length > 0 ? visibleStudentIds[0] : null;
+          else {
+            let newIndex = event.key === 'ArrowRight' ? currentIndex + 1 : currentIndex - 1;
+            if (newIndex < 0) newIndex = 0;
+            if (newIndex >= visibleStudentIds.length) newIndex = visibleStudentIds.length - 1;
+            newId = visibleStudentIds[newIndex];
+          }
+        }
+        updateHighlight(activeSubjectIdRef.current, newId, true);
+      }
+
+      if (viewMode === 'grid' && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+        event.preventDefault();
+        const prev = activeSubjectIdRef.current;
+        let newId = prev;
+        if (!prev) newId = subjects.length > 0 ? subjects[0].id : null;
+        else {
+          const currentIndex = subjects.findIndex(s => s.id === prev);
+          if (currentIndex === -1) newId = subjects.length > 0 ? subjects[0].id : null;
+          else {
+            let newIndex = event.key === 'ArrowDown' ? currentIndex + 1 : currentIndex - 1;
+            if (newIndex < 0) newIndex = 0;
+            if (newIndex >= subjects.length) newIndex = subjects.length - 1;
+            newId = subjects[newIndex].id;
+          }
+        }
+        updateHighlight(newId, activeStudentIdRef.current, true);
+      }
+
+    }
+    
+    document.addEventListener('keydown', handleNumberShortcut);
+    return () => {
+      document.removeEventListener('keydown', handleNumberShortcut);
+      if (numberTimeoutRef.current) clearTimeout(numberTimeoutRef.current);
+    };
+  }, [visibleStudentIds, subjects, viewMode, isBatchMode, isEditMode, currentRow, currentCol, students, activeView, selectedDate, filteredCellData, clickedCellId]);
+
+  useEffect(() => {
+    if (clickedCellId) {
+      const timeoutId = setTimeout(() => {
+        const cellEl = document.getElementById(`cell-${clickedCellId}`);
+        if (cellEl) {
+          const formElements = cellEl.querySelectorAll('select, input, textarea');
+          if (formElements.length > 0) {
+            (formElements[0] as HTMLElement).focus();
+          } else {
+            const focusableElements = cellEl.querySelectorAll('button, [href], [tabindex]:not([tabindex="-1"])');
+            if (focusableElements.length > 0) {
+              (focusableElements[0] as HTMLElement).focus();
+            }
+          }
+        }
+      }, 50);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [clickedCellId]);
+
+  useEffect(() => {
+    if (taskToDelete === null) return;
+
+    const handleModalKeydown = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      if (e.key === 'Enter') {
+        handleDeleteConfirm();
+      } else if (e.key === 'Escape') {
+        setTaskToDelete(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleModalKeydown, { capture: true });
+    return () => {
+      window.removeEventListener('keydown', handleModalKeydown, { capture: true });
+    };
+  }, [taskToDelete]);
+
+  useEffect(() => {
+    const handleUndoShortcut = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() === 'z' && (e.metaKey || e.ctrlKey)) {
+        if (toastConfig.visible && toastConfig.taskId !== null) {
+          e.preventDefault();
+          handleUndoDelete();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleUndoShortcut);
+    return () => window.removeEventListener('keydown', handleUndoShortcut);
+  }, [toastConfig]);
+
+
+
+  useEffect(() => {
+    if (isEditMode && currentRow !== null && currentCol !== null && viewMode === 'grid') {
+      const subject = subjects[currentRow];
+      const studentId = visibleStudentIds[currentCol];
+      if (subject && studentId) {
+        const cellId = `cell-${subject.id}-${studentId}`;
+        const el = document.getElementById(cellId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
+        }
+      }
+    }
+  }, [currentRow, currentCol, isEditMode, viewMode, subjects, visibleStudentIds]);
+
   return (
     <>
       <style jsx global>{`
+        /* Keyboard Navigation Highlights */
+        ${subjects.map(s => `
+          .grid-container[data-active-subject="${s.id}"] .cell-subject-${s.id} > .grid-cell-assigned:not(.cell-clicked) {
+            background-color: rgba(237, 171, 48, 0.15) !important;
+          }
+        `).join('\n')}
+        
+        ${students.map(s => `
+          .grid-container[data-active-student="${s.id}"] .cell-student-${s.id} > .grid-cell-assigned:not(.cell-clicked) {
+            background-color: ${getVibrantColor(s.firstName + ' ' + s.secondName)}26 !important;
+          }
+        `).join('\n')}
+
         .dashboard-content {
           padding: 4px !important;
         }
@@ -695,13 +1139,15 @@ export default function BirdViewPage() {
       <div className="h-[35px] w-full mb-[4px] shadow-sm flex items-center px-8 space-x-3" style={{ backgroundColor: '#254245' }}>
         <button 
           onClick={() => setActiveView('task')}
-          className={`h-[22px] px-6 text-xs font-bold uppercase tracking-wider text-white rounded-none transition-all shadow-sm ${activeView === 'task' ? 'opacity-100' : 'opacity-60 hover:opacity-80'}`}
+          tabIndex={0}
+          className={`h-[22px] px-6 text-xs font-bold uppercase tracking-wider text-white rounded-none transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245] ${activeView === 'task' ? 'opacity-100' : 'opacity-60 hover:opacity-80'}`}
           style={{ backgroundColor: '#edab30' }}>
           Task
         </button>
         <button 
           onClick={() => setActiveView('query')}
-          className={`h-[22px] px-6 text-xs font-bold uppercase tracking-wider text-white rounded-none transition-all shadow-sm ${activeView === 'query' ? 'opacity-100' : 'opacity-60 hover:opacity-80'}`}
+          tabIndex={0}
+          className={`h-[22px] px-6 text-xs font-bold uppercase tracking-wider text-white rounded-none transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245] ${activeView === 'query' ? 'opacity-100' : 'opacity-60 hover:opacity-80'}`}
           style={{ backgroundColor: '#edab30' }}>
           Query
         </button>
@@ -713,13 +1159,15 @@ export default function BirdViewPage() {
         <div className="flex items-center mr-2">
           <button 
             onClick={() => setViewMode('grid')}
-            className={`h-[22px] px-3 text-[10px] font-bold uppercase tracking-wider text-white transition-all shadow-sm rounded-l border border-r-0 border-transparent ${viewMode === 'grid' ? 'bg-[#edab30] opacity-100' : 'bg-[#254245] text-[#edab30] border-[#edab30] hover:bg-[#edab30]/20'}`}
+            tabIndex={0}
+            className={`h-[22px] px-3 text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm rounded-l border border-r-0 border-transparent focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245] ${viewMode === 'grid' ? 'bg-[#edab30] text-white opacity-100' : 'bg-[#254245] text-[#edab30] border-[#edab30] hover:bg-[#edab30]/20'}`}
           >
             <i className="fa-solid fa-table-cells mr-1"></i> Grid
           </button>
           <button 
             onClick={() => setViewMode('stacked')}
-            className={`h-[22px] px-3 text-[10px] font-bold uppercase tracking-wider text-white transition-all shadow-sm rounded-r border border-l-0 border-transparent ${viewMode === 'stacked' ? 'bg-[#edab30] opacity-100' : 'bg-[#254245] text-[#edab30] border-[#edab30] hover:bg-[#edab30]/20'}`}
+            tabIndex={0}
+            className={`h-[22px] px-3 text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm rounded-r border border-l-0 border-transparent focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245] ${viewMode === 'stacked' ? 'bg-[#edab30] text-white opacity-100' : 'bg-[#254245] text-[#edab30] border-[#edab30] hover:bg-[#edab30]/20'}`}
           >
             <i className="fa-solid fa-layer-group mr-1"></i> Stacked
           </button>
@@ -727,32 +1175,168 @@ export default function BirdViewPage() {
 
         {/* Filter Bar */}
         <div className="flex items-center space-x-2 flex-wrap text-[10px] md:text-xs text-white">
-           <select 
-             className="bg-[#254245] border border-white/20 rounded text-white px-2 py-0.5" 
-             value={boardFilters.status} 
-             onChange={(e) => setBoardFilters(prev => ({...prev, status: e.target.value}))}
-           >
-             <option value="">Status: All</option>
-             <option value="OPEN">Open</option>
-             <option value="IN_PROGRESS">In Progress</option>
-             <option value="PENDING">Pending</option>
-             <option value="DONE">Done</option>
-           </select>
+          <div 
+            className="relative inline-block" 
+            ref={filterStatusRef}
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget)) {
+                setIsFilterStatusOpen(false);
+              }
+            }}
+          >
+            <button 
+              onClick={() => setIsFilterStatusOpen(!isFilterStatusOpen)}
+              onFocus={(e) => {
+                if (e.relatedTarget && filterStatusRef.current?.contains(e.relatedTarget as Node)) return;
+                setIsFilterStatusOpen(true);
+                setTimeout(() => {
+                  const firstBtn = filterStatusRef.current?.querySelector('.dropdown-item') as HTMLElement;
+                  if (firstBtn) firstBtn.focus();
+                }, 50);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsFilterStatusOpen(true);
+                  setTimeout(() => {
+                    const firstBtn = filterStatusRef.current?.querySelector('.dropdown-item') as HTMLElement;
+                    if (firstBtn) firstBtn.focus();
+                  }, 50);
+                }
+              }}
+              tabIndex={0}
+              className="h-[22px] px-3 text-[10px] md:text-xs font-bold uppercase tracking-wider text-white rounded-none bg-[#edab30] border-none outline-none cursor-pointer hover:opacity-90 transition-all shadow-sm flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245]" 
+            >
+              <span>Status: {boardFilters.status === '' ? 'All' : (boardFilters.status === 'IN_PROGRESS' ? 'In Progress' : boardFilters.status)}</span>
+              <i className={`fa-solid fa-chevron-${isFilterStatusOpen ? 'up' : 'down'} text-[10px]`}></i>
+            </button>
+            {isFilterStatusOpen && (
+              <div className="absolute top-full mt-2 left-0 w-40 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.15)] rounded border border-gray-200 z-[100] flex flex-col overflow-hidden py-1">
+                {[
+                  { value: '', label: 'All' },
+                  { value: 'OPEN', label: 'Open' },
+                  { value: 'IN_PROGRESS', label: 'In Progress' },
+                  { value: 'PENDING', label: 'Pending' },
+                  { value: 'DONE', label: 'Done' }
+                ].map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => {
+                      setBoardFilters(prev => ({ ...prev, status: opt.value }));
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const next = e.currentTarget.nextElementSibling as HTMLElement;
+                        if (next) next.focus();
+                      } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const prev = e.currentTarget.previousElementSibling as HTMLElement;
+                        if (prev) prev.focus();
+                        else {
+                          const mainBtn = filterStatusRef.current?.querySelector('button') as HTMLElement;
+                          if (mainBtn) mainBtn.focus();
+                        }
+                      }
+                    }}
+                    className={`dropdown-item flex items-center justify-between w-full text-left px-4 py-2 text-[10px] md:text-xs font-bold uppercase tracking-wider transition-colors focus:outline-none focus:bg-gray-100 focus:text-[#edab30] hover:bg-gray-50
+                      ${boardFilters.status === opt.value ? 'text-[#edab30]' : 'text-gray-500 hover:text-gray-700'}`}
+                    tabIndex={-1}
+                  >
+                    <span>{opt.label}</span>
+                    {boardFilters.status === opt.value && <i className="fa-solid fa-check"></i>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
-           <select 
-             className="bg-[#254245] border border-white/20 rounded text-white px-2 py-0.5" 
-             value={boardFilters.taskType} 
-             onChange={(e) => setBoardFilters(prev => ({...prev, taskType: e.target.value}))}
-           >
-             <option value="">Type: All</option>
-             <option value="Home Work">Home Work</option>
-             <option value="Class Work">Class Work</option>
-             <option value="Tuition Work">Tuition Work</option>
-             <option value="Test">Test</option>
-             <option value="Project">Project</option>
-           </select>
+          <div 
+            className="relative inline-block" 
+            ref={filterTypeRef}
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget)) {
+                setIsFilterTypeOpen(false);
+              }
+            }}
+          >
+            <button 
+              onClick={() => setIsFilterTypeOpen(!isFilterTypeOpen)}
+              onFocus={(e) => {
+                if (e.relatedTarget && filterTypeRef.current?.contains(e.relatedTarget as Node)) return;
+                setIsFilterTypeOpen(true);
+                setTimeout(() => {
+                  const firstBtn = filterTypeRef.current?.querySelector('.dropdown-item') as HTMLElement;
+                  if (firstBtn) firstBtn.focus();
+                }, 50);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsFilterTypeOpen(true);
+                  setTimeout(() => {
+                    const firstBtn = filterTypeRef.current?.querySelector('.dropdown-item') as HTMLElement;
+                    if (firstBtn) firstBtn.focus();
+                  }, 50);
+                }
+              }}
+              tabIndex={0}
+              className="h-[22px] px-3 text-[10px] md:text-xs font-bold uppercase tracking-wider text-white rounded-none bg-[#edab30] border-none outline-none cursor-pointer hover:opacity-90 transition-all shadow-sm flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245]" 
+            >
+              <span>Type: {boardFilters.taskType === '' ? 'All' : boardFilters.taskType}</span>
+              <i className={`fa-solid fa-chevron-${isFilterTypeOpen ? 'up' : 'down'} text-[10px]`}></i>
+            </button>
+            {isFilterTypeOpen && (
+              <div className="absolute top-full mt-2 left-0 w-48 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.15)] rounded border border-gray-200 z-[100] flex flex-col overflow-hidden py-1">
+                {['', 'Home Work', 'Class Work', 'Tuition Work', 'Test', 'Project'].map(opt => (
+                  <button
+                    key={opt}
+                    onClick={() => {
+                      setBoardFilters(prev => ({ ...prev, taskType: opt }));
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const next = e.currentTarget.nextElementSibling as HTMLElement;
+                        if (next) next.focus();
+                      } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const prev = e.currentTarget.previousElementSibling as HTMLElement;
+                        if (prev) prev.focus();
+                        else {
+                          const mainBtn = filterTypeRef.current?.querySelector('button') as HTMLElement;
+                          if (mainBtn) mainBtn.focus();
+                        }
+                      }
+                    }}
+                    className={`dropdown-item flex items-center justify-between w-full text-left px-4 py-2 text-[10px] md:text-xs font-bold uppercase tracking-wider transition-colors focus:outline-none focus:bg-gray-100 focus:text-[#edab30] hover:bg-gray-50
+                      ${boardFilters.taskType === opt ? 'text-[#edab30]' : 'text-gray-500 hover:text-gray-700'}`}
+                    tabIndex={-1}
+                  >
+                    <span>{opt === '' ? 'All' : opt}</span>
+                    {boardFilters.taskType === opt && <i className="fa-solid fa-check"></i>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
            
-           <label className="flex items-center space-x-1 cursor-pointer bg-[#edab30]/20 hover:bg-[#edab30]/40 px-2 py-0.5 rounded border border-[#edab30]/50 transition-colors ml-2">
+           <label 
+             tabIndex={0}
+             onKeyDown={(e) => {
+               if (e.key === 'Enter' || e.key === ' ') {
+                 e.preventDefault();
+                 setIsBatchMode(!isBatchMode);
+                 if (isBatchMode) setSelectedTaskIds([]);
+               }
+             }}
+             className="flex items-center space-x-1 cursor-pointer bg-[#edab30]/20 hover:bg-[#edab30]/40 px-2 py-0.5 rounded border border-[#edab30]/50 transition-colors ml-2 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245]">
              <input 
                type="checkbox" 
                checked={isBatchMode} 
@@ -767,10 +1351,35 @@ export default function BirdViewPage() {
         </div>
 
         {/* Date and Students Buttons */}
-        <div className="relative ml-auto" ref={datePickerRef}>
+        <div className="relative ml-auto" ref={datePickerRef}
+             onBlur={(e) => {
+               if (!e.currentTarget.contains(e.relatedTarget)) {
+                 setIsDatePickerOpen(false);
+               }
+             }}>
           <button 
             onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
-            className="h-[22px] px-4 text-xs font-bold uppercase tracking-wider text-white rounded-none transition-all shadow-sm opacity-100 hover:opacity-90 flex items-center space-x-2"
+            onFocus={(e) => {
+              if (e.relatedTarget && datePickerRef.current?.contains(e.relatedTarget as Node)) return;
+              setIsDatePickerOpen(true);
+              setTimeout(() => {
+                const current = datePickerRef.current?.querySelector('.current-date-btn') || datePickerRef.current?.querySelector('.date-focus-item');
+                if (current) (current as HTMLElement).focus();
+              }, 50);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsDatePickerOpen(true);
+                setTimeout(() => {
+                  const current = datePickerRef.current?.querySelector('.current-date-btn') || datePickerRef.current?.querySelector('.date-focus-item');
+                  if (current) (current as HTMLElement).focus();
+                }, 50);
+              }
+            }}
+            tabIndex={0}
+            className="h-[22px] px-4 text-xs font-bold uppercase tracking-wider text-white rounded-none transition-all shadow-sm opacity-100 hover:opacity-90 flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245]"
             style={{ backgroundColor: '#edab30' }}>
             <span>{formattedDate || '...'}</span>
             <i className={`fa-solid fa-chevron-${isDatePickerOpen ? 'up' : 'down'} text-[10px]`}></i>
@@ -779,33 +1388,57 @@ export default function BirdViewPage() {
           {isDatePickerOpen && (
             <div className="absolute top-full mt-2 left-0 w-64 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.15)] rounded border border-gray-200 z-[100] overflow-hidden">
                {/* Calendar Header */}
-               <div className="flex items-center justify-between p-3 bg-gray-50 border-b border-gray-100 text-sm font-bold text-gray-700">
-                 <button onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))} className="w-6 h-6 flex items-center justify-center hover:bg-gray-200 rounded text-gray-500"><i className="fa-solid fa-chevron-left"></i></button>
+               <div className="flex items-center justify-between p-3 bg-gray-50 border-b border-gray-100 text-sm font-bold text-gray-700"
+                    onKeyDown={(e) => {
+                      if (e.key.startsWith('Arrow')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const items = Array.from(datePickerRef.current?.querySelectorAll('.date-focus-item') || []) as HTMLElement[];
+                        const idx = items.indexOf(document.activeElement as HTMLElement);
+                        let next = 0;
+                        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = idx >= 0 ? (idx + 1) % items.length : 0;
+                        else next = idx > 0 ? idx - 1 : items.length - 1;
+                        if (items[next]) items[next].focus();
+                      }
+                    }}>
+                 <button tabIndex={-1} onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))} className="date-focus-item w-6 h-6 flex items-center justify-center hover:bg-gray-200 rounded text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#edab30]"><i className="fa-solid fa-chevron-left"></i></button>
                  <span>
                    {calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                  </span>
-                 <button onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))} className="w-6 h-6 flex items-center justify-center hover:bg-gray-200 rounded text-gray-500"><i className="fa-solid fa-chevron-right"></i></button>
+                 <button tabIndex={-1} onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))} className="date-focus-item w-6 h-6 flex items-center justify-center hover:bg-gray-200 rounded text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#edab30]"><i className="fa-solid fa-chevron-right"></i></button>
                </div>
                {/* Calendar Grid */}
-               <div className="p-3">
-                 <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-gray-400 mb-2">
-                   {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => <div key={d}>{d}</div>)}
-                 </div>
-                 <div className="grid grid-cols-7 gap-1 text-sm">
+                <div className="p-3"
+                     onKeyDown={(e) => {
+                       if (e.key.startsWith('Arrow')) {
+                         e.preventDefault();
+                         e.stopPropagation();
+                         const items = Array.from(datePickerRef.current?.querySelectorAll('.date-focus-item') || []) as HTMLElement[];
+                         const idx = items.indexOf(document.activeElement as HTMLElement);
+                         let next = 0;
+                         if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = idx >= 0 ? (idx + 1) % items.length : 0;
+                         else next = idx > 0 ? idx - 1 : items.length - 1;
+                         if (items[next]) items[next].focus();
+                       }
+                     }}>
+                  <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-gray-400 mb-2">
+                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => <div key={d}>{d}</div>)}
+                  </div>
+                  <div className="grid grid-cols-7 gap-1 text-sm">
                    {blanksArray.map(b => <div key={`blank-${b}`} className="w-7 h-7"></div>)}
                    {daysArray.map(d => {
                      const isSelected = selectedDate && selectedDate.getDate() === d && selectedDate.getMonth() === calendarMonth.getMonth() && selectedDate.getFullYear() === calendarMonth.getFullYear();
                      return (
-                       <button 
-                         key={d} 
-                         onClick={() => {
-                           setSelectedDate(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), d));
-                           setIsDatePickerOpen(false);
-                         }}
-                         className={`w-7 h-7 flex items-center justify-center rounded-full transition-colors ${isSelected ? 'bg-[#edab30] text-white font-bold' : 'text-gray-700 hover:bg-gray-100'}`}
-                       >
-                         {d}
-                       </button>
+                        <button 
+                          key={d} 
+                          onClick={() => {
+                            setSelectedDate(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), d));
+                          }}
+                          tabIndex={-1}
+                          className={`date-focus-item w-7 h-7 flex items-center justify-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#254245] focus:ring-offset-1 ${isSelected ? 'current-date-btn bg-[#edab30] text-white font-bold' : 'text-gray-700 hover:bg-gray-100'}`}
+                        >
+                          {d}
+                        </button>
                      );
                    })}
                  </div>
@@ -814,10 +1447,35 @@ export default function BirdViewPage() {
           )}
         </div>
 
-        <div className="relative" ref={studentPickerRef}>
+        <div className="relative" ref={studentPickerRef}
+             onBlur={(e) => {
+               if (!e.currentTarget.contains(e.relatedTarget)) {
+                 setIsStudentPickerOpen(false);
+               }
+             }}>
           <button 
             onClick={() => setIsStudentPickerOpen(!isStudentPickerOpen)}
-            className="h-[22px] px-4 text-xs font-bold uppercase tracking-wider text-white rounded-none transition-all shadow-sm opacity-100 hover:opacity-90 flex items-center space-x-2"
+            onFocus={(e) => {
+              if (e.relatedTarget && studentPickerRef.current?.contains(e.relatedTarget as Node)) return;
+              setIsStudentPickerOpen(true);
+              setTimeout(() => {
+                const current = studentPickerRef.current?.querySelector('.student-focus-item');
+                if (current) (current as HTMLElement).focus();
+              }, 50);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsStudentPickerOpen(true);
+                setTimeout(() => {
+                  const current = studentPickerRef.current?.querySelector('.student-focus-item');
+                  if (current) (current as HTMLElement).focus();
+                }, 50);
+              }
+            }}
+            tabIndex={0}
+            className="h-[22px] px-4 text-xs font-bold uppercase tracking-wider text-white rounded-none transition-all shadow-sm opacity-100 hover:opacity-90 flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245]"
             style={{ backgroundColor: '#edab30' }}>
             <span>Students</span>
             <i className={`fa-solid fa-chevron-${isStudentPickerOpen ? 'up' : 'down'} text-[10px]`}></i>
@@ -827,7 +1485,19 @@ export default function BirdViewPage() {
             <div className="absolute top-full mt-2 left-0 w-80 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.15)] rounded border border-gray-200 z-[100] max-h-[85vh] flex flex-col">
               
               {/* Category Tabs */}
-              <div className="flex bg-gray-50 border-b border-gray-200 rounded-t overflow-hidden">
+              <div className="flex bg-gray-50 border-b border-gray-200 rounded-t overflow-hidden"
+                   onKeyDown={(e) => {
+                     if (e.key.startsWith('Arrow')) {
+                       e.preventDefault();
+                       e.stopPropagation();
+                       const items = Array.from(studentPickerRef.current?.querySelectorAll('.student-focus-item') || []) as HTMLElement[];
+                       const idx = items.indexOf(document.activeElement as HTMLElement);
+                       let next = 0;
+                       if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = idx >= 0 ? (idx + 1) % items.length : 0;
+                       else next = idx > 0 ? idx - 1 : items.length - 1;
+                       if (items[next]) items[next].focus();
+                     }
+                   }}>
                 {['All', 'Olevels', 'Matric', 'Junior'].map(cat => (
                   <button 
                      key={cat}
@@ -836,14 +1506,27 @@ export default function BirdViewPage() {
                        const newVisibleStudents = students.filter(s => cat === 'All' || getStudentCategory(s.className || '') === cat);
                        setSelectedStudentIds(newVisibleStudents.map(s => s.id));
                      }}
-                     className={`flex-1 py-2 px-1 text-[9px] font-bold uppercase tracking-wider transition-colors border-r last:border-r-0 border-gray-200 ${studentCategoryFilter === cat ? 'bg-[#edab30] text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+                     tabIndex={-1}
+                     className={`student-focus-item flex-1 py-2 px-1 text-[9px] font-bold uppercase tracking-wider transition-colors border-r last:border-r-0 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#edab30] focus:ring-inset ${studentCategoryFilter === cat ? 'bg-[#edab30] text-white' : 'text-gray-500 hover:bg-gray-100'}`}
                   >
                     {cat}
                   </button>
                 ))}
               </div>
 
-              <div className="py-2 px-3 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+              <div className="py-2 px-3 border-b border-gray-100 bg-gray-50 flex justify-between items-center"
+                   onKeyDown={(e) => {
+                     if (e.key.startsWith('Arrow')) {
+                       e.preventDefault();
+                       e.stopPropagation();
+                       const items = Array.from(studentPickerRef.current?.querySelectorAll('.student-focus-item') || []) as HTMLElement[];
+                       const idx = items.indexOf(document.activeElement as HTMLElement);
+                       let next = 0;
+                       if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = idx >= 0 ? (idx + 1) % items.length : 0;
+                       else next = idx > 0 ? idx - 1 : items.length - 1;
+                       if (items[next]) items[next].focus();
+                     }
+                   }}>
                 <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Select Students</span>
                 <button 
                   onClick={() => {
@@ -857,12 +1540,25 @@ export default function BirdViewPage() {
                       setSelectedStudentIds(Array.from(newIds));
                     }
                   }}
-                  className="text-[10px] text-[#254245] hover:underline font-bold uppercase tracking-wider"
+                  className="student-focus-item text-[10px] text-[#254245] hover:underline font-bold uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-[#edab30] rounded"
+                  tabIndex={-1}
                 >
                   {students.length > 0 && students.filter(s => studentCategoryFilter === 'All' || getStudentCategory(s.className || '') === studentCategoryFilter).every(s => selectedStudentIds.includes(s.id)) ? 'Deselect All' : 'Select All'}
                 </button>
               </div>
-              <div className="overflow-y-auto custom-scrollbar flex-1 p-1 space-y-0">
+              <div className="overflow-y-auto custom-scrollbar flex-1 p-1 space-y-0"
+                   onKeyDown={(e) => {
+                     if (e.key.startsWith('Arrow')) {
+                       e.preventDefault();
+                       e.stopPropagation();
+                       const items = Array.from(studentPickerRef.current?.querySelectorAll('.student-focus-item') || []) as HTMLElement[];
+                       const idx = items.indexOf(document.activeElement as HTMLElement);
+                       let next = 0;
+                       if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = idx >= 0 ? (idx + 1) % items.length : 0;
+                       else next = idx > 0 ? idx - 1 : items.length - 1;
+                       if (items[next]) items[next].focus();
+                     }
+                   }}>
                 {students.filter(s => studentCategoryFilter === 'All' || getStudentCategory(s.className || '') === studentCategoryFilter).map(student => (
                   <label key={student.id} className="flex items-center justify-between py-1.5 px-2 hover:bg-gray-50 cursor-pointer rounded transition-colors group border border-transparent hover:border-gray-100">
                     <div className="flex items-center space-x-3 overflow-hidden pr-2">
@@ -875,7 +1571,8 @@ export default function BirdViewPage() {
                     </div>
                     <input 
                       type="checkbox" 
-                      className="w-3.5 h-3.5 border-gray-300 rounded cursor-pointer"
+                      tabIndex={-1}
+                      className="student-focus-item w-3.5 h-3.5 border-gray-300 rounded cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#edab30]"
                       style={{ accentColor: '#edab30' }}
                       checked={selectedStudentIds.includes(student.id)}
                       onChange={(e) => {
@@ -895,6 +1592,19 @@ export default function BirdViewPage() {
             </div>
           )}
         </div>
+        <div className="relative ml-2 flex items-center">
+          <input
+            ref={studentSearchInputRef}
+            type="text"
+            placeholder="Search student..."
+            value={studentSearchQuery}
+            onChange={(e) => setStudentSearchQuery(e.target.value)}
+            className="h-[22px] px-2 pl-2 pr-6 w-32 md:w-40 bg-[#edab30]/20 border border-[#edab30] text-white font-bold text-[10px] md:text-xs rounded outline-none placeholder-[#edab30]/80 focus:bg-[#edab30]/30 transition-all"
+          />
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 text-[#edab30]/80 text-[10px] pointer-events-none flex items-center">
+            <i className="fa-solid fa-magnifying-glass"></i>
+          </div>
+        </div>
       </div>
 
       <div className="w-full h-full bg-white rounded-none shadow-sm border border-gray-100 border-t-4 border-t-teal-700 flex flex-col animate-fadeIn overflow-hidden">
@@ -908,20 +1618,20 @@ export default function BirdViewPage() {
           <div className="flex-1 overflow-auto custom-scrollbar relative">
             <style>{`
               .responsive-table-width {
-                width: ${64 + (students.filter(s => selectedStudentIds.includes(s.id)).length * 96)}px;
+                width: ${64 + (visibleStudentIds.length * 96)}px;
               }
               @media (min-width: 768px) {
                 .responsive-table-width {
-                  width: ${80 + (students.filter(s => selectedStudentIds.includes(s.id)).length * 120)}px;
+                  width: ${80 + (visibleStudentIds.length * 120)}px;
                 }
               }
             `}</style>
-            <div className="responsive-table-width">
+            <div className="responsive-table-width grid-container" ref={gridContainerRef}>
               <table className="text-sm text-left border-separate border-spacing-0 table-fixed responsive-table-width mx-0 mr-auto">
                 <colgroup>
                 <col className="w-16 min-w-[4rem] max-w-[4rem] md:w-[80px] md:min-w-[80px] md:max-w-[80px]" />
                 {students.map((student) => {
-                  if (!selectedStudentIds.includes(student.id)) return null;
+                  if (!visibleStudentIds.includes(student.id)) return null;
                   return <col key={student.id} className="w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px]" />;
                 })}
               </colgroup>
@@ -930,7 +1640,7 @@ export default function BirdViewPage() {
                   <th scope="col" className="w-16 min-w-[4rem] max-w-[4rem] md:w-[80px] md:min-w-[80px] md:max-w-[80px] px-2 py-4 sticky left-0 bg-gray-100 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-b border-r border-gray-200">
                   </th>
                   {students.map((student, index) => {
-                    if (!selectedStudentIds.includes(student.id)) return null;
+                    if (!visibleStudentIds.includes(student.id)) return null;
                     const isDragged = draggedStudentIdx === index;
                     const isHovered = hoveredStudentIdx === index && !isDragged;
                     // Determine drop indicator side
@@ -947,17 +1657,18 @@ export default function BirdViewPage() {
                     return (
                       <th 
                         key={student.id} 
+                        id={`student-col-${student.id}`}
                         scope="col" 
                         className="p-0 text-center border-b border-r border-gray-200 whitespace-nowrap w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px]"
                       >
                         <div 
-                          className={`w-full h-full px-1 py-2 md:px-4 md:py-4 cursor-pointer active:cursor-grabbing hover:bg-gray-100 transition-all group flex flex-col items-center justify-center relative
+                          className={`w-full h-full px-1 py-2 md:px-4 md:py-4 cursor-pointer active:cursor-grabbing hover:bg-gray-100 group flex flex-col items-center justify-center relative
                             ${isDragged ? 'dragged-column' : ''}
                             ${showLeftIndicator ? 'drop-target-left' : ''}
                             ${showRightIndicator ? 'drop-target-right' : ''}
-                            ${highlightedStudentId === student.id ? 'bg-gray-100' : ''}
+                            ${activeStudentIdRef.current === student.id ? 'bg-gray-100' : ''}
                           `}
-                          onClick={() => setHighlightedStudentId(highlightedStudentId === student.id ? null : student.id)}
+                          onClick={() => updateHighlight(activeSubjectIdRef.current, activeStudentIdRef.current === student.id ? null : student.id)}
                           draggable
                           onDragStart={(e) => handleStudentDragStart(e, index)}
                           onDragEnter={(e) => handleStudentDragEnter(e, index)}
@@ -1004,6 +1715,7 @@ export default function BirdViewPage() {
                   return (
                     <tr 
                       key={row.id} 
+                      id={isGrid && subject ? `subject-row-${subject.id}` : undefined}
                       className={`
                         ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} 
                         group
@@ -1017,14 +1729,14 @@ export default function BirdViewPage() {
                         className="w-16 min-w-[4rem] max-w-[4rem] md:w-[80px] md:min-w-[80px] md:max-w-[80px] p-0 font-medium text-gray-900 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-gray-200 bg-inherit whitespace-nowrap align-middle h-24 md:h-[120px]"
                       >
                         <div 
-                          className={`flex items-center justify-center w-full h-full px-2 transition-all
+                          className={`flex items-center justify-center w-full h-full px-2
                             ${isGrid ? 'cursor-pointer active:cursor-grabbing hover:bg-gray-100' : ''}
                             ${isDragged ? 'dragged-row' : ''}
                             ${showTopIndicator ? 'drop-target-top' : ''}
                             ${showBottomIndicator ? 'drop-target-bottom' : ''}
-                            ${isGrid && subject && highlightedSubjectId === subject.id ? 'bg-gray-100' : ''}
+                            ${isGrid && subject && activeSubjectIdRef.current === subject.id ? 'bg-gray-100' : ''}
                           `}
-                          onClick={() => isGrid && subject && setHighlightedSubjectId(highlightedSubjectId === subject.id ? null : subject.id)}
+                          onClick={() => isGrid && subject && updateHighlight(activeSubjectIdRef.current === subject.id ? null : subject.id, activeStudentIdRef.current)}
                           draggable={isGrid}
                           onDragStart={(e) => isGrid && handleSubjectDragStart(e, index)}
                           onDrag={(e) => isGrid && handleDrag(e)}
@@ -1035,7 +1747,7 @@ export default function BirdViewPage() {
                       </th>
                       
                       {students.map((student, studentIndex) => {
-                        if (!selectedStudentIds.includes(student.id)) return null;
+                        if (!visibleStudentIds.includes(student.id)) return null;
                         
                         let stackedTask = null;
                         if (!isGrid) {
@@ -1046,7 +1758,7 @@ export default function BirdViewPage() {
                             if (index === (studentData?.tasks?.length || 0)) {
                               return (
                                 <td key={`stacked-${student.id}-${index}`} className="p-0 text-center border-none bg-transparent h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px]">
-                                  <div className="w-24 h-24 md:w-[120px] md:h-[120px] relative p-1.5 pb-5">
+                                  <div className="w-full h-full relative p-1.5 pb-5">
                                     <div 
                                       className="w-full h-full flex flex-col items-center justify-center cursor-pointer bg-gray-50/50 hover:bg-gray-100 transition-colors border-2 border-dashed border-gray-300 rounded-[4px] group"
                                       onClick={() => {
@@ -1081,13 +1793,13 @@ export default function BirdViewPage() {
                         
                         const cellId = isGrid && subject ? `${subject.id}-${student.id}` : `stacked-${student.id}-${index}`;
                         const isClicked = clickedCellId === cellId;
-                        const isHighlightedColumn = highlightedStudentId === student.id;
-                        const isHighlightedRow = isGrid && subject && highlightedSubjectId === subject.id;
+                        const isEditModeActiveCell = isEditMode && isGrid && currentRow === index && currentCol === visibleStudentIds.indexOf(student.id);
                         
                         return (
                           <td 
                             key={cellId} 
-                            className="p-0 text-center border-b border-r border-gray-200 last:border-r-0 h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px]"
+                            id={`cell-${cellId}`}
+                            className={`p-0 text-center border-b border-r border-gray-200 last:border-r-0 h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] ${isGrid && subject ? `cell-subject-${subject.id} cell-student-${student.id}` : ''}`}
                             onDragEnter={(e) => {
                               if (!isAssigned) return;
                               if (draggedTaskId !== null && draggedTaskSource && (e.shiftKey || e.altKey || e.metaKey)) {
@@ -1126,13 +1838,13 @@ export default function BirdViewPage() {
                               }
                             }}
                           >
-                            <div className="w-24 h-24 md:w-[120px] md:h-[120px] relative">
+                            <div className="w-full h-full relative">
                               <div 
                               onClick={() => {
                                 if (isBatchMode) return;
                                 
                                 // Always toggle highlight for this column when clicking any cell
-                                setHighlightedStudentId(highlightedStudentId === student.id ? null : student.id);
+                                updateHighlight(activeSubjectIdRef.current, activeStudentIdRef.current === student.id ? null : student.id);
                                 
                                 if (!isAssigned) return;
                                 
@@ -1152,7 +1864,7 @@ export default function BirdViewPage() {
                                 if (items.length === 0) {
                                   setNewEntryModal({
                                     type: activeView,
-                                    subject: subject.name,
+                                    subject: subject ? subject.name : '',
                                     studentName: studentFullName,
                                     date: selectedDate ? getLocalDateString(selectedDate) : getLocalDateString(new Date())
                                   });
@@ -1160,18 +1872,19 @@ export default function BirdViewPage() {
                                   setClickedCellId(isClicked ? null : cellId);
                                 }
                               }}
-                              style={(isHighlightedColumn && !isClicked) ? { backgroundColor: getVibrantColor(student.firstName + ' ' + student.secondName) + '26' } : undefined}
-                              className={`
-                                w-full h-full transition-all duration-300 flex items-center justify-center cursor-pointer
-                                ${isClicked ? 'overflow-visible' : 'overflow-hidden'}
-                                ${(!isAssigned && !isDragged && !isStudentDragged && !(isHighlightedColumn && !isClicked) && !(isHighlightedRow && !isClicked)) ? 'unassigned-cell' : ((isHighlightedColumn && !isClicked) ? '' : ((isHighlightedRow && !isClicked) ? 'bg-[#edab30]/15' : 'bg-white'))}
+
+                                className={`
+                                  w-full h-full flex items-center justify-center cursor-pointer transition-all duration-300 ease-in-out
+                                  ${isClicked ? 'overflow-visible cell-clicked' : 'overflow-hidden'}
+                                ${(!isAssigned && !isDragged && !isStudentDragged) ? 'unassigned-cell' : 'bg-white grid-cell-assigned'}
                                 ${isAssigned ? 'hover:bg-gray-50' : ''}
-                                ${isClicked ? 'transform scale-[2] origin-center z-[60] shadow-[0_0_30px_rgba(0,0,0,0.3)] absolute top-0 left-0 bg-white' : 'transform scale-100 z-0 relative'}
+                                ${isClicked ? 'z-[60] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[190px] md:w-[340px] md:h-[210px] bg-transparent p-0' : 'z-0 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full rounded-none p-0'}
                                 ${isDragged || isStudentDragged ? 'dragged-column dragged-row' : ''}
                                 ${showLeftIndicator ? 'drop-target-left' : ''}
                                 ${showRightIndicator ? 'drop-target-right' : ''}
                                 ${showTopIndicator ? 'drop-target-top' : ''}
                                 ${showBottomIndicator ? 'drop-target-bottom' : ''}
+                                ${isEditModeActiveCell ? 'ring-4 ring-[#edab30] ring-inset z-50' : ''}
                               `}
                             >
                                 {isAssigned && filteredCellData && filteredCellData.length > 0 && (() => {
@@ -1206,37 +1919,67 @@ export default function BirdViewPage() {
                                       const statusColor = getStatusColor(item.status);
                                       
                                       return (
-                                        <div 
-                                          key={idx} 
-                                          draggable={!isBatchMode}
-                                          onDragStart={(e) => {
-                                            if (isBatchMode) return;
-                                            e.dataTransfer.effectAllowed = 'copyMove';
-                                            e.dataTransfer.setData('text/plain', item.id.toString());
-                                            setDraggedTaskId(item.id);
-                                            setDraggedTaskSource(item);
-                                            e.stopPropagation();
-                                          }}
-                                          onDragEnd={() => {
-                                            setDraggedTaskId(null);
-                                            setDraggedTaskSource(null);
-                                            setClonedCells(new Set());
-                                          }}
-                                          onClick={(e) => {
-                                            if (isBatchMode) {
+                                          <div 
+                                            key={idx} 
+                                            draggable={!isBatchMode}
+                                            onDragStart={(e) => {
+                                              if (isBatchMode) return;
+                                              e.dataTransfer.effectAllowed = 'copyMove';
+                                              e.dataTransfer.setData('text/plain', item.id.toString());
+                                              setDraggedTaskId(item.id);
+                                              setDraggedTaskSource(item);
                                               e.stopPropagation();
-                                              setSelectedTaskIds(prev => prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]);
+                                            }}
+                                            onDragEnd={() => {
+                                              setDraggedTaskId(null);
+                                              setDraggedTaskSource(null);
+                                              setClonedCells(new Set());
+                                            }}
+                                            onClick={(e) => {
+                                              if (isBatchMode) {
+                                                e.stopPropagation();
+                                                setSelectedTaskIds(prev => prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]);
+                                              }
+                                            }}
+                                            onKeyDown={(e) => {
+                                              if (e.key === 'Tab' && isClicked) {
+                                                const focusableElements = e.currentTarget.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+                                                if (focusableElements.length > 0) {
+                                                  const firstElement = focusableElements[0] as HTMLElement;
+                                                  const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+                                                  if (e.shiftKey) {
+                                                    if (document.activeElement === firstElement) {
+                                                      lastElement.focus();
+                                                      e.preventDefault();
+                                                    }
+                                                  } else {
+                                                    if (document.activeElement === lastElement) {
+                                                      firstElement.focus();
+                                                      e.preventDefault();
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }}
+                                            className={`w-full h-full relative flex flex-col justify-start items-start shadow-sm ${isClicked ? 'overflow-visible rounded-lg p-4 pb-10 shadow-[0_0_30px_rgba(0,0,0,0.2)]' : 'overflow-hidden rounded-[4px] p-1.5 pb-5'} ${selectedTaskIds.includes(item.id) ? 'ring-4 ring-[#edab30] border-transparent' : ''}`}
+                                            style={
+                                              isClicked
+                                                ? { backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderLeft: `6px solid ${statusColor}` }
+                                                : (selectedTaskIds.includes(item.id) ? { backgroundColor: `${statusColor}15` } : { backgroundColor: `${statusColor}15`, border: `1px solid ${statusColor}40` })
                                             }
-                                          }}
-                                          className={`w-full h-full relative p-1.5 pb-5 flex flex-col justify-start items-start rounded-[4px] shadow-sm ${isClicked ? 'overflow-visible' : 'overflow-hidden'} ${selectedTaskIds.includes(item.id) ? 'ring-4 ring-[#edab30] border-transparent' : ''}`}
-                                          style={selectedTaskIds.includes(item.id) ? { backgroundColor: `${statusColor}15` } : { backgroundColor: `${statusColor}15`, border: `1px solid ${statusColor}40` }}
-                                        >
-                                          {/* Delete Button (Bottom Left, visible only when clicked) */}
-                                          {isClicked && (
-                                            <div className="absolute bottom-0 left-0 z-[70] flex items-center justify-center p-1 rounded-bl-[4px]">
+                                          >
+                                            {/* Footer area line separator */}
+                                            {isClicked && (
+                                              <div className="absolute bottom-0 left-0 right-0 h-8 border-t border-gray-200 pointer-events-none z-[60]"></div>
+                                            )}
+                                            
+                                            {/* Delete Button (Bottom Left, visible only when clicked) */}
+                                            {isClicked && (
+                                              <div className="absolute bottom-0 left-0 z-[70] flex items-center justify-center p-1.5 rounded-bl-[4px]">
                                               <button
                                                 onClick={(e) => { e.stopPropagation(); handleDeleteInitiate(item.id); }}
-                                                className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all"
+                                                className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all outline-none focus-visible:ring-1 focus-visible:ring-red-500"
                                                 title="Delete Task"
                                               >
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1251,7 +1994,35 @@ export default function BirdViewPage() {
                                           )}
 
                                           {/* Badges Container (Bottom Right) */}
-                                          <div className={`absolute bottom-0 right-0 flex z-[70] rounded-tl-[4px] ${isClicked ? 'overflow-visible' : 'overflow-hidden'}`}>
+                                          <div 
+                                            className={`absolute bottom-0 right-0 flex z-[70] rounded-tl-[4px] ${isClicked ? 'overflow-visible' : 'overflow-hidden'}`}
+                                            onBlur={(e) => {
+                                              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                                                setActiveDropdown(null);
+                                              }
+                                            }}
+                                            onKeyDown={(e) => {
+                                              if (activeDropdown && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                e.nativeEvent.stopImmediatePropagation();
+                                                
+                                                const buttons = Array.from(e.currentTarget.querySelectorAll('button'));
+                                                if (buttons.length === 0) return;
+                                                
+                                                const currentIndex = buttons.indexOf(document.activeElement as HTMLButtonElement);
+                                                let nextIndex = 0;
+                                                
+                                                if (e.key === 'ArrowUp') {
+                                                  nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % buttons.length;
+                                                } else {
+                                                  nextIndex = currentIndex === -1 ? buttons.length - 1 : (currentIndex <= 0 ? buttons.length - 1 : currentIndex - 1);
+                                                }
+                                                
+                                                buttons[nextIndex].focus();
+                                              }
+                                            }}
+                                          >
                                             {/* Subject Badge (Only in Stacked View) */}
                                             {!isGrid && (
                                               <div 
@@ -1263,20 +2034,30 @@ export default function BirdViewPage() {
                                             )}
                                             {/* Task Type Badge */}
                                             <div 
-                                              className={`w-5 h-4 flex items-center justify-center text-white text-[8px] font-bold ${isClicked ? 'cursor-pointer hover:opacity-90' : ''}`}
+                                              id={`badge-type-${item.id}`}
+                                              tabIndex={isClicked ? 0 : -1}
+                                              className={`flex items-center justify-center text-white font-bold outline-none focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:ring-[#254245] ${isClicked ? 'w-8 h-6 text-[10px] cursor-pointer hover:opacity-90' : 'w-5 h-4 text-[8px]'}`}
                                               style={{ backgroundColor: typeBadge.color }}
                                               title={item.taskType}
+                                              onFocus={() => { if (isClicked) setActiveDropdown(`${item.id}-type`); }}
                                               onClick={(e) => { 
                                                 if (!isClicked) return;
                                                 e.stopPropagation(); 
                                                 setActiveDropdown(activeDropdown === `${item.id}-type` ? null : `${item.id}-type`); 
+                                              }}
+                                              onKeyDown={(e) => {
+                                                if (isClicked && (e.key === 'Enter' || e.key === ' ')) {
+                                                  e.preventDefault();
+                                                  e.stopPropagation();
+                                                  setActiveDropdown(activeDropdown === `${item.id}-type` ? null : `${item.id}-type`);
+                                                }
                                               }}
                                             >
                                               {typeBadge.initials}
                                             </div>
                                             
                                             {activeDropdown === `${item.id}-type` && isClicked && (
-                                              <div className="absolute bottom-4 right-5 flex flex-col-reverse gap-1 z-[80] bg-white p-1 shadow-lg border rounded" onClick={(e) => e.stopPropagation()}>
+                                              <div className="absolute bottom-[100%] right-8 mb-1 flex flex-col-reverse gap-1 z-[80]" onClick={(e) => e.stopPropagation()}>
                                                 {['Tuition Work', 'Class Work', 'Home Work', 'Test', 'Project']
                                                   .filter(t => t !== item.taskType)
                                                   .map(t => {
@@ -1284,9 +2065,13 @@ export default function BirdViewPage() {
                                                   return (
                                                     <button 
                                                       key={t}
-                                                      className="w-5 h-4 flex items-center justify-center text-white text-[8px] font-bold shadow-md hover:scale-110 transition-transform"
+                                                      className="w-8 h-6 flex items-center justify-center text-white text-[10px] font-bold shadow-md hover:scale-110 transition-transform outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                                                       style={{ backgroundColor: b.color }}
-                                                      onClick={() => handleUpdateTaskField(item.id, 'taskType', t)}
+                                                      onClick={() => {
+                                                        handleUpdateTaskField(item.id, 'taskType', t);
+                                                        setActiveDropdown(null);
+                                                        document.getElementById(`badge-type-${item.id}`)?.focus();
+                                                      }}
                                                       title={t}
                                                     >
                                                       {b.initials}
@@ -1298,28 +2083,42 @@ export default function BirdViewPage() {
                                             
                                             {/* Status Badge */}
                                             <div 
-                                              className={`w-5 h-4 flex items-center justify-center text-white text-[8px] font-bold ${isClicked ? 'cursor-pointer hover:opacity-90' : ''}`}
+                                              id={`badge-status-${item.id}`}
+                                              tabIndex={isClicked ? 0 : -1}
+                                              className={`flex items-center justify-center text-white font-bold outline-none focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:ring-[#254245] ${isClicked ? 'w-8 h-6 text-[10px] cursor-pointer hover:opacity-90' : 'w-5 h-4 text-[8px]'}`}
                                               style={{ backgroundColor: statusColor }}
                                               title={item.status}
+                                              onFocus={() => { if (isClicked) setActiveDropdown(`${item.id}-status`); }}
                                               onClick={(e) => { 
                                                 if (!isClicked) return;
                                                 e.stopPropagation(); 
                                                 setActiveDropdown(activeDropdown === `${item.id}-status` ? null : `${item.id}-status`); 
+                                              }}
+                                              onKeyDown={(e) => {
+                                                if (isClicked && (e.key === 'Enter' || e.key === ' ')) {
+                                                  e.preventDefault();
+                                                  e.stopPropagation();
+                                                  setActiveDropdown(activeDropdown === `${item.id}-status` ? null : `${item.id}-status`);
+                                                }
                                               }}
                                             >
                                               {getStatusInitials(item.status)}
                                             </div>
                                             
                                             {activeDropdown === `${item.id}-status` && isClicked && (
-                                              <div className="absolute bottom-4 right-0 flex flex-col-reverse gap-1 z-[80] bg-white p-1 shadow-lg border rounded" onClick={(e) => e.stopPropagation()}>
+                                              <div className="absolute bottom-[100%] right-0 mb-1 flex flex-col-reverse gap-1 z-[80]" onClick={(e) => e.stopPropagation()}>
                                                 {['OPEN', 'IN_PROGRESS', 'DONE', 'PENDING']
                                                   .filter(s => s !== item.status)
                                                   .map(s => (
                                                   <button 
                                                     key={s}
-                                                    className="w-5 h-4 flex items-center justify-center text-white text-[8px] font-bold shadow-md hover:scale-110 transition-transform"
+                                                    className="w-8 h-6 flex items-center justify-center text-white text-[10px] font-bold shadow-md hover:scale-110 transition-transform outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                                                     style={{ backgroundColor: getStatusColor(s) }}
-                                                    onClick={() => handleUpdateTaskField(item.id, 'status', s)}
+                                                    onClick={() => {
+                                                      handleUpdateTaskField(item.id, 'status', s);
+                                                      setActiveDropdown(null);
+                                                      document.getElementById(`badge-status-${item.id}`)?.focus();
+                                                    }}
                                                     title={s}
                                                   >
                                                     {getStatusInitials(s)}
@@ -1339,8 +2138,8 @@ export default function BirdViewPage() {
 
                                               return (
                                                 <div className="flex flex-col flex-1 w-full text-left mt-0 gap-[1px]" onClick={(e) => e.stopPropagation()}>
-                                                  <div className="flex items-center w-full">
-                                                    <span className="text-[12px] font-black text-gray-900 mr-1">Ch</span>
+                                                  <div className="flex items-center w-full relative group">
+                                                    <span className="text-sm font-black text-gray-900 mr-2">Ch:</span>
                                                     <select 
                                                       value={item.chapter || ''} 
                                                       onChange={(e) => {
@@ -1349,16 +2148,19 @@ export default function BirdViewPage() {
                                                         handleUpdateTaskField(item.id, 'topic', '');
                                                         handleUpdateTaskField(item.id, 'exercise', '');
                                                       }}
-                                                      className="text-[12px] font-black text-gray-900 w-full bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none transition-colors rounded-none"
+                                                      className="appearance-none peer text-sm font-black text-gray-900 w-full bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none transition-colors rounded-none pr-6"
                                                     >
                                                       <option value="" disabled>-</option>
                                                       {availableChapters.map(c => (
                                                         <option key={c.id} value={c.chapterTitle || c.chapterName}>{c.chapterTitle || c.chapterName}</option>
                                                       ))}
                                                     </select>
+                                                    <div className="absolute right-0 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
+                                                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                                    </div>
                                                   </div>
-                                                  <div className="flex items-center w-full mt-[1px]">
-                                                    <span className="text-[10px] font-bold text-gray-800 mr-1">Tp</span>
+                                                  <div className="flex items-center w-full mt-2 relative group">
+                                                    <span className="text-sm font-bold text-gray-800 mr-2">Tp:</span>
                                                     <select 
                                                       value={item.topic || ''}
                                                       onChange={(e) => {
@@ -1366,39 +2168,51 @@ export default function BirdViewPage() {
                                                         handleUpdateTaskField(item.id, 'topic', val);
                                                         handleUpdateTaskField(item.id, 'exercise', '');
                                                       }}
-                                                      className="text-[10px] font-bold text-gray-800 w-full bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none transition-colors rounded-none"
+                                                      className="appearance-none peer text-sm font-bold text-gray-800 w-full bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none transition-colors rounded-none pr-6"
                                                     >
                                                       <option value="" disabled>Topic...</option>
                                                       {uniqueTopicNames.map((tName, i) => (
                                                         <option key={i} value={tName as string}>{tName as string}</option>
                                                       ))}
                                                     </select>
+                                                    <div className="absolute right-0 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
+                                                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                                    </div>
                                                   </div>
-                                                  <select 
-                                                    value={item.exercise || ''}
-                                                    onChange={(e) => handleUpdateTaskField(item.id, 'exercise', e.target.value)}
-                                                    className="text-[9px] font-semibold text-gray-700 w-full italic bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none transition-colors rounded-none"
-                                                  >
-                                                    <option value="" disabled>Exercise...</option>
-                                                    {uniqueExercises.map((ex, i) => (
-                                                      <option key={i} value={ex as string}>{ex as string}</option>
-                                                    ))}
-                                                  </select>
-                                                  <textarea 
-                                                    defaultValue={item.description || ''}
-                                                    placeholder="Description..."
-                                                    onBlur={(e) => { if(e.target.value !== (item.description || '')) handleUpdateTaskField(item.id, 'description', e.target.value) }}
-                                                    className="text-[8px] text-black font-semibold mt-1 w-[90%] leading-tight text-left bg-transparent border border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none transition-colors resize-none min-h-[40px] whitespace-normal custom-scrollbar rounded-none"
-                                                  />
+                                                  <div className="flex items-center w-full mt-2 relative group">
+                                                    <span className="text-xs font-semibold text-gray-700 mr-2">Ex:</span>
+                                                    <select 
+                                                      value={item.exercise || ''}
+                                                      onChange={(e) => handleUpdateTaskField(item.id, 'exercise', e.target.value)}
+                                                      className="appearance-none peer text-xs font-semibold text-gray-700 w-full italic bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none transition-colors rounded-none pr-6"
+                                                    >
+                                                      <option value="" disabled>Exercise...</option>
+                                                      {uniqueExercises.map((ex, i) => (
+                                                        <option key={i} value={ex as string}>{ex as string}</option>
+                                                      ))}
+                                                    </select>
+                                                    <div className="absolute right-0 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
+                                                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                                    </div>
+                                                  </div>
+                                                  <div className="flex items-start w-full mt-3">
+                                                    <span className="text-xs font-semibold text-gray-700 mr-2 mt-1">Ds:</span>
+                                                    <textarea 
+                                                      defaultValue={item.description || ''}
+                                                      placeholder="Description..."
+                                                      onBlur={(e) => { if(e.target.value !== (item.description || '')) handleUpdateTaskField(item.id, 'description', e.target.value) }}
+                                                      className="text-xs text-black font-semibold w-full leading-relaxed text-left bg-transparent border border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none transition-colors resize-none min-h-[60px] whitespace-normal custom-scrollbar rounded-none"
+                                                    />
+                                                  </div>
                                                 </div>
                                               );
                                             })()
                                           ) : (
                                             <div className="flex flex-col flex-1 w-full text-left mt-0 overflow-hidden pr-2">
-                                              <span className="text-[12px] font-black text-gray-900 truncate w-full leading-tight mb-[1px]">Ch {item.chapter || '-'}</span>
-                                              <span className="text-[10px] font-bold text-gray-800 truncate w-full leading-tight mb-[1px]">Tp {item.topic || '-'}</span>
-                                              {item.exercise && <span className="text-[9px] font-semibold text-gray-700 truncate w-full italic leading-tight mb-[1px]">{item.exercise}</span>}
-                                              {item.description && <span className="text-[8px] text-black font-semibold mt-0.5 w-full leading-tight text-left line-clamp-2">{item.description}</span>}
+                                              <span className="text-[12px] font-black text-gray-900 truncate w-full leading-tight mb-[1px]">Ch: {item.chapter || '-'}</span>
+                                              <span className="text-[10px] font-bold text-gray-800 truncate w-full leading-tight mb-[1px]">Tp: {item.topic || '-'}</span>
+                                              {item.exercise && <span className="text-[9px] font-semibold text-gray-700 truncate w-full italic leading-tight mb-[1px]">Ex: {item.exercise}</span>}
+                                              {item.description && <span className="text-[8px] text-black font-semibold mt-0.5 w-full leading-tight text-left line-clamp-2">Ds: {item.description}</span>}
                                             </div>
                                           )}
                                         </div>

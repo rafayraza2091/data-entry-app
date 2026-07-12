@@ -482,7 +482,7 @@ export default function TaskEntryClient({
             <div className="relative">
               <input 
                 type="date" 
-                className="form-control pl-10" 
+                className="form-control pl-10 md:pl-10" 
                 value={dueDate} 
                 onChange={e => setDueDate(e.target.value)} 
                 required
@@ -515,14 +515,15 @@ export default function TaskEntryClient({
           {onClose && (
             <button 
               type="button" 
+              tabIndex={0}
               onClick={onClose} 
-              className="px-6 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors font-medium text-sm"
+              className="px-6 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors font-medium text-sm"
               disabled={isSubmitting}
             >
               Cancel
             </button>
           )}
-          <button type="submit" className="btn-submit m-0 px-8 py-2 w-auto flex justify-center items-center" disabled={isSubmitting}>
+          <button type="submit" tabIndex={0} className="btn-submit m-0 px-8 py-2 w-auto flex justify-center items-center focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary" disabled={isSubmitting}>
             {isSubmitting ? (
               <i className="fa-solid fa-spinner fa-spin mr-2"></i>
             ) : null}

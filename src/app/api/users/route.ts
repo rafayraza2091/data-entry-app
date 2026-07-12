@@ -178,8 +178,7 @@ export async function PUT(request: Request) {
     try {
       require('fs').writeFileSync('/tmp/prisma-update-error.log', JSON.stringify({
         message: error.message,
-        stack: error.stack,
-        requestData: data
+        stack: error.stack
       }, null, 2));
     } catch(e) {}
     return NextResponse.json({ error: 'Failed to update profile', details: error.message }, { status: 500 });
