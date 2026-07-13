@@ -34,6 +34,15 @@ const getVibrantColor = (str: string) => {
   return colors[Math.abs(hash) % colors.length];
 };
 
+const getReporterColor = (reporterStr: string | null | undefined) => {
+  if (!reporterStr) return getVibrantColor('?');
+  const lower = reporterStr.toLowerCase();
+  if (lower.includes('rafay')) return '#254245'; // Dark Teal
+  if (lower.includes('tayyaba')) return '#f58231'; // Orange
+  if (lower.includes('rabia')) return '#D81B60'; // Dark Pink (Rose)
+  return getVibrantColor(reporterStr);
+};
+
 const getTaskTypeBadge = (typeStr: string) => {
   if (!typeStr) return { initials: 'TK', color: '#474E30' };
   const type = typeStr.toUpperCase();
@@ -145,6 +154,7 @@ export default function BirdViewPage() {
   const [cellData, setCellData] = useState<any[]>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [viewMode, setViewMode] = useState<'grid' | 'stacked'>('grid');
+  const [reportersList, setReportersList] = useState<string[]>([]);
 
   const [boardFilters, setBoardFilters] = useState({
     status: '',
@@ -396,7 +406,25 @@ export default function BirdViewPage() {
           setIsFilterStatusOpen(false);
           setIsFilterTypeOpen(false);
         } else {
-          // Otherwise, turn off the row/column highlighting
+          const activeEl = document.activeElement as HTMLElement;
+          const isGridCell = activeEl?.tagName === 'TD' && activeEl?.hasAttribute('data-subject-id');
+          
+          if (!isGridCell && activeEl && activeEl !== document.body) {
+            // Return focus to the grid
+            let cellToFocus: HTMLElement | null = null;
+            if (activeSubjectIdRef.current !== null && activeStudentIdRef.current !== null) {
+              cellToFocus = document.querySelector(`td[data-subject-id="${activeSubjectIdRef.current}"][data-student-id="${activeStudentIdRef.current}"]`) as HTMLElement;
+            }
+            if (!cellToFocus) {
+              cellToFocus = document.querySelector('.grid-container td[data-subject-id]') as HTMLElement;
+            }
+            if (cellToFocus) {
+              cellToFocus.focus();
+              return;
+            }
+          }
+
+          // Otherwise, if already in grid, turn off the row/column highlighting
           updateHighlight(null, null);
         }
       }
@@ -472,14 +500,23 @@ export default function BirdViewPage() {
       try {
         const initialDateStr = getLocalDateString(new Date());
         
-        const [response, chapRes, topRes] = await Promise.all([
+        const [response, chapRes, topRes, taskUsersRes] = await Promise.all([
           fetch(`/api/bird-view?date=${initialDateStr}&view=task`),
           fetch('/api/chapters'),
-          fetch('/api/topics')
+          fetch('/api/topics'),
+          fetch('/api/task-users')
         ]);
         
         if (chapRes.ok) setChaptersList(await chapRes.json());
         if (topRes.ok) setTopicsList(await topRes.json());
+        
+        if (taskUsersRes.ok) {
+          const data = await taskUsersRes.json();
+          const names = [...(data.teachers || []), ...(data.admins || []), ...(data.owners || [])]
+            .map(u => `${u.firstName || ''} ${u.lastName || ''}`.trim())
+            .filter(Boolean);
+          setReportersList(Array.from(new Set(names)));
+        }
 
         if (response.ok) {
           const data = await response.json();
@@ -1019,14 +1056,24 @@ export default function BirdViewPage() {
       <style jsx global>{`
         /* Keyboard Navigation Highlights */
         ${subjects.map(s => `
-          .grid-container[data-active-subject="${s.id}"] .cell-subject-${s.id} > .grid-cell-assigned:not(.cell-clicked) {
+          .grid-container[data-active-subject="${s.id}"] .cell-subject-${s.id}::before {
+            content: '';
+            position: absolute;
+            inset: 0;
             background-color: rgba(237, 171, 48, 0.15) !important;
+            pointer-events: none;
+            z-index: 5;
           }
         `).join('\n')}
         
         ${students.map(s => `
-          .grid-container[data-active-student="${s.id}"] .cell-student-${s.id} > .grid-cell-assigned:not(.cell-clicked) {
+          .grid-container[data-active-student="${s.id}"] .cell-student-${s.id}::after {
+            content: '';
+            position: absolute;
+            inset: 0;
             background-color: ${getVibrantColor(s.firstName + ' ' + s.secondName)}26 !important;
+            pointer-events: none;
+            z-index: 6;
           }
         `).join('\n')}
 
@@ -1140,14 +1187,14 @@ export default function BirdViewPage() {
         <button 
           onClick={() => setActiveView('task')}
           tabIndex={0}
-          className={`h-[22px] px-6 text-xs font-bold uppercase tracking-wider text-white rounded-none transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245] ${activeView === 'task' ? 'opacity-100' : 'opacity-60 hover:opacity-80'}`}
+          className={`h-[22px] px-6 text-xs font-bold uppercase tracking-wider text-white rounded-none transition-all duration-300 ease-in-out shadow-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245] ${activeView === 'task' ? 'opacity-100' : 'opacity-60 hover:opacity-80'}`}
           style={{ backgroundColor: '#edab30' }}>
           Task
         </button>
         <button 
           onClick={() => setActiveView('query')}
           tabIndex={0}
-          className={`h-[22px] px-6 text-xs font-bold uppercase tracking-wider text-white rounded-none transition-all shadow-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245] ${activeView === 'query' ? 'opacity-100' : 'opacity-60 hover:opacity-80'}`}
+          className={`h-[22px] px-6 text-xs font-bold uppercase tracking-wider text-white rounded-none transition-all duration-300 ease-in-out shadow-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245] ${activeView === 'query' ? 'opacity-100' : 'opacity-60 hover:opacity-80'}`}
           style={{ backgroundColor: '#edab30' }}>
           Query
         </button>
@@ -1160,14 +1207,14 @@ export default function BirdViewPage() {
           <button 
             onClick={() => setViewMode('grid')}
             tabIndex={0}
-            className={`h-[22px] px-3 text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm rounded-l border border-r-0 border-transparent focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245] ${viewMode === 'grid' ? 'bg-[#edab30] text-white opacity-100' : 'bg-[#254245] text-[#edab30] border-[#edab30] hover:bg-[#edab30]/20'}`}
+            className={`h-[22px] px-3 text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ease-in-out shadow-sm rounded-l border border-r-0 border-transparent focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245] ${viewMode === 'grid' ? 'bg-[#edab30] text-white opacity-100' : 'bg-[#254245] text-[#edab30] border-[#edab30] hover:bg-[#edab30]/20'}`}
           >
             <i className="fa-solid fa-table-cells mr-1"></i> Grid
           </button>
           <button 
             onClick={() => setViewMode('stacked')}
             tabIndex={0}
-            className={`h-[22px] px-3 text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm rounded-r border border-l-0 border-transparent focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245] ${viewMode === 'stacked' ? 'bg-[#edab30] text-white opacity-100' : 'bg-[#254245] text-[#edab30] border-[#edab30] hover:bg-[#edab30]/20'}`}
+            className={`h-[22px] px-3 text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ease-in-out shadow-sm rounded-r border border-l-0 border-transparent focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245] ${viewMode === 'stacked' ? 'bg-[#edab30] text-white opacity-100' : 'bg-[#254245] text-[#edab30] border-[#edab30] hover:bg-[#edab30]/20'}`}
           >
             <i className="fa-solid fa-layer-group mr-1"></i> Stacked
           </button>
@@ -1186,14 +1233,7 @@ export default function BirdViewPage() {
           >
             <button 
               onClick={() => setIsFilterStatusOpen(!isFilterStatusOpen)}
-              onFocus={(e) => {
-                if (e.relatedTarget && filterStatusRef.current?.contains(e.relatedTarget as Node)) return;
-                setIsFilterStatusOpen(true);
-                setTimeout(() => {
-                  const firstBtn = filterStatusRef.current?.querySelector('.dropdown-item') as HTMLElement;
-                  if (firstBtn) firstBtn.focus();
-                }, 50);
-              }}
+              onFocus={(e) => { if (e.target.matches(':focus-visible')) setIsFilterStatusOpen(true); }}
               onKeyDown={(e) => {
                 if (e.key === 'ArrowDown') {
                   e.preventDefault();
@@ -1265,14 +1305,7 @@ export default function BirdViewPage() {
           >
             <button 
               onClick={() => setIsFilterTypeOpen(!isFilterTypeOpen)}
-              onFocus={(e) => {
-                if (e.relatedTarget && filterTypeRef.current?.contains(e.relatedTarget as Node)) return;
-                setIsFilterTypeOpen(true);
-                setTimeout(() => {
-                  const firstBtn = filterTypeRef.current?.querySelector('.dropdown-item') as HTMLElement;
-                  if (firstBtn) firstBtn.focus();
-                }, 50);
-              }}
+              onFocus={(e) => { if (e.target.matches(':focus-visible')) setIsFilterTypeOpen(true); }}
               onKeyDown={(e) => {
                 if (e.key === 'ArrowDown') {
                   e.preventDefault();
@@ -1359,14 +1392,7 @@ export default function BirdViewPage() {
              }}>
           <button 
             onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
-            onFocus={(e) => {
-              if (e.relatedTarget && datePickerRef.current?.contains(e.relatedTarget as Node)) return;
-              setIsDatePickerOpen(true);
-              setTimeout(() => {
-                const current = datePickerRef.current?.querySelector('.current-date-btn') || datePickerRef.current?.querySelector('.date-focus-item');
-                if (current) (current as HTMLElement).focus();
-              }, 50);
-            }}
+            onFocus={(e) => { if (e.target.matches(':focus-visible')) setIsDatePickerOpen(true); }}
             onKeyDown={(e) => {
               if (e.key === 'ArrowDown') {
                 e.preventDefault();
@@ -1455,14 +1481,7 @@ export default function BirdViewPage() {
              }}>
           <button 
             onClick={() => setIsStudentPickerOpen(!isStudentPickerOpen)}
-            onFocus={(e) => {
-              if (e.relatedTarget && studentPickerRef.current?.contains(e.relatedTarget as Node)) return;
-              setIsStudentPickerOpen(true);
-              setTimeout(() => {
-                const current = studentPickerRef.current?.querySelector('.student-focus-item');
-                if (current) (current as HTMLElement).focus();
-              }, 50);
-            }}
+            onFocus={(e) => { if (e.target.matches(':focus-visible')) setIsStudentPickerOpen(true); }}
             onKeyDown={(e) => {
               if (e.key === 'ArrowDown') {
                 e.preventDefault();
@@ -1659,7 +1678,7 @@ export default function BirdViewPage() {
                         key={student.id} 
                         id={`student-col-${student.id}`}
                         scope="col" 
-                        className="p-0 text-center border-b border-r border-gray-200 whitespace-nowrap w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px]"
+                        className={`p-0 text-center border-b border-r border-gray-200 whitespace-nowrap w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] relative scroll-ml-16 md:scroll-ml-[80px] cell-student-${student.id}`}
                       >
                         <div 
                           className={`w-full h-full px-1 py-2 md:px-4 md:py-4 cursor-pointer active:cursor-grabbing hover:bg-gray-100 group flex flex-col items-center justify-center relative
@@ -1718,7 +1737,7 @@ export default function BirdViewPage() {
                       id={isGrid && subject ? `subject-row-${subject.id}` : undefined}
                       className={`
                         ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} 
-                        group
+                        group scroll-mt-[100px]
                       `}
                       onDragEnter={(e) => isGrid && handleSubjectDragEnter(e, index)}
                       onDragOver={(e) => { e.preventDefault(); isGrid && handleDrag(e); }}
@@ -1726,7 +1745,7 @@ export default function BirdViewPage() {
                     >
                       <th 
                         scope="row" 
-                        className="w-16 min-w-[4rem] max-w-[4rem] md:w-[80px] md:min-w-[80px] md:max-w-[80px] p-0 font-medium text-gray-900 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-gray-200 bg-inherit whitespace-nowrap align-middle h-24 md:h-[120px]"
+                        className={`w-16 min-w-[4rem] max-w-[4rem] md:w-[80px] md:min-w-[80px] md:max-w-[80px] p-0 font-medium text-gray-900 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-gray-200 bg-inherit whitespace-nowrap align-middle h-24 md:h-[120px] relative ${isGrid && subject ? `cell-subject-${subject.id}` : ''}`}
                       >
                         <div 
                           className={`flex items-center justify-center w-full h-full px-2
@@ -1799,7 +1818,7 @@ export default function BirdViewPage() {
                           <td 
                             key={cellId} 
                             id={`cell-${cellId}`}
-                            className={`p-0 text-center border-b border-r border-gray-200 last:border-r-0 h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] ${isGrid && subject ? `cell-subject-${subject.id} cell-student-${student.id}` : ''}`}
+                            className={`p-0 text-center border-b border-r border-gray-200 last:border-r-0 h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] relative scroll-ml-16 md:scroll-ml-[80px] scroll-mt-[100px] ${isGrid && subject ? `cell-subject-${subject.id} cell-student-${student.id}` : ''} ${(isGrid && subject && activeSubjectIdRef.current === subject.id) || activeStudentIdRef.current === student.id ? 'cell-subject-highlight' : ''}`}
                             onDragEnter={(e) => {
                               if (!isAssigned) return;
                               if (draggedTaskId !== null && draggedTaskSource && (e.shiftKey || e.altKey || e.metaKey)) {
@@ -1878,7 +1897,7 @@ export default function BirdViewPage() {
                                   ${isClicked ? 'overflow-visible cell-clicked' : 'overflow-hidden'}
                                 ${(!isAssigned && !isDragged && !isStudentDragged) ? 'unassigned-cell' : 'bg-white grid-cell-assigned'}
                                 ${isAssigned ? 'hover:bg-gray-50' : ''}
-                                ${isClicked ? 'z-[60] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[190px] md:w-[340px] md:h-[210px] bg-transparent p-0' : 'z-0 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full rounded-none p-0'}
+                                  ${isClicked ? `z-[60] absolute top-1/2 -translate-y-1/2 ${studentIndex === 0 ? 'left-0' : studentIndex === visibleStudentIds.length - 1 ? 'right-0' : 'left-1/2 -translate-x-1/2'} w-[280px] h-[210px] md:w-[340px] md:h-[220px] bg-transparent p-0` : 'z-0 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full rounded-none p-0'}
                                 ${isDragged || isStudentDragged ? 'dragged-column dragged-row' : ''}
                                 ${showLeftIndicator ? 'drop-target-left' : ''}
                                 ${showRightIndicator ? 'drop-target-right' : ''}
@@ -1962,7 +1981,7 @@ export default function BirdViewPage() {
                                                 }
                                               }
                                             }}
-                                            className={`w-full h-full relative flex flex-col justify-start items-start shadow-sm ${isClicked ? 'overflow-visible rounded-lg p-4 pb-10 shadow-[0_0_30px_rgba(0,0,0,0.2)]' : 'overflow-hidden rounded-[4px] p-1.5 pb-5'} ${selectedTaskIds.includes(item.id) ? 'ring-4 ring-[#edab30] border-transparent' : ''}`}
+                                            className={`w-full h-full relative flex flex-col justify-start items-start shadow-sm transition-all duration-300 ease-in-out ${isClicked ? 'overflow-visible rounded-lg p-4 pb-10 shadow-[0_0_30px_rgba(0,0,0,0.2)]' : 'overflow-hidden rounded-[4px] p-1.5 pb-5'} ${selectedTaskIds.includes(item.id) ? 'ring-4 ring-[#edab30] border-transparent' : ''}`}
                                             style={
                                               isClicked
                                                 ? { backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderLeft: `6px solid ${statusColor}` }
@@ -1974,22 +1993,31 @@ export default function BirdViewPage() {
                                               <div className="absolute bottom-0 left-0 right-0 h-8 border-t border-gray-200 pointer-events-none z-[60]"></div>
                                             )}
                                             
-                                            {/* Delete Button (Bottom Left, visible only when clicked) */}
+                                            {/* Footer Content (Bottom Left, visible only when clicked) */}
                                             {isClicked && (
-                                              <div className="absolute bottom-0 left-0 z-[70] flex items-center justify-center p-1.5 rounded-bl-[4px]">
-                                              <button
-                                                onClick={(e) => { e.stopPropagation(); handleDeleteInitiate(item.id); }}
-                                                className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all outline-none focus-visible:ring-1 focus-visible:ring-red-500"
-                                                title="Delete Task"
-                                              >
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                  <path d="M3 6h18" />
-                                                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                                                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                                                  <line x1="10" y1="11" x2="10" y2="17" />
-                                                  <line x1="14" y1="11" x2="14" y2="17" />
-                                                </svg>
-                                              </button>
+                                              <div className="absolute bottom-0 left-0 z-[70] flex items-center h-8 pl-[10px] pr-1.5 rounded-bl-[4px] w-[80%]">
+                                                <button
+                                                  onClick={(e) => { e.stopPropagation(); handleDeleteInitiate(item.id); }}
+                                                  className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all outline-none focus-visible:ring-1 focus-visible:ring-red-500 p-1 mr-2 flex-shrink-0"
+                                                  title="Delete Task"
+                                                >
+                                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <path d="M3 6h18" />
+                                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                                    <line x1="10" y1="11" x2="10" y2="17" />
+                                                    <line x1="14" y1="11" x2="14" y2="17" />
+                                                  </svg>
+                                                </button>
+                                              </div>
+                                            )}
+
+                                          {/* Reporter Avatar (Bottom Left, only when NOT clicked) */}
+                                          {!isClicked && item.reporter && (
+                                            <div className="absolute bottom-[3px] left-[3px] z-[70]" title={`Reporter: ${item.reporter}`}>
+                                              <div className="w-4 h-4 rounded-full text-white flex items-center justify-center text-[9px] font-black shadow-sm" style={{ backgroundColor: getReporterColor(item.reporter) }}>
+                                                {(item.reporter || '?').charAt(0).toUpperCase()}
+                                              </div>
                                             </div>
                                           )}
 
@@ -2135,74 +2163,145 @@ export default function BirdViewPage() {
                                               const availableTopics = topicsList.filter(t => t.subject === item.subject && t.book === item.book && t.chapterName === item.chapter);
                                               const uniqueTopicNames = Array.from(new Set(availableTopics.map(t => t.topicName)));
                                               const uniqueExercises = Array.from(new Set(availableTopics.filter(t => t.topicName === item.topic && t.exercise).map(t => t.exercise)));
+                                              const uniqueReporters = Array.from(new Set([
+                                                ...reportersList,
+                                                ...cellData.map(d => d.reporter)
+                                              ].filter(Boolean)));
 
                                               return (
                                                 <div className="flex flex-col flex-1 w-full text-left mt-0 gap-[1px]" onClick={(e) => e.stopPropagation()}>
                                                   <div className="flex items-center w-full relative group">
                                                     <span className="text-sm font-black text-gray-900 mr-2">Ch:</span>
-                                                    <select 
-                                                      value={item.chapter || ''} 
-                                                      onChange={(e) => {
-                                                        const val = e.target.value;
-                                                        handleUpdateTaskField(item.id, 'chapter', val);
-                                                        handleUpdateTaskField(item.id, 'topic', '');
-                                                        handleUpdateTaskField(item.id, 'exercise', '');
-                                                      }}
-                                                      className="appearance-none peer text-sm font-black text-gray-900 w-full bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none transition-colors rounded-none pr-6"
-                                                    >
-                                                      <option value="" disabled>-</option>
-                                                      {availableChapters.map(c => (
-                                                        <option key={c.id} value={c.chapterTitle || c.chapterName}>{c.chapterTitle || c.chapterName}</option>
-                                                      ))}
-                                                    </select>
-                                                    <div className="absolute right-0 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
-                                                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                                    <div className="relative flex items-center group flex-1 min-w-0">
+                                                      <select 
+                                                        value={item.chapter || ''} 
+                                                        onChange={(e) => {
+                                                          const val = e.target.value;
+                                                          handleUpdateTaskField(item.id, 'chapter', val);
+                                                          handleUpdateTaskField(item.id, 'topic', '');
+                                                          handleUpdateTaskField(item.id, 'exercise', '');
+                                                        }}
+                                                        className="appearance-none peer text-sm font-black text-gray-900 w-full max-w-full bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors rounded px-1 -ml-1 pr-6 py-0.5 truncate"
+                                                      >
+                                                        <option value="" disabled>-</option>
+                                                        {availableChapters.map(c => (
+                                                          <option key={c.id} value={c.chapterTitle || c.chapterName}>{c.chapterTitle || c.chapterName}</option>
+                                                        ))}
+                                                      </select>
+                                                      <div className="absolute right-1 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                                      </div>
                                                     </div>
                                                   </div>
-                                                  <div className="flex items-center w-full mt-2 relative group">
+                                                  <div className="flex items-center w-full mt-1 relative group">
                                                     <span className="text-sm font-bold text-gray-800 mr-2">Tp:</span>
-                                                    <select 
-                                                      value={item.topic || ''}
-                                                      onChange={(e) => {
-                                                        const val = e.target.value;
-                                                        handleUpdateTaskField(item.id, 'topic', val);
-                                                        handleUpdateTaskField(item.id, 'exercise', '');
-                                                      }}
-                                                      className="appearance-none peer text-sm font-bold text-gray-800 w-full bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none transition-colors rounded-none pr-6"
-                                                    >
-                                                      <option value="" disabled>Topic...</option>
-                                                      {uniqueTopicNames.map((tName, i) => (
-                                                        <option key={i} value={tName as string}>{tName as string}</option>
-                                                      ))}
-                                                    </select>
-                                                    <div className="absolute right-0 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
-                                                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                                    <div className="relative flex items-center group flex-1 min-w-0">
+                                                      <select 
+                                                        value={item.topic || ''}
+                                                        onChange={(e) => {
+                                                          const val = e.target.value;
+                                                          handleUpdateTaskField(item.id, 'topic', val);
+                                                          handleUpdateTaskField(item.id, 'exercise', '');
+                                                        }}
+                                                        className="appearance-none peer text-sm font-bold text-gray-800 w-full max-w-full bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors rounded px-1 -ml-1 pr-6 py-0.5 truncate"
+                                                      >
+                                                        <option value="" disabled>Topic...</option>
+                                                        {uniqueTopicNames.map((tName, i) => (
+                                                          <option key={i} value={tName as string}>{tName as string}</option>
+                                                        ))}
+                                                      </select>
+                                                      <div className="absolute right-1 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                                      </div>
                                                     </div>
                                                   </div>
-                                                  <div className="flex items-center w-full mt-2 relative group">
+                                                  <div className="flex items-center w-full mt-1 relative group">
                                                     <span className="text-xs font-semibold text-gray-700 mr-2">Ex:</span>
-                                                    <select 
-                                                      value={item.exercise || ''}
-                                                      onChange={(e) => handleUpdateTaskField(item.id, 'exercise', e.target.value)}
-                                                      className="appearance-none peer text-xs font-semibold text-gray-700 w-full italic bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none transition-colors rounded-none pr-6"
-                                                    >
-                                                      <option value="" disabled>Exercise...</option>
-                                                      {uniqueExercises.map((ex, i) => (
-                                                        <option key={i} value={ex as string}>{ex as string}</option>
-                                                      ))}
-                                                    </select>
-                                                    <div className="absolute right-0 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
-                                                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                                    <div className="relative flex items-center group flex-1 min-w-0">
+                                                      <select 
+                                                        value={item.exercise || ''}
+                                                        onChange={(e) => handleUpdateTaskField(item.id, 'exercise', e.target.value)}
+                                                        className="appearance-none peer text-xs font-semibold text-gray-700 w-full max-w-full italic bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors rounded px-1 -ml-1 pr-6 py-0.5 truncate"
+                                                      >
+                                                        <option value="" disabled>Exercise...</option>
+                                                        {uniqueExercises.map((ex, i) => (
+                                                          <option key={i} value={ex as string}>{ex as string}</option>
+                                                        ))}
+                                                      </select>
+                                                      <div className="absolute right-1 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                                      </div>
                                                     </div>
                                                   </div>
-                                                  <div className="flex items-start w-full mt-3">
-                                                    <span className="text-xs font-semibold text-gray-700 mr-2 mt-1">Ds:</span>
+                                                  <div className="flex items-start w-full mt-1.5">
+                                                    <span className="text-xs font-semibold text-gray-700 mr-2 mt-1.5">Ds:</span>
                                                     <textarea 
                                                       defaultValue={item.description || ''}
                                                       placeholder="Description..."
+                                                      ref={(el) => {
+                                                        if (el && el.scrollHeight > 0) {
+                                                          el.style.height = 'auto';
+                                                          el.style.height = `${el.scrollHeight}px`;
+                                                        }
+                                                      }}
+                                                      onFocus={(e) => {
+                                                        const target = e.currentTarget;
+                                                        setTimeout(() => {
+                                                          const val = target.value;
+                                                          target.setSelectionRange(val.length, val.length);
+                                                        }, 0);
+                                                      }}
                                                       onBlur={(e) => { if(e.target.value !== (item.description || '')) handleUpdateTaskField(item.id, 'description', e.target.value) }}
-                                                      className="text-xs text-black font-semibold w-full leading-relaxed text-left bg-transparent border border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none transition-colors resize-none min-h-[60px] whitespace-normal custom-scrollbar rounded-none"
+                                                      onInput={(e) => {
+                                                        const target = e.currentTarget;
+                                                        target.style.height = 'auto';
+                                                        target.style.height = `${target.scrollHeight}px`;
+                                                      }}
+                                                      onKeyDown={(e) => {
+                                                        if (e.key === 'Escape' || e.key === 'Esc') {
+                                                          if (e.currentTarget.value !== (item.description || '')) {
+                                                            handleUpdateTaskField(item.id, 'description', e.currentTarget.value);
+                                                          }
+                                                        } else if (e.key === 'Enter') {
+                                                          if (!e.shiftKey) {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            const nextElement = e.currentTarget.parentElement?.nextElementSibling?.querySelector('select');
+                                                            if (nextElement) {
+                                                              nextElement.focus();
+                                                            } else {
+                                                              e.currentTarget.blur();
+                                                            }
+                                                          }
+                                                        }
+                                                      }}
+                                                      className="text-xs text-black font-semibold w-[calc(100%+8px)] leading-relaxed text-left bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors resize-none min-h-[40px] whitespace-normal custom-scrollbar rounded px-2 py-1 -ml-2"
                                                     />
+                                                  </div>
+                                                  <div className="flex items-center w-[calc(100%+8px)] mt-auto pt-1 relative group mb-1 hover:bg-gray-100 focus-within:bg-gray-100 rounded px-2 py-1 -ml-2 transition-colors cursor-pointer">
+                                                    {(() => {
+                                                      const reporterInitials = (item.reporter || '?').charAt(0).toUpperCase();
+                                                      return (
+                                                        <div className="w-6 h-6 rounded-full text-white flex items-center justify-center text-[11px] font-bold mr-2 flex-shrink-0 shadow-sm pointer-events-none" style={{ backgroundColor: getReporterColor(item.reporter) }}>
+                                                          {reporterInitials}
+                                                        </div>
+                                                      );
+                                                    })()}
+                                                    <div className="relative flex items-center group flex-1 min-w-0">
+                                                      <select 
+                                                        value={item.reporter || ''}
+                                                        onChange={(e) => handleUpdateTaskField(item.id, 'reporter', e.target.value)}
+                                                        className="appearance-none peer text-[12px] font-semibold text-gray-800 w-full max-w-full bg-transparent focus:outline-none transition-colors cursor-pointer truncate pr-6 py-0.5"
+                                                      >
+                                                        <option value="" disabled>Reporter...</option>
+                                                        {uniqueReporters.map((rp, i) => (
+                                                          <option key={i} value={rp as string}>{rp as string}</option>
+                                                        ))}
+                                                      </select>
+                                                      <div className="absolute right-[-4px] opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                                      </div>
+                                                    </div>
                                                   </div>
                                                 </div>
                                               );
@@ -2212,6 +2311,7 @@ export default function BirdViewPage() {
                                               <span className="text-[12px] font-black text-gray-900 truncate w-full leading-tight mb-[1px]">Ch: {item.chapter || '-'}</span>
                                               <span className="text-[10px] font-bold text-gray-800 truncate w-full leading-tight mb-[1px]">Tp: {item.topic || '-'}</span>
                                               {item.exercise && <span className="text-[9px] font-semibold text-gray-700 truncate w-full italic leading-tight mb-[1px]">Ex: {item.exercise}</span>}
+
                                               {item.description && <span className="text-[8px] text-black font-semibold mt-0.5 w-full leading-tight text-left line-clamp-2">Ds: {item.description}</span>}
                                             </div>
                                           )}
