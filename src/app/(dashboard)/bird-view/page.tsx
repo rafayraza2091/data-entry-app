@@ -100,26 +100,26 @@ export default function BirdViewPage() {
   // Visual drag state
   const [draggedStudentIdx, setDraggedStudentIdx] = useState<number | null>(null);
   const [hoveredStudentIdx, setHoveredStudentIdx] = useState<number | null>(null);
-  
+
   const [draggedSubjectIdx, setDraggedSubjectIdx] = useState<number | null>(null);
   const [hoveredSubjectIdx, setHoveredSubjectIdx] = useState<number | null>(null);
-  
+
   const [clickedCellId, setClickedCellId] = useState<string | null>(null);
   const activeStudentIdRef = useRef<number | null>(null);
   const activeSubjectIdRef = useRef<number | null>(null);
   const gridContainerRef = useRef<HTMLDivElement>(null);
-  
+
   const updateHighlight = useCallback((subjectId: number | null, studentId: number | null, shouldScroll: boolean = false) => {
     activeSubjectIdRef.current = subjectId;
     activeStudentIdRef.current = studentId;
     if (gridContainerRef.current) {
       if (subjectId !== null) gridContainerRef.current.setAttribute('data-active-subject', subjectId.toString());
       else gridContainerRef.current.removeAttribute('data-active-subject');
-      
+
       if (studentId !== null) gridContainerRef.current.setAttribute('data-active-student', studentId.toString());
       else gridContainerRef.current.removeAttribute('data-active-student');
     }
-    
+
     if (shouldScroll) {
       if (subjectId !== null) {
         const el = document.getElementById(`subject-row-${subjectId}`);
@@ -131,7 +131,7 @@ export default function BirdViewPage() {
       }
     }
   }, []);
-  
+
   // Edit Mode States
   const [isEditMode, setIsEditMode] = useState(false);
   const [currentRow, setCurrentRow] = useState<number | null>(null);
@@ -148,7 +148,7 @@ export default function BirdViewPage() {
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [calendarMonth, setCalendarMonth] = useState<Date>(new Date());
-  
+
   const [selectedStudentIds, setSelectedStudentIds] = useState<number[]>([]);
   const [studentCategoryFilter, setStudentCategoryFilter] = useState<'All' | 'Olevels' | 'Matric' | 'Junior'>('All');
   const [cellData, setCellData] = useState<any[]>([]);
@@ -208,7 +208,7 @@ export default function BirdViewPage() {
 
   const handleBatchUpdate = async (fieldName: string, newValue: string) => {
     setCellData(prev => prev.map(d => selectedTaskIds.includes(d.id) ? { ...d, [fieldName]: newValue } : d));
-    const promises = selectedTaskIds.map(taskId => 
+    const promises = selectedTaskIds.map(taskId =>
       fetch(activeView === 'task' ? '/api/tasks' : '/api/queries', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -230,13 +230,16 @@ export default function BirdViewPage() {
 
     // Generate a temporary ID for optimistic UI
     const tempId = Date.now() + Math.floor(Math.random() * 1000);
+    const dateToUse = selectedDate ? getLocalDateString(selectedDate) : getLocalDateString(new Date());
+
     const newTask = {
       ...task,
       id: tempId,
       assignee: newAssignee,
       className: newClassName,
+      ...(activeView === 'task' ? { dueDate: dateToUse } : { createdAt: dateToUse }),
     };
-    
+
     // Optimistic update
     setCellData(prev => [...prev, newTask]);
 
@@ -249,6 +252,7 @@ export default function BirdViewPage() {
           ...task,
           assignee: newAssignee,
           className: newClassName,
+          ...(activeView === 'task' ? { dueDate: dateToUse } : { createdAt: dateToUse }),
         })
       });
       if (res.ok) {
@@ -269,7 +273,7 @@ export default function BirdViewPage() {
     if (draggedTaskId !== null) {
       e.preventDefault();
       e.stopPropagation();
-      
+
       if (e.altKey || e.shiftKey || e.metaKey) {
         if (draggedTaskSource) {
           handleCloneTask(draggedTaskSource, studentFullName);
@@ -277,7 +281,7 @@ export default function BirdViewPage() {
       } else {
         handleUpdateTaskField(draggedTaskId, 'assignee', studentFullName);
       }
-      
+
       setDraggedTaskId(null);
       setDraggedTaskSource(null);
       setClonedCells(new Set());
@@ -291,7 +295,7 @@ export default function BirdViewPage() {
   const handleDeleteConfirm = () => {
     if (taskToDelete === null) return;
     const taskId = taskToDelete;
-    
+
     // Optimistically hide from UI
     setPendingDeletions(prev => [...prev, taskId]);
     setTaskToDelete(null);
@@ -302,7 +306,7 @@ export default function BirdViewPage() {
       try {
         const endpoint = activeView === 'task' ? '/api/tasks' : '/api/queries';
         await fetch(`${endpoint}?id=${taskId}`, { method: 'DELETE' });
-        
+
         // Remove from UI state completely
         setCellData(prev => prev.filter(t => t.id !== taskId));
         setPendingDeletions(prev => prev.filter(id => id !== taskId));
@@ -312,7 +316,7 @@ export default function BirdViewPage() {
         // Revert on error
         setPendingDeletions(prev => prev.filter(id => id !== taskId));
       }
-      
+
       delete deleteTimeoutsRef.current[taskId];
     }, 7000);
 
@@ -322,13 +326,13 @@ export default function BirdViewPage() {
   const handleUndoDelete = () => {
     if (toastConfig.taskId === null) return;
     const taskId = toastConfig.taskId;
-    
+
     // Cancel the timeout
     if (deleteTimeoutsRef.current[taskId]) {
       clearTimeout(deleteTimeoutsRef.current[taskId]);
       delete deleteTimeoutsRef.current[taskId];
     }
-    
+
     // Revert optimistic hide
     setPendingDeletions(prev => prev.filter(id => id !== taskId));
     setToastConfig({ visible: false, taskId: null });
@@ -341,7 +345,7 @@ export default function BirdViewPage() {
     if (c.includes('F.S.C') || c.includes('FSC') || c.includes('MATRIC') || c.includes('9') || c.includes('10')) return 'Matric';
     return 'Junior';
   };
-  
+
   const datePickerRef = useRef<HTMLDivElement>(null);
   const studentPickerRef = useRef<HTMLDivElement>(null);
   const filterStatusRef = useRef<HTMLDivElement>(null);
@@ -358,7 +362,7 @@ export default function BirdViewPage() {
           const data = await res.json();
           setCurrentUser(data.user);
         }
-      } catch (err) {}
+      } catch (err) { }
     }
     fetchUser();
   }, []);
@@ -397,7 +401,7 @@ export default function BirdViewPage() {
       }
 
       const isInputFocused = document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
-      
+
       if (!isInputFocused) {
         if ((event.metaKey || event.ctrlKey) && event.key === 'ArrowRight') {
           event.preventDefault();
@@ -441,7 +445,7 @@ export default function BirdViewPage() {
         } else {
           const activeEl = document.activeElement as HTMLElement;
           const isGridCell = activeEl?.tagName === 'TD' && activeEl?.hasAttribute('data-subject-id');
-          
+
           if (!isGridCell && activeEl && activeEl !== document.body) {
             // Return focus to the grid
             let cellToFocus: HTMLElement | null = null;
@@ -470,7 +474,7 @@ export default function BirdViewPage() {
     function handleShortcutM(event: KeyboardEvent) {
       if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'm') {
         event.preventDefault();
-        
+
         let studentName = '';
         if (activeStudentIdRef.current !== null) {
           const student = students.find(s => s.id === activeStudentIdRef.current);
@@ -478,7 +482,7 @@ export default function BirdViewPage() {
             studentName = `${student.firstName} ${student.secondName}`.trim();
           }
         }
-        
+
         setNewEntryModal({
           type: activeView,
           subject: '',
@@ -499,9 +503,9 @@ export default function BirdViewPage() {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const isSameDay = (d1: Date, d2: Date) => 
-      d1.getDate() === d2.getDate() && 
-      d1.getMonth() === d2.getMonth() && 
+    const isSameDay = (d1: Date, d2: Date) =>
+      d1.getDate() === d2.getDate() &&
+      d1.getMonth() === d2.getMonth() &&
       d1.getFullYear() === d2.getFullYear();
 
     if (isSameDay(selectedDate, today)) {
@@ -532,17 +536,17 @@ export default function BirdViewPage() {
     async function fetchData() {
       try {
         const initialDateStr = getLocalDateString(new Date());
-        
+
         const [response, chapRes, topRes, taskUsersRes] = await Promise.all([
           fetch(`/api/bird-view?date=${initialDateStr}&view=task`),
           fetch('/api/chapters'),
           fetch('/api/topics'),
           fetch('/api/task-users')
         ]);
-        
+
         if (chapRes.ok) setChaptersList(await chapRes.json());
         if (topRes.ok) setTopicsList(await topRes.json());
-        
+
         if (taskUsersRes.ok) {
           const data = await taskUsersRes.json();
           const names = [...(data.teachers || []), ...(data.admins || []), ...(data.owners || [])]
@@ -602,7 +606,7 @@ export default function BirdViewPage() {
   // Fetch dynamic cell data on date or view change
   useEffect(() => {
     if (!selectedDate) return;
-    
+
     async function fetchCellData() {
       try {
         const dateToUse = selectedDate || new Date();
@@ -620,7 +624,7 @@ export default function BirdViewPage() {
         console.error('Failed to fetch cell data:', error);
       }
     }
-    
+
     // Skip initial fetch since the first useEffect handles it
     if (selectedDate && getLocalDateString(selectedDate) === getLocalDateString(new Date()) && activeView === 'task' && refreshTrigger === 0) {
       // It might have already fetched, but let's just fetch it anyway to be safe, it's fast
@@ -630,7 +634,7 @@ export default function BirdViewPage() {
 
   const filteredCellData = cellData.filter(item => {
     if (pendingDeletions.includes(item.id)) return false;
-    
+
     if (boardFilters.status && boardFilters.status !== 'All') {
       if (boardFilters.status === 'IN_PROGRESS' && !item.status?.toUpperCase().includes('PROGRESS')) return false;
       else if (boardFilters.status !== 'IN_PROGRESS' && item.status?.toUpperCase() !== boardFilters.status) return false;
@@ -683,12 +687,12 @@ export default function BirdViewPage() {
       setHoveredStudentIdx(null);
       return;
     }
-    
+
     const newStudents = [...students];
     const draggedItem = newStudents[draggedStudentIdx];
     newStudents.splice(draggedStudentIdx, 1);
     newStudents.splice(dropIndex, 0, draggedItem);
-    
+
     setStudents(newStudents);
     saveOrder(subjects, newStudents);
     setDraggedStudentIdx(null);
@@ -723,12 +727,12 @@ export default function BirdViewPage() {
       setHoveredSubjectIdx(null);
       return;
     }
-    
+
     const newSubjects = [...subjects];
     const draggedItem = newSubjects[draggedSubjectIdx];
     newSubjects.splice(draggedSubjectIdx, 1);
     newSubjects.splice(index, 0, draggedItem);
-    
+
     setSubjects(newSubjects);
     saveOrder(newSubjects, students);
     setDraggedSubjectIdx(null);
@@ -753,7 +757,7 @@ export default function BirdViewPage() {
   const maxTasks = Math.max(...tasksPerStudent.map(s => s.tasks.length), 0);
   const stackedRowCount = Math.max(maxTasks + 1, 1);
 
-  const tableRows = viewMode === 'grid' 
+  const tableRows = viewMode === 'grid'
     ? subjects.map((subject, index) => ({ type: 'grid', id: subject.id, index, subject }))
     : Array.from({ length: stackedRowCount }).map((_, index) => ({ type: 'stacked', id: `stacked-${index}`, index, subject: null }));
 
@@ -820,16 +824,16 @@ export default function BirdViewPage() {
         setClickedCellId(null);
         setNewEntryModal(null);
       }
-      
+
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes((event.target as HTMLElement).tagName)) return;
-      
+
       const digitMatch = event.code.match(/^Digit([0-9])$/);
       if (digitMatch) {
         if (event.metaKey || event.ctrlKey || event.altKey) return;
-        
+
         const digit = digitMatch[1];
         numberBufferRef.current += digit;
-        
+
         const index = parseInt(numberBufferRef.current, 10) - 1;
         if (!isNaN(index) && index >= 0) {
           if (event.shiftKey) {
@@ -842,11 +846,11 @@ export default function BirdViewPage() {
             }
           }
         }
-        
+
         if (numberTimeoutRef.current) {
           clearTimeout(numberTimeoutRef.current);
         }
-        
+
         numberTimeoutRef.current = setTimeout(() => {
           numberBufferRef.current = '';
         }, 200);
@@ -859,12 +863,12 @@ export default function BirdViewPage() {
             if (student) {
               const subject = subjects[currentRow];
               const studentFullName = `${student.firstName} ${student.secondName}`.trim();
-              
-              const cellTasks = filteredCellData.filter(d => 
-                (d.assignee === studentFullName || d.studentName === studentFullName) && 
+
+              const cellTasks = filteredCellData.filter(d =>
+                (d.assignee === studentFullName || d.studentName === studentFullName) &&
                 d.subject === subject.name
               );
-              
+
               if (cellTasks.length > 0) {
                 copiedTaskRef.current = cellTasks[0];
               }
@@ -882,7 +886,7 @@ export default function BirdViewPage() {
             if (student) {
               const subject = subjects[currentRow];
               const studentFullName = `${student.firstName} ${student.secondName}`.trim();
-              
+
               if (subject.name !== copiedTask.subject) {
                 alert("Tasks can only be pasted horizontally within the same subject row.");
               } else {
@@ -901,12 +905,12 @@ export default function BirdViewPage() {
             if (student) {
               const subject = subjects[currentRow];
               const studentFullName = `${student.firstName} ${student.secondName}`.trim();
-              
-              const cellTasks = filteredCellData.filter(d => 
-                (d.assignee === studentFullName || d.studentName === studentFullName) && 
+
+              const cellTasks = filteredCellData.filter(d =>
+                (d.assignee === studentFullName || d.studentName === studentFullName) &&
                 d.subject === subject.name
               );
-              
+
               if (cellTasks.length > 0) {
                 handleDeleteInitiate(cellTasks[0].id);
               }
@@ -918,7 +922,7 @@ export default function BirdViewPage() {
 
         if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
           event.preventDefault();
-          
+
           setCurrentRow(prevRow => {
             let newRow = prevRow === null ? 0 : prevRow;
             if (event.key === 'ArrowUp') newRow = Math.max(0, newRow - 1);
@@ -943,9 +947,9 @@ export default function BirdViewPage() {
             if (student) {
               const subject = subjects[currentRow];
               const studentFullName = `${student.firstName} ${student.secondName}`.trim();
-              
-              const cellHasTasks = filteredCellData.some(d => 
-                (d.assignee === studentFullName || d.studentName === studentFullName) && 
+
+              const cellHasTasks = filteredCellData.some(d =>
+                (d.assignee === studentFullName || d.studentName === studentFullName) &&
                 d.subject === subject.name
               );
 
@@ -1006,7 +1010,7 @@ export default function BirdViewPage() {
       }
 
     }
-    
+
     document.addEventListener('keydown', handleNumberShortcut);
     return () => {
       document.removeEventListener('keydown', handleNumberShortcut);
@@ -1142,11 +1146,11 @@ export default function BirdViewPage() {
           background: repeating-linear-gradient(45deg, #f9fafb, #f9fafb 4px, #f3f4f6 4px, #f3f4f6 8px) !important;
         }
       `}</style>
-      
+
       {/* Invisible overlay to close expanded cell when clicking anywhere else */}
       {clickedCellId && (
-        <div 
-          className="fixed inset-0 z-[50] cursor-default" 
+        <div
+          className="fixed inset-0 z-[50] cursor-default"
           onClick={(e) => {
             e.stopPropagation();
             setClickedCellId(null);
@@ -1156,7 +1160,7 @@ export default function BirdViewPage() {
 
       {/* Custom Floating Column Overlay */}
       {draggedStudentIdx !== null && students[draggedStudentIdx] && (
-        <div 
+        <div
           className="fixed pointer-events-none z-[9999] opacity-95 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.2),0_10px_10px_-5px_rgba(0,0,0,0.1)] rounded-lg overflow-hidden border border-gray-300 transform -translate-x-1/2"
           style={{ left: mousePos.x + 'px', top: mousePos.y - 40 + 'px', width: '120px', height: 'max-content' }}
         >
@@ -1192,7 +1196,7 @@ export default function BirdViewPage() {
 
       {/* Custom Floating Row Overlay */}
       {draggedSubjectIdx !== null && subjects[draggedSubjectIdx] && (
-        <div 
+        <div
           className="fixed pointer-events-none z-[9999] opacity-95 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.2),0_10px_10px_-5px_rgba(0,0,0,0.1)] rounded-lg overflow-hidden border border-gray-300 transform -translate-y-1/2"
           style={{ left: mousePos.x - 100 + 'px', top: mousePos.y + 'px', width: 'max-content' }}
         >
@@ -1205,8 +1209,8 @@ export default function BirdViewPage() {
                 {students.map((student) => {
                   const isAssigned = student.subjects.includes(subjects[draggedSubjectIdx].name);
                   return (
-                    <td 
-                      key={student.id} 
+                    <td
+                      key={student.id}
                       className={`px-4 py-3 text-center border-r border-gray-100 min-w-[120px] w-[120px] h-[100px] ${!isAssigned ? 'unassigned-cell' : 'bg-white'}`}
                     >
                     </td>
@@ -1220,14 +1224,14 @@ export default function BirdViewPage() {
 
       {/* 35px Div element between top nav and table */}
       <div className="h-[35px] w-full mb-[4px] shadow-sm flex items-center px-8 space-x-3" style={{ backgroundColor: '#254245' }}>
-        <button 
+        <button
           onClick={() => setActiveView('task')}
           tabIndex={0}
           className={`h-[22px] px-6 text-xs font-bold uppercase tracking-wider text-white rounded-none transition-all duration-300 ease-in-out shadow-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245] ${activeView === 'task' ? 'opacity-100' : 'opacity-60 hover:opacity-80'}`}
           style={{ backgroundColor: '#edab30' }}>
           Task
         </button>
-        <button 
+        <button
           onClick={() => setActiveView('query')}
           tabIndex={0}
           className={`h-[22px] px-6 text-xs font-bold uppercase tracking-wider text-white rounded-none transition-all duration-300 ease-in-out shadow-sm focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245] ${activeView === 'query' ? 'opacity-100' : 'opacity-60 hover:opacity-80'}`}
@@ -1240,14 +1244,14 @@ export default function BirdViewPage() {
 
         {/* View Mode Toggle */}
         <div className="flex items-center mr-2">
-          <button 
+          <button
             onClick={() => setViewMode('grid')}
             tabIndex={0}
             className={`h-[22px] px-3 text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ease-in-out shadow-sm rounded-l border border-r-0 border-transparent focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245] ${viewMode === 'grid' ? 'bg-[#edab30] text-white opacity-100' : 'bg-[#254245] text-[#edab30] border-[#edab30] hover:bg-[#edab30]/20'}`}
           >
             <i className="fa-solid fa-table-cells mr-1"></i> Grid
           </button>
-          <button 
+          <button
             onClick={() => setViewMode('stacked')}
             tabIndex={0}
             className={`h-[22px] px-3 text-[10px] font-bold uppercase tracking-wider transition-all duration-300 ease-in-out shadow-sm rounded-r border border-l-0 border-transparent focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245] ${viewMode === 'stacked' ? 'bg-[#edab30] text-white opacity-100' : 'bg-[#254245] text-[#edab30] border-[#edab30] hover:bg-[#edab30]/20'}`}
@@ -1258,8 +1262,8 @@ export default function BirdViewPage() {
 
         {/* Filter Bar */}
         <div className="flex items-center space-x-2 flex-wrap text-[10px] md:text-xs text-white">
-          <div 
-            className="relative inline-block" 
+          <div
+            className="relative inline-block"
             ref={filterStatusRef}
             onBlur={(e) => {
               if (!e.currentTarget.contains(e.relatedTarget)) {
@@ -1267,7 +1271,7 @@ export default function BirdViewPage() {
               }
             }}
           >
-            <button 
+            <button
               onClick={() => setIsFilterStatusOpen(!isFilterStatusOpen)}
               onFocus={(e) => { if (e.target.matches(':focus-visible')) setIsFilterStatusOpen(true); }}
               onKeyDown={(e) => {
@@ -1282,7 +1286,7 @@ export default function BirdViewPage() {
                 }
               }}
               tabIndex={0}
-              className="h-[22px] px-3 text-[10px] md:text-xs font-bold uppercase tracking-wider text-white rounded-none bg-[#edab30] border-none outline-none cursor-pointer hover:opacity-90 transition-all shadow-sm flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245]" 
+              className="h-[22px] px-3 text-[10px] md:text-xs font-bold uppercase tracking-wider text-white rounded-none bg-[#edab30] border-none outline-none cursor-pointer hover:opacity-90 transition-all shadow-sm flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245]"
             >
               <span>Status: {boardFilters.status === '' ? 'All' : (boardFilters.status === 'IN_PROGRESS' ? 'In Progress' : boardFilters.status)}</span>
               <i className={`fa-solid fa-chevron-${isFilterStatusOpen ? 'up' : 'down'} text-[10px]`}></i>
@@ -1330,8 +1334,8 @@ export default function BirdViewPage() {
             )}
           </div>
 
-          <div 
-            className="relative inline-block" 
+          <div
+            className="relative inline-block"
             ref={filterTypeRef}
             onBlur={(e) => {
               if (!e.currentTarget.contains(e.relatedTarget)) {
@@ -1339,7 +1343,7 @@ export default function BirdViewPage() {
               }
             }}
           >
-            <button 
+            <button
               onClick={() => setIsFilterTypeOpen(!isFilterTypeOpen)}
               onFocus={(e) => { if (e.target.matches(':focus-visible')) setIsFilterTypeOpen(true); }}
               onKeyDown={(e) => {
@@ -1354,7 +1358,7 @@ export default function BirdViewPage() {
                 }
               }}
               tabIndex={0}
-              className="h-[22px] px-3 text-[10px] md:text-xs font-bold uppercase tracking-wider text-white rounded-none bg-[#edab30] border-none outline-none cursor-pointer hover:opacity-90 transition-all shadow-sm flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245]" 
+              className="h-[22px] px-3 text-[10px] md:text-xs font-bold uppercase tracking-wider text-white rounded-none bg-[#edab30] border-none outline-none cursor-pointer hover:opacity-90 transition-all shadow-sm flex items-center space-x-2 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245]"
             >
               <span>Type: {boardFilters.taskType === '' ? 'All' : boardFilters.taskType}</span>
               <i className={`fa-solid fa-chevron-${isFilterTypeOpen ? 'up' : 'down'} text-[10px]`}></i>
@@ -1395,38 +1399,38 @@ export default function BirdViewPage() {
               </div>
             )}
           </div>
-           
-           <label 
-             tabIndex={0}
-             onKeyDown={(e) => {
-               if (e.key === 'Enter' || e.key === ' ') {
-                 e.preventDefault();
-                 setIsBatchMode(!isBatchMode);
-                 if (isBatchMode) setSelectedTaskIds([]);
-               }
-             }}
-             className="flex items-center space-x-1 cursor-pointer bg-[#edab30]/20 hover:bg-[#edab30]/40 px-2 py-0.5 rounded border border-[#edab30]/50 transition-colors ml-2 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245]">
-             <input 
-               type="checkbox" 
-               checked={isBatchMode} 
-               onChange={(e) => {
-                 setIsBatchMode(e.target.checked);
-                 if (!e.target.checked) setSelectedTaskIds([]);
-               }}
-               className="cursor-pointer"
-             />
-             <span className="font-bold text-[#edab30]">Batch Select</span>
-           </label>
+
+          <label
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setIsBatchMode(!isBatchMode);
+                if (isBatchMode) setSelectedTaskIds([]);
+              }
+            }}
+            className="flex items-center space-x-1 cursor-pointer bg-[#edab30]/20 hover:bg-[#edab30]/40 px-2 py-0.5 rounded border border-[#edab30]/50 transition-colors ml-2 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-1 focus:ring-offset-[#254245]">
+            <input
+              type="checkbox"
+              checked={isBatchMode}
+              onChange={(e) => {
+                setIsBatchMode(e.target.checked);
+                if (!e.target.checked) setSelectedTaskIds([]);
+              }}
+              className="cursor-pointer"
+            />
+            <span className="font-bold text-[#edab30]">Batch Select</span>
+          </label>
         </div>
 
         {/* Date and Students Buttons */}
         <div className="relative ml-auto" ref={datePickerRef}
-             onBlur={(e) => {
-               if (!e.currentTarget.contains(e.relatedTarget)) {
-                 setIsDatePickerOpen(false);
-               }
-             }}>
-          <button 
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) {
+              setIsDatePickerOpen(false);
+            }
+          }}>
+          <button
             onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
             onFocus={(e) => { if (e.target.matches(':focus-visible')) setIsDatePickerOpen(true); }}
             onKeyDown={(e) => {
@@ -1446,76 +1450,76 @@ export default function BirdViewPage() {
             <span>{formattedDate || '...'}</span>
             <i className={`fa-solid fa-chevron-${isDatePickerOpen ? 'up' : 'down'} text-[10px]`}></i>
           </button>
-          
+
           {isDatePickerOpen && (
             <div className="absolute top-full mt-2 left-0 w-64 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.15)] rounded border border-gray-200 z-[100] overflow-hidden">
-               {/* Calendar Header */}
-               <div className="flex items-center justify-between p-3 bg-gray-50 border-b border-gray-100 text-sm font-bold text-gray-700"
-                    onKeyDown={(e) => {
-                      if (e.key.startsWith('Arrow')) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const items = Array.from(datePickerRef.current?.querySelectorAll('.date-focus-item') || []) as HTMLElement[];
-                        const idx = items.indexOf(document.activeElement as HTMLElement);
-                        let next = 0;
-                        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = idx >= 0 ? (idx + 1) % items.length : 0;
-                        else next = idx > 0 ? idx - 1 : items.length - 1;
-                        if (items[next]) items[next].focus();
-                      }
-                    }}>
-                 <button tabIndex={-1} onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))} className="date-focus-item w-6 h-6 flex items-center justify-center hover:bg-gray-200 rounded text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#edab30]"><i className="fa-solid fa-chevron-left"></i></button>
-                 <span>
-                   {calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                 </span>
-                 <button tabIndex={-1} onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))} className="date-focus-item w-6 h-6 flex items-center justify-center hover:bg-gray-200 rounded text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#edab30]"><i className="fa-solid fa-chevron-right"></i></button>
-               </div>
-               {/* Calendar Grid */}
-                <div className="p-3"
-                     onKeyDown={(e) => {
-                       if (e.key.startsWith('Arrow')) {
-                         e.preventDefault();
-                         e.stopPropagation();
-                         const items = Array.from(datePickerRef.current?.querySelectorAll('.date-focus-item') || []) as HTMLElement[];
-                         const idx = items.indexOf(document.activeElement as HTMLElement);
-                         let next = 0;
-                         if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = idx >= 0 ? (idx + 1) % items.length : 0;
-                         else next = idx > 0 ? idx - 1 : items.length - 1;
-                         if (items[next]) items[next].focus();
-                       }
-                     }}>
-                  <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-gray-400 mb-2">
-                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => <div key={d}>{d}</div>)}
-                  </div>
-                  <div className="grid grid-cols-7 gap-1 text-sm">
-                   {blanksArray.map(b => <div key={`blank-${b}`} className="w-7 h-7"></div>)}
-                   {daysArray.map(d => {
-                     const isSelected = selectedDate && selectedDate.getDate() === d && selectedDate.getMonth() === calendarMonth.getMonth() && selectedDate.getFullYear() === calendarMonth.getFullYear();
-                     return (
-                        <button 
-                          key={d} 
-                          onClick={() => {
-                            setSelectedDate(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), d));
-                          }}
-                          tabIndex={-1}
-                          className={`date-focus-item w-7 h-7 flex items-center justify-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#254245] focus:ring-offset-1 ${isSelected ? 'current-date-btn bg-[#edab30] text-white font-bold' : 'text-gray-700 hover:bg-gray-100'}`}
-                        >
-                          {d}
-                        </button>
-                     );
-                   })}
-                 </div>
-               </div>
+              {/* Calendar Header */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 border-b border-gray-100 text-sm font-bold text-gray-700"
+                onKeyDown={(e) => {
+                  if (e.key.startsWith('Arrow')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const items = Array.from(datePickerRef.current?.querySelectorAll('.date-focus-item') || []) as HTMLElement[];
+                    const idx = items.indexOf(document.activeElement as HTMLElement);
+                    let next = 0;
+                    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = idx >= 0 ? (idx + 1) % items.length : 0;
+                    else next = idx > 0 ? idx - 1 : items.length - 1;
+                    if (items[next]) items[next].focus();
+                  }
+                }}>
+                <button tabIndex={-1} onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))} className="date-focus-item w-6 h-6 flex items-center justify-center hover:bg-gray-200 rounded text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#edab30]"><i className="fa-solid fa-chevron-left"></i></button>
+                <span>
+                  {calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </span>
+                <button tabIndex={-1} onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))} className="date-focus-item w-6 h-6 flex items-center justify-center hover:bg-gray-200 rounded text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#edab30]"><i className="fa-solid fa-chevron-right"></i></button>
+              </div>
+              {/* Calendar Grid */}
+              <div className="p-3"
+                onKeyDown={(e) => {
+                  if (e.key.startsWith('Arrow')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const items = Array.from(datePickerRef.current?.querySelectorAll('.date-focus-item') || []) as HTMLElement[];
+                    const idx = items.indexOf(document.activeElement as HTMLElement);
+                    let next = 0;
+                    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = idx >= 0 ? (idx + 1) % items.length : 0;
+                    else next = idx > 0 ? idx - 1 : items.length - 1;
+                    if (items[next]) items[next].focus();
+                  }
+                }}>
+                <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-gray-400 mb-2">
+                  {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => <div key={d}>{d}</div>)}
+                </div>
+                <div className="grid grid-cols-7 gap-1 text-sm">
+                  {blanksArray.map(b => <div key={`blank-${b}`} className="w-7 h-7"></div>)}
+                  {daysArray.map(d => {
+                    const isSelected = selectedDate && selectedDate.getDate() === d && selectedDate.getMonth() === calendarMonth.getMonth() && selectedDate.getFullYear() === calendarMonth.getFullYear();
+                    return (
+                      <button
+                        key={d}
+                        onClick={() => {
+                          setSelectedDate(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), d));
+                        }}
+                        tabIndex={-1}
+                        className={`date-focus-item w-7 h-7 flex items-center justify-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#254245] focus:ring-offset-1 ${isSelected ? 'current-date-btn bg-[#edab30] text-white font-bold' : 'text-gray-700 hover:bg-gray-100'}`}
+                      >
+                        {d}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
         </div>
 
         <div className="relative" ref={studentPickerRef}
-             onBlur={(e) => {
-               if (!e.currentTarget.contains(e.relatedTarget)) {
-                 setIsStudentPickerOpen(false);
-               }
-             }}>
-          <button 
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) {
+              setIsStudentPickerOpen(false);
+            }
+          }}>
+          <button
             onClick={() => setIsStudentPickerOpen(!isStudentPickerOpen)}
             onFocus={(e) => { if (e.target.matches(':focus-visible')) setIsStudentPickerOpen(true); }}
             onKeyDown={(e) => {
@@ -1538,31 +1542,31 @@ export default function BirdViewPage() {
 
           {isStudentPickerOpen && (
             <div className="absolute top-full mt-2 left-0 w-80 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.15)] rounded border border-gray-200 z-[100] max-h-[85vh] flex flex-col">
-              
+
               {/* Category Tabs */}
               <div className="flex bg-gray-50 border-b border-gray-200 rounded-t overflow-hidden"
-                   onKeyDown={(e) => {
-                     if (e.key.startsWith('Arrow')) {
-                       e.preventDefault();
-                       e.stopPropagation();
-                       const items = Array.from(studentPickerRef.current?.querySelectorAll('.student-focus-item') || []) as HTMLElement[];
-                       const idx = items.indexOf(document.activeElement as HTMLElement);
-                       let next = 0;
-                       if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = idx >= 0 ? (idx + 1) % items.length : 0;
-                       else next = idx > 0 ? idx - 1 : items.length - 1;
-                       if (items[next]) items[next].focus();
-                     }
-                   }}>
+                onKeyDown={(e) => {
+                  if (e.key.startsWith('Arrow')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const items = Array.from(studentPickerRef.current?.querySelectorAll('.student-focus-item') || []) as HTMLElement[];
+                    const idx = items.indexOf(document.activeElement as HTMLElement);
+                    let next = 0;
+                    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = idx >= 0 ? (idx + 1) % items.length : 0;
+                    else next = idx > 0 ? idx - 1 : items.length - 1;
+                    if (items[next]) items[next].focus();
+                  }
+                }}>
                 {['All', 'Olevels', 'Matric', 'Junior'].map(cat => (
-                  <button 
-                     key={cat}
-                     onClick={() => {
-                       setStudentCategoryFilter(cat as any);
-                       const newVisibleStudents = students.filter(s => cat === 'All' || getStudentCategory(s.className || '') === cat);
-                       setSelectedStudentIds(newVisibleStudents.map(s => s.id));
-                     }}
-                     tabIndex={-1}
-                     className={`student-focus-item flex-1 py-2 px-1 text-[9px] font-bold uppercase tracking-wider transition-colors border-r last:border-r-0 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#edab30] focus:ring-inset ${studentCategoryFilter === cat ? 'bg-[#edab30] text-white' : 'text-gray-500 hover:bg-gray-100'}`}
+                  <button
+                    key={cat}
+                    onClick={() => {
+                      setStudentCategoryFilter(cat as any);
+                      const newVisibleStudents = students.filter(s => cat === 'All' || getStudentCategory(s.className || '') === cat);
+                      setSelectedStudentIds(newVisibleStudents.map(s => s.id));
+                    }}
+                    tabIndex={-1}
+                    className={`student-focus-item flex-1 py-2 px-1 text-[9px] font-bold uppercase tracking-wider transition-colors border-r last:border-r-0 border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#edab30] focus:ring-inset ${studentCategoryFilter === cat ? 'bg-[#edab30] text-white' : 'text-gray-500 hover:bg-gray-100'}`}
                   >
                     {cat}
                   </button>
@@ -1570,20 +1574,20 @@ export default function BirdViewPage() {
               </div>
 
               <div className="py-2 px-3 border-b border-gray-100 bg-gray-50 flex justify-between items-center"
-                   onKeyDown={(e) => {
-                     if (e.key.startsWith('Arrow')) {
-                       e.preventDefault();
-                       e.stopPropagation();
-                       const items = Array.from(studentPickerRef.current?.querySelectorAll('.student-focus-item') || []) as HTMLElement[];
-                       const idx = items.indexOf(document.activeElement as HTMLElement);
-                       let next = 0;
-                       if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = idx >= 0 ? (idx + 1) % items.length : 0;
-                       else next = idx > 0 ? idx - 1 : items.length - 1;
-                       if (items[next]) items[next].focus();
-                     }
-                   }}>
+                onKeyDown={(e) => {
+                  if (e.key.startsWith('Arrow')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const items = Array.from(studentPickerRef.current?.querySelectorAll('.student-focus-item') || []) as HTMLElement[];
+                    const idx = items.indexOf(document.activeElement as HTMLElement);
+                    let next = 0;
+                    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = idx >= 0 ? (idx + 1) % items.length : 0;
+                    else next = idx > 0 ? idx - 1 : items.length - 1;
+                    if (items[next]) items[next].focus();
+                  }
+                }}>
                 <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Select Students</span>
-                <button 
+                <button
                   onClick={() => {
                     const visibleStudents = students.filter(s => studentCategoryFilter === 'All' || getStudentCategory(s.className || '') === studentCategoryFilter);
                     const allVisibleSelected = visibleStudents.length > 0 && visibleStudents.every(s => selectedStudentIds.includes(s.id));
@@ -1602,18 +1606,18 @@ export default function BirdViewPage() {
                 </button>
               </div>
               <div className="overflow-y-auto custom-scrollbar flex-1 p-1 space-y-0"
-                   onKeyDown={(e) => {
-                     if (e.key.startsWith('Arrow')) {
-                       e.preventDefault();
-                       e.stopPropagation();
-                       const items = Array.from(studentPickerRef.current?.querySelectorAll('.student-focus-item') || []) as HTMLElement[];
-                       const idx = items.indexOf(document.activeElement as HTMLElement);
-                       let next = 0;
-                       if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = idx >= 0 ? (idx + 1) % items.length : 0;
-                       else next = idx > 0 ? idx - 1 : items.length - 1;
-                       if (items[next]) items[next].focus();
-                     }
-                   }}>
+                onKeyDown={(e) => {
+                  if (e.key.startsWith('Arrow')) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const items = Array.from(studentPickerRef.current?.querySelectorAll('.student-focus-item') || []) as HTMLElement[];
+                    const idx = items.indexOf(document.activeElement as HTMLElement);
+                    let next = 0;
+                    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = idx >= 0 ? (idx + 1) % items.length : 0;
+                    else next = idx > 0 ? idx - 1 : items.length - 1;
+                    if (items[next]) items[next].focus();
+                  }
+                }}>
                 {students.filter(s => studentCategoryFilter === 'All' || getStudentCategory(s.className || '') === studentCategoryFilter).map(student => (
                   <label key={student.id} className="flex items-center justify-between py-1.5 px-2 hover:bg-gray-50 cursor-pointer rounded transition-colors group border border-transparent hover:border-gray-100">
                     <div className="flex items-center space-x-3 overflow-hidden pr-2">
@@ -1624,8 +1628,8 @@ export default function BirdViewPage() {
                         {student.firstName} {student.secondName}
                       </span>
                     </div>
-                    <input 
-                      type="checkbox" 
+                    <input
+                      type="checkbox"
                       tabIndex={-1}
                       className="student-focus-item w-3.5 h-3.5 border-gray-300 rounded cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#edab30]"
                       style={{ accentColor: '#edab30' }}
@@ -1663,7 +1667,7 @@ export default function BirdViewPage() {
       </div>
 
       <div className="w-full h-full bg-white rounded-none shadow-sm border border-gray-100 border-t-4 border-t-teal-700 flex flex-col animate-fadeIn overflow-hidden">
-        
+
         {loading ? (
           <div className="flex-1 flex flex-col items-center justify-center">
             <div className="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
@@ -1684,251 +1688,251 @@ export default function BirdViewPage() {
             <div className="responsive-table-width grid-container" ref={gridContainerRef}>
               <table className="text-sm text-left border-separate border-spacing-0 table-fixed responsive-table-width mx-0 mr-auto">
                 <colgroup>
-                <col className="w-16 min-w-[4rem] max-w-[4rem] md:w-[80px] md:min-w-[80px] md:max-w-[80px]" />
-                {students.map((student) => {
-                  if (!visibleStudentIds.includes(student.id)) return null;
-                  return <col key={student.id} className="w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px]" />;
-                })}
-              </colgroup>
-              <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0 z-20 shadow-sm">
-                <tr>
-                  <th scope="col" className="w-16 min-w-[4rem] max-w-[4rem] md:w-[80px] md:min-w-[80px] md:max-w-[80px] px-2 py-4 sticky left-0 bg-gray-100 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-b border-r border-gray-200">
-                  </th>
-                  {students.map((student, index) => {
+                  <col className="w-16 min-w-[4rem] max-w-[4rem] md:w-[80px] md:min-w-[80px] md:max-w-[80px]" />
+                  {students.map((student) => {
                     if (!visibleStudentIds.includes(student.id)) return null;
-                    const isDragged = draggedStudentIdx === index;
-                    const isHovered = hoveredStudentIdx === index && !isDragged;
-                    // Determine drop indicator side
-                    const showLeftIndicator = isHovered && draggedStudentIdx !== null && index < draggedStudentIdx;
-                    const showRightIndicator = isHovered && draggedStudentIdx !== null && index > draggedStudentIdx;
-                    
-                    const studentFullName = `${student.firstName} ${student.secondName}`.trim();
-                    const activeTaskCount = filteredCellData.filter(d => 
-                      (d.assignee === studentFullName || d.studentName === studentFullName) && 
-                      d.status !== 'DONE' && 
-                      d.status !== 'COMPLETED'
-                    ).length;
-                    
-                    return (
-                      <th 
-                        key={student.id} 
-                        id={`student-col-${student.id}`}
-                        scope="col" 
-                        className={`p-0 text-center border-b border-r border-gray-200 whitespace-nowrap w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] relative scroll-ml-16 md:scroll-ml-[80px] cell-student-${student.id}`}
-                      >
-                        <div 
-                          className={`w-full h-full px-1 py-2 md:px-4 md:py-4 cursor-pointer active:cursor-grabbing hover:bg-gray-100 group flex flex-col items-center justify-center relative
+                    return <col key={student.id} className="w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px]" />;
+                  })}
+                </colgroup>
+                <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0 z-20 shadow-sm">
+                  <tr>
+                    <th scope="col" className="w-16 min-w-[4rem] max-w-[4rem] md:w-[80px] md:min-w-[80px] md:max-w-[80px] px-2 py-4 sticky left-0 bg-gray-100 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-b border-r border-gray-200">
+                    </th>
+                    {students.map((student, index) => {
+                      if (!visibleStudentIds.includes(student.id)) return null;
+                      const isDragged = draggedStudentIdx === index;
+                      const isHovered = hoveredStudentIdx === index && !isDragged;
+                      // Determine drop indicator side
+                      const showLeftIndicator = isHovered && draggedStudentIdx !== null && index < draggedStudentIdx;
+                      const showRightIndicator = isHovered && draggedStudentIdx !== null && index > draggedStudentIdx;
+
+                      const studentFullName = `${student.firstName} ${student.secondName}`.trim();
+                      const activeTaskCount = filteredCellData.filter(d =>
+                        (d.assignee === studentFullName || d.studentName === studentFullName) &&
+                        d.status !== 'DONE' &&
+                        d.status !== 'COMPLETED'
+                      ).length;
+
+                      return (
+                        <th
+                          key={student.id}
+                          id={`student-col-${student.id}`}
+                          scope="col"
+                          className={`p-0 text-center border-b border-r border-gray-200 whitespace-nowrap w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] relative scroll-ml-16 md:scroll-ml-[80px] cell-student-${student.id}`}
+                        >
+                          <div
+                            className={`w-full h-full px-1 py-2 md:px-4 md:py-4 cursor-pointer active:cursor-grabbing hover:bg-gray-100 group flex flex-col items-center justify-center relative
                             ${isDragged ? 'dragged-column' : ''}
                             ${showLeftIndicator ? 'drop-target-left' : ''}
                             ${showRightIndicator ? 'drop-target-right' : ''}
                             ${activeStudentIdRef.current === student.id ? 'bg-gray-100' : ''}
                           `}
-                          onClick={() => updateHighlight(activeSubjectIdRef.current, activeStudentIdRef.current === student.id ? null : student.id)}
-                          draggable
-                          onDragStart={(e) => handleStudentDragStart(e, index)}
-                          onDragEnter={(e) => handleStudentDragEnter(e, index)}
-                          onDragOver={(e) => { e.preventDefault(); handleDrag(e); }}
-                          onDrag={(e) => handleDrag(e)}
-                          onDrop={(e) => handleStudentDrop(e, index)}
-                          onDragEnd={handleStudentDragEnd}
-                        >
-                          <div className={`flex flex-col items-center justify-center relative ${isDragged ? 'opacity-50' : ''}`}>
-                            <div className="relative">
-                              <div className="w-6 h-6 text-[10px] md:w-8 md:h-8 md:text-sm rounded-full text-white flex items-center justify-center font-bold mb-1 md:mb-2 shadow-sm" style={{ backgroundColor: getVibrantColor(student.firstName + ' ' + student.secondName) }}>
-                                {student.firstName.charAt(0)}{student.secondName.charAt(0)}
-                              </div>
-                              {activeTaskCount > 0 && (
-                                <div 
-                                  className="absolute -top-1 -right-2 md:-right-1.5 bg-[#ef4444] text-white text-[8px] font-bold min-w-[14px] h-[14px] px-1 flex items-center justify-center rounded-full shadow-sm border border-white"
-                                  title={`${activeTaskCount} active/pending tasks`}
-                                >
-                                  {activeTaskCount}
+                            onClick={() => updateHighlight(activeSubjectIdRef.current, activeStudentIdRef.current === student.id ? null : student.id)}
+                            draggable
+                            onDragStart={(e) => handleStudentDragStart(e, index)}
+                            onDragEnter={(e) => handleStudentDragEnter(e, index)}
+                            onDragOver={(e) => { e.preventDefault(); handleDrag(e); }}
+                            onDrag={(e) => handleDrag(e)}
+                            onDrop={(e) => handleStudentDrop(e, index)}
+                            onDragEnd={handleStudentDragEnd}
+                          >
+                            <div className={`flex flex-col items-center justify-center relative ${isDragged ? 'opacity-50' : ''}`}>
+                              <div className="relative">
+                                <div className="w-6 h-6 text-[10px] md:w-8 md:h-8 md:text-sm rounded-full text-white flex items-center justify-center font-bold mb-1 md:mb-2 shadow-sm" style={{ backgroundColor: getVibrantColor(student.firstName + ' ' + student.secondName) }}>
+                                  {student.firstName.charAt(0)}{student.secondName.charAt(0)}
                                 </div>
-                              )}
+                                {activeTaskCount > 0 && (
+                                  <div
+                                    className="absolute -top-1 -right-2 md:-right-1.5 bg-[#ef4444] text-white text-[8px] font-bold min-w-[14px] h-[14px] px-1 flex items-center justify-center rounded-full shadow-sm border border-white"
+                                    title={`${activeTaskCount} active/pending tasks`}
+                                  >
+                                    {activeTaskCount}
+                                  </div>
+                                )}
+                              </div>
+                              <span className="truncate w-full text-[9px] md:text-xs text-center max-w-[80px] md:max-w-[100px]" title={`${student.firstName} ${student.secondName}`}>
+                                {student.firstName} {student.secondName}
+                              </span>
                             </div>
-                            <span className="truncate w-full text-[9px] md:text-xs text-center max-w-[80px] md:max-w-[100px]" title={`${student.firstName} ${student.secondName}`}>
-                              {student.firstName} {student.secondName}
-                            </span>
                           </div>
-                        </div>
-                      </th>
-                    );
-                  })}
-                </tr>
-              </thead>
-              <tbody>
-                {tableRows.map((row) => {
-                  const isGrid = viewMode === 'grid';
-                  const index = row.index;
-                  const subject = row.subject;
-                  
-                  const isDragged = isGrid && draggedSubjectIdx === index;
-                  const isHovered = isGrid && hoveredSubjectIdx === index && !isDragged;
-                  const showTopIndicator = isHovered && draggedSubjectIdx !== null && index < draggedSubjectIdx;
-                  const showBottomIndicator = isHovered && draggedSubjectIdx !== null && index > draggedSubjectIdx;
-                  
-                  return (
-                    <tr 
-                      key={row.id} 
-                      id={isGrid && subject ? `subject-row-${subject.id}` : undefined}
-                      className={`
+                        </th>
+                      );
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {tableRows.map((row) => {
+                    const isGrid = viewMode === 'grid';
+                    const index = row.index;
+                    const subject = row.subject;
+
+                    const isDragged = isGrid && draggedSubjectIdx === index;
+                    const isHovered = isGrid && hoveredSubjectIdx === index && !isDragged;
+                    const showTopIndicator = isHovered && draggedSubjectIdx !== null && index < draggedSubjectIdx;
+                    const showBottomIndicator = isHovered && draggedSubjectIdx !== null && index > draggedSubjectIdx;
+
+                    return (
+                      <tr
+                        key={row.id}
+                        id={isGrid && subject ? `subject-row-${subject.id}` : undefined}
+                        className={`
                         ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} 
                         group scroll-mt-[100px]
                       `}
-                      onDragEnter={(e) => isGrid && handleSubjectDragEnter(e, index)}
-                      onDragOver={(e) => { e.preventDefault(); isGrid && handleDrag(e); }}
-                      onDrop={(e) => isGrid && handleSubjectDrop(e, index)}
-                    >
-                      <th 
-                        scope="row" 
-                        className={`w-16 min-w-[4rem] max-w-[4rem] md:w-[80px] md:min-w-[80px] md:max-w-[80px] p-0 font-medium text-gray-900 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-gray-200 bg-inherit whitespace-nowrap align-middle h-24 md:h-[120px] relative ${isGrid && subject ? `cell-subject-${subject.id}` : ''}`}
+                        onDragEnter={(e) => isGrid && handleSubjectDragEnter(e, index)}
+                        onDragOver={(e) => { e.preventDefault(); isGrid && handleDrag(e); }}
+                        onDrop={(e) => isGrid && handleSubjectDrop(e, index)}
                       >
-                        <div 
-                          className={`flex items-center justify-center w-full h-full px-2
+                        <th
+                          scope="row"
+                          className={`w-16 min-w-[4rem] max-w-[4rem] md:w-[80px] md:min-w-[80px] md:max-w-[80px] p-0 font-medium text-gray-900 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-gray-200 bg-inherit whitespace-nowrap align-middle h-24 md:h-[120px] relative ${isGrid && subject ? `cell-subject-${subject.id}` : ''}`}
+                        >
+                          <div
+                            className={`flex items-center justify-center w-full h-full px-2
                             ${isGrid ? 'cursor-pointer active:cursor-grabbing hover:bg-gray-100' : ''}
                             ${isDragged ? 'dragged-row' : ''}
                             ${showTopIndicator ? 'drop-target-top' : ''}
                             ${showBottomIndicator ? 'drop-target-bottom' : ''}
                             ${isGrid && subject && activeSubjectIdRef.current === subject.id ? 'bg-gray-100' : ''}
                           `}
-                          onClick={() => isGrid && subject && updateHighlight(activeSubjectIdRef.current === subject.id ? null : subject.id, activeStudentIdRef.current)}
-                          draggable={isGrid}
-                          onDragStart={(e) => isGrid && handleSubjectDragStart(e, index)}
-                          onDrag={(e) => isGrid && handleDrag(e)}
-                          onDragEnd={isGrid ? handleSubjectDragEnd : undefined}
-                        >
-                          <span className="text-center font-bold">{isGrid && subject ? (subject.code || subject.name) : ''}</span>
-                        </div>
-                      </th>
-                      
-                      {students.map((student, studentIndex) => {
-                        if (!visibleStudentIds.includes(student.id)) return null;
-                        
-                        let stackedTask = null;
-                        if (!isGrid) {
-                          const studentData = tasksPerStudent.find(s => s.studentId === student.id);
-                          stackedTask = studentData?.tasks[index];
-                          // If stacked view and no task
-                          if (!stackedTask) {
-                            if (index === (studentData?.tasks?.length || 0)) {
-                              return (
-                                <td key={`stacked-${student.id}-${index}`} className={`p-0 text-center border-none bg-transparent h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] relative cell-student-${student.id} cell-subject-${row.id} ${activeStudentIdRef.current === student.id || activeSubjectIdRef.current === row.id ? 'cell-subject-highlight' : ''}`}>
-                                  <div className="w-full h-full relative p-1.5 pb-5">
-                                    <div 
-                                      className="w-full h-full flex flex-col items-center justify-center cursor-pointer bg-gray-50/50 hover:bg-gray-100 transition-colors border-2 border-dashed border-gray-300 rounded-[4px] group"
-                                      onClick={() => {
-                                        if (isBatchMode) return;
-                                        setNewEntryModal({
-                                          type: activeView,
-                                          subject: '',
-                                          studentName: `${student.firstName} ${student.secondName}`.trim(),
-                                          date: selectedDate ? getLocalDateString(selectedDate) : getLocalDateString(new Date())
-                                        });
-                                      }}
-                                    >
-                                      <span className="text-gray-400 text-3xl font-light group-hover:text-[#254245] transition-colors">+</span>
-                                    </div>
-                                  </div>
-                                </td>
-                              );
-                            }
-                            // Otherwise completely empty cell without borders
-                            return <td key={`stacked-${student.id}-${index}`} className={`p-0 border-none bg-transparent h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] relative cell-student-${student.id} cell-subject-${row.id} ${activeStudentIdRef.current === student.id || activeSubjectIdRef.current === row.id ? 'cell-subject-highlight' : ''}`}></td>;
-                          }
-                        }
-
-                        const isAssigned = isGrid 
-                          ? student.subjects.some(s => subject && s.trim().toLowerCase() === subject.name.trim().toLowerCase())
-                          : true; // In stacked view, it's always assigned if a task is present
-                          
-                        const isStudentDragged = draggedStudentIdx === studentIndex;
-                        const isStudentHovered = hoveredStudentIdx === studentIndex && !isStudentDragged;
-                        const showLeftIndicator = isStudentHovered && draggedStudentIdx !== null && studentIndex < draggedStudentIdx;
-                        const showRightIndicator = isStudentHovered && draggedStudentIdx !== null && studentIndex > draggedStudentIdx;
-                        
-                        const cellId = isGrid && subject ? `${subject.id}-${student.id}` : `stacked-${student.id}-${index}`;
-                        const isClicked = clickedCellId === cellId;
-                        const isEditModeActiveCell = isEditMode && isGrid && currentRow === index && currentCol === visibleStudentIds.indexOf(student.id);
-                        
-                        return (
-                          <td 
-                            key={cellId} 
-                            id={`cell-${cellId}`}
-                            className={`p-0 text-center border-b border-r border-gray-200 last:border-r-0 h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] relative scroll-ml-16 md:scroll-ml-[80px] scroll-mt-[100px] cell-student-${student.id} cell-subject-${isGrid && subject ? subject.id : row.id} ${(isGrid && subject && activeSubjectIdRef.current === subject.id) || activeStudentIdRef.current === student.id || (!isGrid && activeSubjectIdRef.current === row.id) ? 'cell-subject-highlight' : ''}`}
-                            onDragEnter={(e) => {
-                              if (!isAssigned) return;
-                              if (draggedTaskId !== null && draggedTaskSource && (e.shiftKey || e.altKey || e.metaKey)) {
-                                const studentFullName = `${student.firstName} ${student.secondName}`.trim();
-                                if (!clonedCells.has(cellId)) {
-                                  handleCloneTask(draggedTaskSource, studentFullName);
-                                  setClonedCells(prev => new Set(prev).add(cellId));
-                                }
-                              }
-                            }}
-                            onDragOver={(e) => {
-                              if (!isAssigned) return;
-                              if (draggedTaskId !== null) {
-                                e.preventDefault(); // allow drop
-                                e.dataTransfer.dropEffect = (e.shiftKey || e.altKey || e.metaKey) ? 'copy' : 'move';
-                              }
-                            }}
-                            onDrop={(e) => {
-                              if (!isAssigned) return;
-                              if (draggedTaskId !== null) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                const studentFullName = `${student.firstName} ${student.secondName}`.trim();
-                                
-                                if (e.altKey || e.shiftKey || e.metaKey) {
-                                  if (!clonedCells.has(cellId) && draggedTaskSource) {
-                                    handleCloneTask(draggedTaskSource, studentFullName);
-                                  }
-                                } else {
-                                  handleUpdateTaskField(draggedTaskId, 'assignee', studentFullName);
-                                }
-                                
-                                setDraggedTaskId(null);
-                                setDraggedTaskSource(null);
-                                setClonedCells(new Set());
-                              }
-                            }}
+                            onClick={() => isGrid && subject && updateHighlight(activeSubjectIdRef.current === subject.id ? null : subject.id, activeStudentIdRef.current)}
+                            draggable={isGrid}
+                            onDragStart={(e) => isGrid && handleSubjectDragStart(e, index)}
+                            onDrag={(e) => isGrid && handleDrag(e)}
+                            onDragEnd={isGrid ? handleSubjectDragEnd : undefined}
                           >
-                            <div className="w-full h-full relative">
-                              <div 
-                              onClick={() => {
-                                if (isBatchMode) return;
-                                
-                                // Always toggle highlight for this column when clicking any cell
-                                updateHighlight(activeSubjectIdRef.current, activeStudentIdRef.current === student.id ? null : student.id);
-                                
+                            <span className="text-center font-bold">{isGrid && subject ? (subject.code || subject.name) : ''}</span>
+                          </div>
+                        </th>
+
+                        {students.map((student, studentIndex) => {
+                          if (!visibleStudentIds.includes(student.id)) return null;
+
+                          let stackedTask = null;
+                          if (!isGrid) {
+                            const studentData = tasksPerStudent.find(s => s.studentId === student.id);
+                            stackedTask = studentData?.tasks[index];
+                            // If stacked view and no task
+                            if (!stackedTask) {
+                              if (index === (studentData?.tasks?.length || 0)) {
+                                return (
+                                  <td key={`stacked-${student.id}-${index}`} className={`p-0 text-center border-none bg-transparent h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] relative cell-student-${student.id} cell-subject-${row.id} ${activeStudentIdRef.current === student.id || activeSubjectIdRef.current === row.id ? 'cell-subject-highlight' : ''}`}>
+                                    <div className="w-full h-full relative p-1.5 pb-5">
+                                      <div
+                                        className="w-full h-full flex flex-col items-center justify-center cursor-pointer bg-gray-50/50 hover:bg-gray-100 transition-colors border-2 border-dashed border-gray-300 rounded-[4px] group"
+                                        onClick={() => {
+                                          if (isBatchMode) return;
+                                          setNewEntryModal({
+                                            type: activeView,
+                                            subject: '',
+                                            studentName: `${student.firstName} ${student.secondName}`.trim(),
+                                            date: selectedDate ? getLocalDateString(selectedDate) : getLocalDateString(new Date())
+                                          });
+                                        }}
+                                      >
+                                        <span className="text-gray-400 text-3xl font-light group-hover:text-[#254245] transition-colors">+</span>
+                                      </div>
+                                    </div>
+                                  </td>
+                                );
+                              }
+                              // Otherwise completely empty cell without borders
+                              return <td key={`stacked-${student.id}-${index}`} className={`p-0 border-none bg-transparent h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] relative cell-student-${student.id} cell-subject-${row.id} ${activeStudentIdRef.current === student.id || activeSubjectIdRef.current === row.id ? 'cell-subject-highlight' : ''}`}></td>;
+                            }
+                          }
+
+                          const isAssigned = isGrid
+                            ? student.subjects.some(s => subject && s.trim().toLowerCase() === subject.name.trim().toLowerCase())
+                            : true; // In stacked view, it's always assigned if a task is present
+
+                          const isStudentDragged = draggedStudentIdx === studentIndex;
+                          const isStudentHovered = hoveredStudentIdx === studentIndex && !isStudentDragged;
+                          const showLeftIndicator = isStudentHovered && draggedStudentIdx !== null && studentIndex < draggedStudentIdx;
+                          const showRightIndicator = isStudentHovered && draggedStudentIdx !== null && studentIndex > draggedStudentIdx;
+
+                          const cellId = isGrid && subject ? `${subject.id}-${student.id}` : `stacked-${student.id}-${index}`;
+                          const isClicked = clickedCellId === cellId;
+                          const isEditModeActiveCell = isEditMode && isGrid && currentRow === index && currentCol === visibleStudentIds.indexOf(student.id);
+
+                          return (
+                            <td
+                              key={cellId}
+                              id={`cell-${cellId}`}
+                              className={`p-0 text-center border-b border-r border-gray-200 last:border-r-0 h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] relative scroll-ml-16 md:scroll-ml-[80px] scroll-mt-[100px] cell-student-${student.id} cell-subject-${isGrid && subject ? subject.id : row.id} ${(isGrid && subject && activeSubjectIdRef.current === subject.id) || activeStudentIdRef.current === student.id || (!isGrid && activeSubjectIdRef.current === row.id) ? 'cell-subject-highlight' : ''}`}
+                              onDragEnter={(e) => {
                                 if (!isAssigned) return;
-                                
-                                const studentFullName = `${student.firstName} ${student.secondName}`.trim();
-                                let items = [];
-                                if (isGrid && subject) {
-                                  items = filteredCellData.filter(d => 
-                                    (d.assignee === studentFullName || d.studentName === studentFullName) && 
-                                    d.subject === subject.name
-                                  );
-                                } else {
-                                  const studentData = tasksPerStudent.find(s => s.studentId === student.id);
-                                  const task = studentData?.tasks[index];
-                                  if (task) items = [task];
-                                }
-                                
-                                if (items.length === 0) {
-                                  setNewEntryModal({
-                                    type: activeView,
-                                    subject: subject ? subject.name : '',
-                                    studentName: studentFullName,
-                                    date: selectedDate ? getLocalDateString(selectedDate) : getLocalDateString(new Date())
-                                  });
-                                } else {
-                                  setClickedCellId(isClicked ? null : cellId);
+                                if (draggedTaskId !== null && draggedTaskSource && (e.shiftKey || e.altKey || e.metaKey)) {
+                                  const studentFullName = `${student.firstName} ${student.secondName}`.trim();
+                                  if (!clonedCells.has(cellId)) {
+                                    handleCloneTask(draggedTaskSource, studentFullName);
+                                    setClonedCells(prev => new Set(prev).add(cellId));
+                                  }
                                 }
                               }}
+                              onDragOver={(e) => {
+                                if (!isAssigned) return;
+                                if (draggedTaskId !== null) {
+                                  e.preventDefault(); // allow drop
+                                  e.dataTransfer.dropEffect = (e.shiftKey || e.altKey || e.metaKey) ? 'copy' : 'move';
+                                }
+                              }}
+                              onDrop={(e) => {
+                                if (!isAssigned) return;
+                                if (draggedTaskId !== null) {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  const studentFullName = `${student.firstName} ${student.secondName}`.trim();
 
-                                className={`
+                                  if (e.altKey || e.shiftKey || e.metaKey) {
+                                    if (!clonedCells.has(cellId) && draggedTaskSource) {
+                                      handleCloneTask(draggedTaskSource, studentFullName);
+                                    }
+                                  } else {
+                                    handleUpdateTaskField(draggedTaskId, 'assignee', studentFullName);
+                                  }
+
+                                  setDraggedTaskId(null);
+                                  setDraggedTaskSource(null);
+                                  setClonedCells(new Set());
+                                }
+                              }}
+                            >
+                              <div className="w-full h-full relative">
+                                <div
+                                  onClick={() => {
+                                    if (isBatchMode) return;
+
+                                    // Always toggle highlight for this column when clicking any cell
+                                    updateHighlight(activeSubjectIdRef.current, activeStudentIdRef.current === student.id ? null : student.id);
+
+                                    if (!isAssigned) return;
+
+                                    const studentFullName = `${student.firstName} ${student.secondName}`.trim();
+                                    let items = [];
+                                    if (isGrid && subject) {
+                                      items = filteredCellData.filter(d =>
+                                        (d.assignee === studentFullName || d.studentName === studentFullName) &&
+                                        d.subject === subject.name
+                                      );
+                                    } else {
+                                      const studentData = tasksPerStudent.find(s => s.studentId === student.id);
+                                      const task = studentData?.tasks[index];
+                                      if (task) items = [task];
+                                    }
+
+                                    if (items.length === 0) {
+                                      setNewEntryModal({
+                                        type: activeView,
+                                        subject: subject ? subject.name : '',
+                                        studentName: studentFullName,
+                                        date: selectedDate ? getLocalDateString(selectedDate) : getLocalDateString(new Date())
+                                      });
+                                    } else {
+                                      setClickedCellId(isClicked ? null : cellId);
+                                    }
+                                  }}
+
+                                  className={`
                                   w-full h-full flex items-center justify-center cursor-pointer transition-all duration-300 ease-in-out
                                   ${isClicked ? 'overflow-visible cell-clicked' : 'overflow-hidden'}
                                 ${(!isAssigned && !isDragged && !isStudentDragged) ? 'unassigned-cell' : 'bg-white grid-cell-assigned'}
@@ -1941,467 +1945,467 @@ export default function BirdViewPage() {
                                 ${showBottomIndicator ? 'drop-target-bottom' : ''}
                                 ${isEditModeActiveCell ? 'ring-4 ring-[#edab30] ring-inset z-50' : ''}
                               `}
-                            >
-                                {isAssigned && filteredCellData && filteredCellData.length > 0 && (() => {
-                                const studentFullName = `${student.firstName} ${student.secondName}`.trim();
-                                let items = [];
-                                if (isGrid && subject) {
-                                  items = filteredCellData.filter(d => 
-                                    (d.assignee === studentFullName || d.studentName === studentFullName) && 
-                                    d.subject === subject.name
-                                  );
-                                } else {
-                                  if (stackedTask) items = [stackedTask];
-                                }
-                                
-                                if (items.length === 0) return null;
-                                
-                                return (
-                                <div className="w-full h-full flex flex-col items-center justify-center relative">
-                                    {items.slice(0, 1).map((item, idx) => {
-                                      if (activeView === 'query') {
-                                        return (
-                                          <div key={idx} className="w-full h-full bg-[#edab30]/10 border border-[#edab30]/30 p-1 flex flex-col items-center justify-center">
-                                            <span className="text-[9px] font-bold text-[#254245] truncate w-full text-center uppercase">Query</span>
-                                            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase mt-0.5 ${item.status === 'OPEN' || item.status === 'open' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
-                                              {item.status}
-                                            </span>
-                                          </div>
-                                        );
-                                      }
+                                >
+                                  {isAssigned && filteredCellData && filteredCellData.length > 0 && (() => {
+                                    const studentFullName = `${student.firstName} ${student.secondName}`.trim();
+                                    let items = [];
+                                    if (isGrid && subject) {
+                                      items = filteredCellData.filter(d =>
+                                        (d.assignee === studentFullName || d.studentName === studentFullName) &&
+                                        d.subject === subject.name
+                                      );
+                                    } else {
+                                      if (stackedTask) items = [stackedTask];
+                                    }
 
-                                      const typeBadge = getTaskTypeBadge(item.taskType || 'Task');
-                                      const statusColor = getStatusColor(item.status);
-                                      
-                                      return (
-                                          <div 
-                                            key={idx} 
-                                            draggable={!isBatchMode}
-                                            onDragStart={(e) => {
-                                              if (isBatchMode) return;
-                                              e.dataTransfer.effectAllowed = 'copyMove';
-                                              e.dataTransfer.setData('text/plain', item.id.toString());
-                                              setDraggedTaskId(item.id);
-                                              setDraggedTaskSource(item);
-                                              e.stopPropagation();
-                                            }}
-                                            onDragEnd={() => {
-                                              setDraggedTaskId(null);
-                                              setDraggedTaskSource(null);
-                                              setClonedCells(new Set());
-                                            }}
-                                            onClick={(e) => {
-                                              if (isBatchMode) {
+                                    if (items.length === 0) return null;
+
+                                    return (
+                                      <div className="w-full h-full flex flex-col items-center justify-center relative">
+                                        {items.slice(0, 1).map((item, idx) => {
+                                          if (activeView === 'query') {
+                                            return (
+                                              <div key={idx} className="w-full h-full bg-[#edab30]/10 border border-[#edab30]/30 p-1 flex flex-col items-center justify-center">
+                                                <span className="text-[9px] font-bold text-[#254245] truncate w-full text-center uppercase">Query</span>
+                                                <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase mt-0.5 ${item.status === 'OPEN' || item.status === 'open' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
+                                                  {item.status}
+                                                </span>
+                                              </div>
+                                            );
+                                          }
+
+                                          const typeBadge = getTaskTypeBadge(item.taskType || 'Task');
+                                          const statusColor = getStatusColor(item.status);
+
+                                          return (
+                                            <div
+                                              key={idx}
+                                              draggable={!isBatchMode}
+                                              onDragStart={(e) => {
+                                                if (isBatchMode) return;
+                                                e.dataTransfer.effectAllowed = 'copyMove';
+                                                e.dataTransfer.setData('text/plain', item.id.toString());
+                                                setDraggedTaskId(item.id);
+                                                setDraggedTaskSource(item);
                                                 e.stopPropagation();
-                                                setSelectedTaskIds(prev => prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]);
-                                              }
-                                            }}
-                                            onKeyDown={(e) => {
-                                              if (e.key === 'Tab' && isClicked) {
-                                                const focusableElements = e.currentTarget.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-                                                if (focusableElements.length > 0) {
-                                                  const firstElement = focusableElements[0] as HTMLElement;
-                                                  const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+                                              }}
+                                              onDragEnd={() => {
+                                                setDraggedTaskId(null);
+                                                setDraggedTaskSource(null);
+                                                setClonedCells(new Set());
+                                              }}
+                                              onClick={(e) => {
+                                                if (isBatchMode) {
+                                                  e.stopPropagation();
+                                                  setSelectedTaskIds(prev => prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]);
+                                                }
+                                              }}
+                                              onKeyDown={(e) => {
+                                                if (e.key === 'Tab' && isClicked) {
+                                                  const focusableElements = e.currentTarget.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+                                                  if (focusableElements.length > 0) {
+                                                    const firstElement = focusableElements[0] as HTMLElement;
+                                                    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
 
-                                                  if (e.shiftKey) {
-                                                    if (document.activeElement === firstElement) {
-                                                      lastElement.focus();
-                                                      e.preventDefault();
-                                                    }
-                                                  } else {
-                                                    if (document.activeElement === lastElement) {
-                                                      firstElement.focus();
-                                                      e.preventDefault();
+                                                    if (e.shiftKey) {
+                                                      if (document.activeElement === firstElement) {
+                                                        lastElement.focus();
+                                                        e.preventDefault();
+                                                      }
+                                                    } else {
+                                                      if (document.activeElement === lastElement) {
+                                                        firstElement.focus();
+                                                        e.preventDefault();
+                                                      }
                                                     }
                                                   }
                                                 }
-                                              }
-                                            }}
-                                            className={`w-full flex flex-col justify-start items-start shadow-sm transition-all duration-300 ease-in-out ${isClicked ? 'absolute top-0 left-0 min-h-[100%] h-fit z-[100] overflow-visible rounded-lg p-4 pb-10 shadow-[0_0_30px_rgba(0,0,0,0.2)]' : 'h-full relative overflow-hidden rounded-[4px] p-1.5 pb-5'} ${selectedTaskIds.includes(item.id) ? 'ring-4 ring-[#edab30] border-transparent' : ''}`}
-                                            style={
-                                              isClicked
-                                                ? { backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderLeft: `6px solid ${statusColor}` }
-                                                : (selectedTaskIds.includes(item.id) ? { backgroundColor: `${statusColor}15` } : { backgroundColor: `${statusColor}15`, border: `1px solid ${statusColor}40` })
-                                            }
-                                          >
-                                            {/* Footer area line separator */}
-                                            {isClicked && (
-                                              <div className="absolute bottom-0 left-0 right-0 h-8 border-t border-gray-200 pointer-events-none z-[60]"></div>
-                                            )}
-                                            
-                                            {/* Footer Content (Bottom Left, visible only when clicked) */}
-                                            {isClicked && (
-                                              <div className="absolute bottom-0 left-0 z-[70] flex items-center h-8 pl-[10px] pr-1.5 rounded-bl-[4px] w-[80%]">
-                                                <button
-                                                  onClick={(e) => { e.stopPropagation(); handleDeleteInitiate(item.id); }}
-                                                  className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all outline-none focus-visible:ring-1 focus-visible:ring-red-500 p-1 mr-2 flex-shrink-0"
-                                                  title="Delete Task"
-                                                >
-                                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                    <path d="M3 6h18" />
-                                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                                                    <line x1="10" y1="11" x2="10" y2="17" />
-                                                    <line x1="14" y1="11" x2="14" y2="17" />
-                                                  </svg>
-                                                </button>
-                                              </div>
-                                            )}
-
-                                          {/* Reporter Avatar (Bottom Left, only when NOT clicked) */}
-                                          {!isClicked && item.reporter && (
-                                            <div className="absolute bottom-[3px] left-[3px] z-[70]" title={`Reporter: ${item.reporter}`}>
-                                              <div className="w-4 h-4 rounded-full text-white flex items-center justify-center text-[9px] font-black shadow-sm" style={{ backgroundColor: getReporterColor(item.reporter) }}>
-                                                {(item.reporter || '?').charAt(0).toUpperCase()}
-                                              </div>
-                                            </div>
-                                          )}
-
-                                          {/* Badges Container (Bottom Right) */}
-                                          <div 
-                                            className={`absolute bottom-0 right-0 flex z-[70] rounded-tl-[4px] ${isClicked ? 'overflow-visible' : 'overflow-hidden'}`}
-                                            onBlur={(e) => {
-                                              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                                                setActiveDropdown(null);
-                                              }
-                                            }}
-                                            onKeyDown={(e) => {
-                                              if (activeDropdown && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                e.nativeEvent.stopImmediatePropagation();
-                                                
-                                                const buttons = Array.from(e.currentTarget.querySelectorAll('button'));
-                                                if (buttons.length === 0) return;
-                                                
-                                                const currentIndex = buttons.indexOf(document.activeElement as HTMLButtonElement);
-                                                let nextIndex = 0;
-                                                
-                                                if (e.key === 'ArrowUp') {
-                                                  nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % buttons.length;
-                                                } else {
-                                                  nextIndex = currentIndex === -1 ? buttons.length - 1 : (currentIndex <= 0 ? buttons.length - 1 : currentIndex - 1);
-                                                }
-                                                
-                                                buttons[nextIndex].focus();
-                                              }
-                                            }}
-                                          >
-                                            {/* Subject Badge (Only in Stacked View) */}
-                                            {!isGrid && (
-                                              <div 
-                                                className="w-auto px-1.5 h-4 flex items-center justify-center text-white text-[8px] font-bold bg-[#254245]"
-                                                title={item.subject}
-                                              >
-                                                {subjects.find(s => s.name === item.subject)?.code || item.subject}
-                                              </div>
-                                            )}
-                                            {/* Task Type Badge */}
-                                            <div 
-                                              id={`badge-type-${item.id}`}
-                                              tabIndex={isClicked ? 0 : -1}
-                                              className={`flex items-center justify-center text-white font-bold outline-none focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:ring-[#254245] ${isClicked ? 'w-8 h-6 text-[10px] cursor-pointer hover:opacity-90' : 'w-5 h-4 text-[8px]'}`}
-                                              style={{ backgroundColor: typeBadge.color }}
-                                              title={item.taskType}
-                                              onFocus={() => { if (isClicked) setActiveDropdown(`${item.id}-type`); }}
-                                              onClick={(e) => { 
-                                                if (!isClicked) return;
-                                                e.stopPropagation(); 
-                                                setActiveDropdown(activeDropdown === `${item.id}-type` ? null : `${item.id}-type`); 
                                               }}
-                                              onKeyDown={(e) => {
-                                                if (isClicked && (e.key === 'Enter' || e.key === ' ')) {
-                                                  e.preventDefault();
-                                                  e.stopPropagation();
-                                                  setActiveDropdown(activeDropdown === `${item.id}-type` ? null : `${item.id}-type`);
-                                                }
-                                              }}
+                                              className={`w-full flex flex-col justify-start items-start shadow-sm transition-all duration-300 ease-in-out ${isClicked ? 'absolute top-0 left-0 min-h-[100%] h-fit z-[100] overflow-visible rounded-lg p-4 pb-10 shadow-[0_0_30px_rgba(0,0,0,0.2)]' : 'h-full relative overflow-hidden rounded-[4px] p-1.5 pb-5'} ${selectedTaskIds.includes(item.id) ? 'ring-4 ring-[#edab30] border-transparent' : ''}`}
+                                              style={
+                                                isClicked
+                                                  ? { backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderLeft: `6px solid ${statusColor}` }
+                                                  : (selectedTaskIds.includes(item.id) ? { backgroundColor: `${statusColor}15` } : { backgroundColor: `${statusColor}15`, border: `1px solid ${statusColor}40` })
+                                              }
                                             >
-                                              {typeBadge.initials}
-                                            </div>
-                                            
-                                            {activeDropdown === `${item.id}-type` && isClicked && (
-                                              <div className="absolute bottom-[100%] right-8 mb-1 flex flex-col-reverse gap-1 z-[80]" onClick={(e) => e.stopPropagation()}>
-                                                {['Tuition Work', 'Class Work', 'Home Work', 'Test', 'Project']
-                                                  .filter(t => t !== item.taskType)
-                                                  .map(t => {
-                                                  const b = getTaskTypeBadge(t);
-                                                  return (
-                                                    <button 
-                                                      key={t}
-                                                      className="w-8 h-6 flex items-center justify-center text-white text-[10px] font-bold shadow-md hover:scale-110 transition-transform outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                                                      style={{ backgroundColor: b.color }}
-                                                      onClick={() => {
-                                                        handleUpdateTaskField(item.id, 'taskType', t);
-                                                        setActiveDropdown(null);
-                                                        document.getElementById(`badge-type-${item.id}`)?.focus();
-                                                      }}
-                                                      onKeyDown={(e) => {
-                                                        if (e.key === 'Enter' || e.key === ' ') {
-                                                          e.preventDefault();
-                                                          e.stopPropagation();
-                                                          handleUpdateTaskField(item.id, 'taskType', t);
-                                                          setActiveDropdown(null);
-                                                          document.getElementById(`badge-type-${item.id}`)?.focus();
-                                                        }
-                                                      }}
-                                                      title={t}
-                                                    >
-                                                      {b.initials}
-                                                    </button>
-                                                  )
-                                                })}
-                                              </div>
-                                            )}
-                                            
-                                            {/* Status Badge */}
-                                            <div 
-                                              id={`badge-status-${item.id}`}
-                                              tabIndex={isClicked ? 0 : -1}
-                                              className={`flex items-center justify-center text-white font-bold outline-none focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:ring-[#254245] ${isClicked ? 'w-8 h-6 text-[10px] cursor-pointer hover:opacity-90' : 'w-5 h-4 text-[8px]'}`}
-                                              style={{ backgroundColor: statusColor }}
-                                              title={item.status}
-                                              onFocus={() => { if (isClicked) setActiveDropdown(`${item.id}-status`); }}
-                                              onClick={(e) => { 
-                                                if (!isClicked) return;
-                                                e.stopPropagation(); 
-                                                setActiveDropdown(activeDropdown === `${item.id}-status` ? null : `${item.id}-status`); 
-                                              }}
-                                              onKeyDown={(e) => {
-                                                if (isClicked && (e.key === 'Enter' || e.key === ' ')) {
-                                                  e.preventDefault();
-                                                  e.stopPropagation();
-                                                  setActiveDropdown(activeDropdown === `${item.id}-status` ? null : `${item.id}-status`);
-                                                }
-                                              }}
-                                            >
-                                              {getStatusInitials(item.status)}
-                                            </div>
-                                            
-                                            {activeDropdown === `${item.id}-status` && isClicked && (
-                                              <div className="absolute bottom-[100%] right-0 mb-1 flex flex-col-reverse gap-1 z-[80]" onClick={(e) => e.stopPropagation()}>
-                                                {['OPEN', 'IN_PROGRESS', 'DONE', 'PENDING']
-                                                  .filter(s => s !== item.status)
-                                                  .map(s => (
-                                                  <button 
-                                                    key={s}
-                                                    className="w-8 h-6 flex items-center justify-center text-white text-[10px] font-bold shadow-md hover:scale-110 transition-transform outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                                                    style={{ backgroundColor: getStatusColor(s) }}
-                                                    onClick={() => {
-                                                      handleUpdateTaskField(item.id, 'status', s);
-                                                      setActiveDropdown(null);
-                                                      document.getElementById(`badge-status-${item.id}`)?.focus();
-                                                    }}
-                                                    onKeyDown={(e) => {
-                                                      if (e.key === 'Enter' || e.key === ' ') {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                      handleUpdateTaskField(item.id, 'status', s);
-                                                      setActiveDropdown(null);
-                                                      document.getElementById(`badge-status-${item.id}`)?.focus();
-                                                      }
-                                                    }}
-                                                    title={s}
+                                              {/* Footer area line separator */}
+                                              {isClicked && (
+                                                <div className="absolute bottom-0 left-0 right-0 h-8 border-t border-gray-200 pointer-events-none z-[60]"></div>
+                                              )}
+
+                                              {/* Footer Content (Bottom Left, visible only when clicked) */}
+                                              {isClicked && (
+                                                <div className="absolute bottom-0 left-0 z-[70] flex items-center h-8 pl-[10px] pr-1.5 rounded-bl-[4px] w-[80%]">
+                                                  <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteInitiate(item.id); }}
+                                                    className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all outline-none focus-visible:ring-1 focus-visible:ring-red-500 p-1 mr-2 flex-shrink-0"
+                                                    title="Delete Task"
                                                   >
-                                                    {getStatusInitials(s)}
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                      <path d="M3 6h18" />
+                                                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                                      <line x1="10" y1="11" x2="10" y2="17" />
+                                                      <line x1="14" y1="11" x2="14" y2="17" />
+                                                    </svg>
                                                   </button>
-                                                ))}
-                                              </div>
-                                            )}
-                                          </div>
+                                                </div>
+                                              )}
 
-                                          {/* Main Content */}
-                                          {isClicked ? (
-                                            (() => {
-                                              const availableChapters = chaptersList.filter(c => c.subject === item.subject && c.book === item.book);
-                                              const availableTopics = topicsList.filter(t => t.subject === item.subject && t.book === item.book && t.chapterName === item.chapter);
-                                              const uniqueTopicNames = Array.from(new Set(availableTopics.map(t => t.topicName)));
-                                              const uniqueExercises = Array.from(new Set(availableTopics.filter(t => t.topicName === item.topic && t.exercise).map(t => t.exercise)));
-                                              const uniqueReporters = Array.from(new Set([
-                                                ...reportersList,
-                                                ...cellData.map(d => d.reporter)
-                                              ].filter(Boolean)));
-
-                                              return (
-                                                <div className="flex flex-col flex-1 w-full text-left mt-0 gap-[1px]" onClick={(e) => e.stopPropagation()}>
-                                                  <div className="flex items-center w-full relative group">
-                                                    <span className="text-sm font-black text-gray-900 mr-2">Ch:</span>
-                                                    <div className="relative flex items-center group flex-1 min-w-0">
-                                                      <select 
-                                                        value={item.chapter || ''} 
-                                                        onChange={(e) => {
-                                                          const val = e.target.value;
-                                                          handleUpdateTaskField(item.id, 'chapter', val);
-                                                          handleUpdateTaskField(item.id, 'topic', '');
-                                                          handleUpdateTaskField(item.id, 'exercise', '');
-                                                        }}
-                                                        className="appearance-none peer text-sm font-black text-gray-900 w-full max-w-full bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors rounded px-1 -ml-1 pr-6 py-0.5 truncate"
-                                                      >
-                                                        <option value="" disabled>-</option>
-                                                        {availableChapters.map(c => (
-                                                          <option key={c.id} value={c.chapterTitle || c.chapterName}>{c.chapterTitle || c.chapterName}</option>
-                                                        ))}
-                                                      </select>
-                                                      <div className="absolute right-1 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                                                      </div>
-                                                    </div>
-                                                  </div>
-                                                  <div className="flex items-center w-full mt-1 relative group">
-                                                    <span className="text-sm font-bold text-gray-800 mr-2">Tp:</span>
-                                                    <div className="relative flex items-center group flex-1 min-w-0">
-                                                      <select 
-                                                        value={item.topic || ''}
-                                                        onChange={(e) => {
-                                                          const val = e.target.value;
-                                                          handleUpdateTaskField(item.id, 'topic', val);
-                                                          handleUpdateTaskField(item.id, 'exercise', '');
-                                                        }}
-                                                        className="appearance-none peer text-sm font-bold text-gray-800 w-full max-w-full bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors rounded px-1 -ml-1 pr-6 py-0.5 truncate"
-                                                      >
-                                                        <option value="" disabled>Topic...</option>
-                                                        {uniqueTopicNames.map((tName, i) => (
-                                                          <option key={i} value={tName as string}>{tName as string}</option>
-                                                        ))}
-                                                      </select>
-                                                      <div className="absolute right-1 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                                                      </div>
-                                                    </div>
-                                                  </div>
-                                                  <div className="flex items-center w-full mt-1 relative group">
-                                                    <span className="text-xs font-semibold text-gray-700 mr-2">Ex:</span>
-                                                    <div className="relative flex items-center group flex-1 min-w-0">
-                                                      <select 
-                                                        value={item.exercise || ''}
-                                                        onChange={(e) => handleUpdateTaskField(item.id, 'exercise', e.target.value)}
-                                                        className="appearance-none peer text-xs font-semibold text-gray-700 w-full max-w-full italic bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors rounded px-1 -ml-1 pr-6 py-0.5 truncate"
-                                                      >
-                                                        <option value="" disabled>Exercise...</option>
-                                                        {uniqueExercises.map((ex, i) => (
-                                                          <option key={i} value={ex as string}>{ex as string}</option>
-                                                        ))}
-                                                      </select>
-                                                      <div className="absolute right-1 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                                                      </div>
-                                                    </div>
-                                                  </div>
-                                                  <div className="flex items-start w-full mt-1.5">
-                                                    <span className="text-xs font-semibold text-gray-700 mr-2 mt-1.5">Ds:</span>
-                                                    <textarea 
-                                                      defaultValue={item.description || ''}
-                                                      placeholder="Description..."
-                                                      ref={(el) => {
-                                                        if (el && !el.dataset.resized) {
-                                                          el.dataset.resized = 'true';
-                                                          setTimeout(() => {
-                                                            if (el) {
-                                                              el.style.height = 'auto';
-                                                              el.style.height = `${el.scrollHeight}px`;
-                                                            }
-                                                          }, 10);
-                                                        }
-                                                      }}
-                                                      onFocus={(e) => {
-                                                        const target = e.currentTarget;
-                                                        setTimeout(() => {
-                                                          const val = target.value;
-                                                          target.setSelectionRange(val.length, val.length);
-                                                        }, 0);
-                                                      }}
-                                                      onBlur={(e) => { if(e.target.value !== (item.description || '')) handleUpdateTaskField(item.id, 'description', e.target.value) }}
-                                                      onInput={(e) => {
-                                                        const target = e.currentTarget;
-                                                        target.style.height = 'auto';
-                                                        target.style.height = `${target.scrollHeight}px`;
-                                                      }}
-                                                      onKeyDown={(e) => {
-                                                        if (e.key === 'Escape' || e.key === 'Esc') {
-                                                          if (e.currentTarget.value !== (item.description || '')) {
-                                                            handleUpdateTaskField(item.id, 'description', e.currentTarget.value);
-                                                          }
-                                                        } else if (e.key === 'Enter') {
-                                                          if (!e.shiftKey) {
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
-                                                            const nextElement = e.currentTarget.parentElement?.nextElementSibling?.querySelector('select');
-                                                            if (nextElement) {
-                                                              nextElement.focus();
-                                                            } else {
-                                                              e.currentTarget.blur();
-                                                            }
-                                                          }
-                                                        }
-                                                      }}
-                                                      className="text-xs text-black font-semibold w-[calc(100%+8px)] leading-relaxed text-left bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors resize-none min-h-[40px] whitespace-normal custom-scrollbar rounded px-2 py-1 -ml-2"
-                                                    />
-                                                  </div>
-                                                  <div className="flex items-center w-[calc(100%+8px)] mt-auto pt-1 relative group mb-1 hover:bg-gray-100 focus-within:bg-gray-100 rounded px-2 py-1 -ml-2 transition-colors cursor-pointer">
-                                                    {(() => {
-                                                      const reporterInitials = (item.reporter || '?').charAt(0).toUpperCase();
-                                                      return (
-                                                        <div className="w-6 h-6 rounded-full text-white flex items-center justify-center text-[11px] font-bold mr-2 flex-shrink-0 shadow-sm pointer-events-none" style={{ backgroundColor: getReporterColor(item.reporter) }}>
-                                                          {reporterInitials}
-                                                        </div>
-                                                      );
-                                                    })()}
-                                                    <div className="relative flex items-center group flex-1 min-w-0">
-                                                      <select 
-                                                        value={item.reporter || ''}
-                                                        onChange={(e) => handleUpdateTaskField(item.id, 'reporter', e.target.value)}
-                                                        className="appearance-none peer text-[12px] font-semibold text-gray-800 w-full max-w-full bg-transparent focus:outline-none transition-colors cursor-pointer truncate pr-6 py-0.5"
-                                                      >
-                                                        <option value="" disabled>Reporter...</option>
-                                                        {uniqueReporters.map((rp, i) => (
-                                                          <option key={i} value={rp as string}>{rp as string}</option>
-                                                        ))}
-                                                      </select>
-                                                      <div className="absolute right-[-4px] opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                                                      </div>
-                                                    </div>
+                                              {/* Reporter Avatar (Bottom Left, only when NOT clicked) */}
+                                              {!isClicked && item.reporter && (
+                                                <div className="absolute bottom-[3px] left-[3px] z-[70]" title={`Reporter: ${item.reporter}`}>
+                                                  <div className="w-4 h-4 rounded-full text-white flex items-center justify-center text-[9px] font-black shadow-sm" style={{ backgroundColor: getReporterColor(item.reporter) }}>
+                                                    {(item.reporter || '?').charAt(0).toUpperCase()}
                                                   </div>
                                                 </div>
-                                              );
-                                            })()
-                                          ) : (
-                                            <div className="flex flex-col flex-1 w-full text-left mt-0 overflow-hidden pr-2">
-                                              <span className="text-[12px] font-black text-gray-900 truncate w-full leading-tight mb-[1px]">Ch: {item.chapter || '-'}</span>
-                                              <span className="text-[10px] font-bold text-gray-800 truncate w-full leading-tight mb-[1px]">Tp: {item.topic || '-'}</span>
-                                              {item.exercise && <span className="text-[9px] font-semibold text-gray-700 truncate w-full italic leading-tight mb-[1px]">Ex: {item.exercise}</span>}
+                                              )}
 
-                                              {item.description && <span className="text-[8px] text-black font-semibold mt-0.5 w-full leading-tight text-left line-clamp-2">Ds: {item.description}</span>}
+                                              {/* Badges Container (Bottom Right) */}
+                                              <div
+                                                className={`absolute bottom-0 right-0 flex z-[70] rounded-tl-[4px] ${isClicked ? 'overflow-visible' : 'overflow-hidden'}`}
+                                                onBlur={(e) => {
+                                                  if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                                                    setActiveDropdown(null);
+                                                  }
+                                                }}
+                                                onKeyDown={(e) => {
+                                                  if (activeDropdown && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    e.nativeEvent.stopImmediatePropagation();
+
+                                                    const buttons = Array.from(e.currentTarget.querySelectorAll('button'));
+                                                    if (buttons.length === 0) return;
+
+                                                    const currentIndex = buttons.indexOf(document.activeElement as HTMLButtonElement);
+                                                    let nextIndex = 0;
+
+                                                    if (e.key === 'ArrowUp') {
+                                                      nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % buttons.length;
+                                                    } else {
+                                                      nextIndex = currentIndex === -1 ? buttons.length - 1 : (currentIndex <= 0 ? buttons.length - 1 : currentIndex - 1);
+                                                    }
+
+                                                    buttons[nextIndex].focus();
+                                                  }
+                                                }}
+                                              >
+                                                {/* Subject Badge (Only in Stacked View) */}
+                                                {!isGrid && (
+                                                  <div
+                                                    className="w-auto px-1.5 h-4 flex items-center justify-center text-white text-[8px] font-bold bg-[#254245]"
+                                                    title={item.subject}
+                                                  >
+                                                    {subjects.find(s => s.name === item.subject)?.code || item.subject}
+                                                  </div>
+                                                )}
+                                                {/* Task Type Badge */}
+                                                <div
+                                                  id={`badge-type-${item.id}`}
+                                                  tabIndex={isClicked ? 0 : -1}
+                                                  className={`flex items-center justify-center text-white font-bold outline-none focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:ring-[#254245] ${isClicked ? 'w-8 h-6 text-[10px] cursor-pointer hover:opacity-90' : 'w-5 h-4 text-[8px]'}`}
+                                                  style={{ backgroundColor: typeBadge.color }}
+                                                  title={item.taskType}
+                                                  onFocus={() => { if (isClicked) setActiveDropdown(`${item.id}-type`); }}
+                                                  onClick={(e) => {
+                                                    if (!isClicked) return;
+                                                    e.stopPropagation();
+                                                    setActiveDropdown(activeDropdown === `${item.id}-type` ? null : `${item.id}-type`);
+                                                  }}
+                                                  onKeyDown={(e) => {
+                                                    if (isClicked && (e.key === 'Enter' || e.key === ' ')) {
+                                                      e.preventDefault();
+                                                      e.stopPropagation();
+                                                      setActiveDropdown(activeDropdown === `${item.id}-type` ? null : `${item.id}-type`);
+                                                    }
+                                                  }}
+                                                >
+                                                  {typeBadge.initials}
+                                                </div>
+
+                                                {activeDropdown === `${item.id}-type` && isClicked && (
+                                                  <div className="absolute bottom-[100%] right-8 mb-1 flex flex-col-reverse gap-1 z-[80]" onClick={(e) => e.stopPropagation()}>
+                                                    {['Tuition Work', 'Class Work', 'Home Work', 'Test', 'Project']
+                                                      .filter(t => t !== item.taskType)
+                                                      .map(t => {
+                                                        const b = getTaskTypeBadge(t);
+                                                        return (
+                                                          <button
+                                                            key={t}
+                                                            className="w-8 h-6 flex items-center justify-center text-white text-[10px] font-bold shadow-md hover:scale-110 transition-transform outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                                            style={{ backgroundColor: b.color }}
+                                                            onClick={() => {
+                                                              handleUpdateTaskField(item.id, 'taskType', t);
+                                                              setActiveDropdown(null);
+                                                              document.getElementById(`badge-type-${item.id}`)?.focus();
+                                                            }}
+                                                            onKeyDown={(e) => {
+                                                              if (e.key === 'Enter' || e.key === ' ') {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                handleUpdateTaskField(item.id, 'taskType', t);
+                                                                setActiveDropdown(null);
+                                                                document.getElementById(`badge-type-${item.id}`)?.focus();
+                                                              }
+                                                            }}
+                                                            title={t}
+                                                          >
+                                                            {b.initials}
+                                                          </button>
+                                                        )
+                                                      })}
+                                                  </div>
+                                                )}
+
+                                                {/* Status Badge */}
+                                                <div
+                                                  id={`badge-status-${item.id}`}
+                                                  tabIndex={isClicked ? 0 : -1}
+                                                  className={`flex items-center justify-center text-white font-bold outline-none focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:ring-[#254245] ${isClicked ? 'w-8 h-6 text-[10px] cursor-pointer hover:opacity-90' : 'w-5 h-4 text-[8px]'}`}
+                                                  style={{ backgroundColor: statusColor }}
+                                                  title={item.status}
+                                                  onFocus={() => { if (isClicked) setActiveDropdown(`${item.id}-status`); }}
+                                                  onClick={(e) => {
+                                                    if (!isClicked) return;
+                                                    e.stopPropagation();
+                                                    setActiveDropdown(activeDropdown === `${item.id}-status` ? null : `${item.id}-status`);
+                                                  }}
+                                                  onKeyDown={(e) => {
+                                                    if (isClicked && (e.key === 'Enter' || e.key === ' ')) {
+                                                      e.preventDefault();
+                                                      e.stopPropagation();
+                                                      setActiveDropdown(activeDropdown === `${item.id}-status` ? null : `${item.id}-status`);
+                                                    }
+                                                  }}
+                                                >
+                                                  {getStatusInitials(item.status)}
+                                                </div>
+
+                                                {activeDropdown === `${item.id}-status` && isClicked && (
+                                                  <div className="absolute bottom-[100%] right-0 mb-1 flex flex-col-reverse gap-1 z-[80]" onClick={(e) => e.stopPropagation()}>
+                                                    {['OPEN', 'IN_PROGRESS', 'DONE', 'PENDING']
+                                                      .filter(s => s !== item.status)
+                                                      .map(s => (
+                                                        <button
+                                                          key={s}
+                                                          className="w-8 h-6 flex items-center justify-center text-white text-[10px] font-bold shadow-md hover:scale-110 transition-transform outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                                          style={{ backgroundColor: getStatusColor(s) }}
+                                                          onClick={() => {
+                                                            handleUpdateTaskField(item.id, 'status', s);
+                                                            setActiveDropdown(null);
+                                                            document.getElementById(`badge-status-${item.id}`)?.focus();
+                                                          }}
+                                                          onKeyDown={(e) => {
+                                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                              e.preventDefault();
+                                                              e.stopPropagation();
+                                                              handleUpdateTaskField(item.id, 'status', s);
+                                                              setActiveDropdown(null);
+                                                              document.getElementById(`badge-status-${item.id}`)?.focus();
+                                                            }
+                                                          }}
+                                                          title={s}
+                                                        >
+                                                          {getStatusInitials(s)}
+                                                        </button>
+                                                      ))}
+                                                  </div>
+                                                )}
+                                              </div>
+
+                                              {/* Main Content */}
+                                              {isClicked ? (
+                                                (() => {
+                                                  const availableChapters = chaptersList.filter(c => c.subject === item.subject && c.book === item.book);
+                                                  const availableTopics = topicsList.filter(t => t.subject === item.subject && t.book === item.book && t.chapterName === item.chapter);
+                                                  const uniqueTopicNames = Array.from(new Set(availableTopics.map(t => t.topicName)));
+                                                  const uniqueExercises = Array.from(new Set(availableTopics.filter(t => t.topicName === item.topic && t.exercise).map(t => t.exercise)));
+                                                  const uniqueReporters = Array.from(new Set([
+                                                    ...reportersList,
+                                                    ...cellData.map(d => d.reporter)
+                                                  ].filter(Boolean)));
+
+                                                  return (
+                                                    <div className="flex flex-col flex-1 w-full text-left mt-0 gap-[1px]" onClick={(e) => e.stopPropagation()}>
+                                                      <div className="flex items-center w-full relative group">
+                                                        <span className="text-sm font-black text-gray-900 mr-2">Ch:</span>
+                                                        <div className="relative flex items-center group flex-1 min-w-0">
+                                                          <select
+                                                            value={item.chapter || ''}
+                                                            onChange={(e) => {
+                                                              const val = e.target.value;
+                                                              handleUpdateTaskField(item.id, 'chapter', val);
+                                                              handleUpdateTaskField(item.id, 'topic', '');
+                                                              handleUpdateTaskField(item.id, 'exercise', '');
+                                                            }}
+                                                            className="appearance-none peer text-sm font-black text-gray-900 w-full max-w-full bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors rounded px-1 -ml-1 pr-6 py-0.5 truncate"
+                                                          >
+                                                            <option value="" disabled>-</option>
+                                                            {availableChapters.map(c => (
+                                                              <option key={c.id} value={c.chapterTitle || c.chapterName}>{c.chapterTitle || c.chapterName}</option>
+                                                            ))}
+                                                          </select>
+                                                          <div className="absolute right-1 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                      <div className="flex items-center w-full mt-1 relative group">
+                                                        <span className="text-sm font-bold text-gray-800 mr-2">Tp:</span>
+                                                        <div className="relative flex items-center group flex-1 min-w-0">
+                                                          <select
+                                                            value={item.topic || ''}
+                                                            onChange={(e) => {
+                                                              const val = e.target.value;
+                                                              handleUpdateTaskField(item.id, 'topic', val);
+                                                              handleUpdateTaskField(item.id, 'exercise', '');
+                                                            }}
+                                                            className="appearance-none peer text-sm font-bold text-gray-800 w-full max-w-full bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors rounded px-1 -ml-1 pr-6 py-0.5 truncate"
+                                                          >
+                                                            <option value="" disabled>Topic...</option>
+                                                            {uniqueTopicNames.map((tName, i) => (
+                                                              <option key={i} value={tName as string}>{tName as string}</option>
+                                                            ))}
+                                                          </select>
+                                                          <div className="absolute right-1 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                      <div className="flex items-center w-full mt-1 relative group">
+                                                        <span className="text-xs font-semibold text-gray-700 mr-2">Ex:</span>
+                                                        <div className="relative flex items-center group flex-1 min-w-0">
+                                                          <select
+                                                            value={item.exercise || ''}
+                                                            onChange={(e) => handleUpdateTaskField(item.id, 'exercise', e.target.value)}
+                                                            className="appearance-none peer text-xs font-semibold text-gray-700 w-full max-w-full italic bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors rounded px-1 -ml-1 pr-6 py-0.5 truncate"
+                                                          >
+                                                            <option value="" disabled>Exercise...</option>
+                                                            {uniqueExercises.map((ex, i) => (
+                                                              <option key={i} value={ex as string}>{ex as string}</option>
+                                                            ))}
+                                                          </select>
+                                                          <div className="absolute right-1 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                      <div className="flex items-start w-full mt-1.5">
+                                                        <span className="text-xs font-semibold text-gray-700 mr-2 mt-1.5">Ds:</span>
+                                                        <textarea
+                                                          defaultValue={item.description || ''}
+                                                          placeholder="Description..."
+                                                          ref={(el) => {
+                                                            if (el && !el.dataset.resized) {
+                                                              el.dataset.resized = 'true';
+                                                              setTimeout(() => {
+                                                                if (el) {
+                                                                  el.style.height = 'auto';
+                                                                  el.style.height = `${el.scrollHeight}px`;
+                                                                }
+                                                              }, 10);
+                                                            }
+                                                          }}
+                                                          onFocus={(e) => {
+                                                            const target = e.currentTarget;
+                                                            setTimeout(() => {
+                                                              const val = target.value;
+                                                              target.setSelectionRange(val.length, val.length);
+                                                            }, 0);
+                                                          }}
+                                                          onBlur={(e) => { if (e.target.value !== (item.description || '')) handleUpdateTaskField(item.id, 'description', e.target.value) }}
+                                                          onInput={(e) => {
+                                                            const target = e.currentTarget;
+                                                            target.style.height = 'auto';
+                                                            target.style.height = `${target.scrollHeight}px`;
+                                                          }}
+                                                          onKeyDown={(e) => {
+                                                            if (e.key === 'Escape' || e.key === 'Esc') {
+                                                              if (e.currentTarget.value !== (item.description || '')) {
+                                                                handleUpdateTaskField(item.id, 'description', e.currentTarget.value);
+                                                              }
+                                                            } else if (e.key === 'Enter') {
+                                                              if (!e.shiftKey) {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                const nextElement = e.currentTarget.parentElement?.nextElementSibling?.querySelector('select');
+                                                                if (nextElement) {
+                                                                  nextElement.focus();
+                                                                } else {
+                                                                  e.currentTarget.blur();
+                                                                }
+                                                              }
+                                                            }
+                                                          }}
+                                                          className="text-xs text-black font-semibold w-[calc(100%+8px)] leading-relaxed text-left bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors resize-none min-h-[40px] whitespace-normal custom-scrollbar rounded px-2 py-1 -ml-2"
+                                                        />
+                                                      </div>
+                                                      <div className="flex items-center w-[calc(100%+8px)] mt-auto pt-1 relative group mb-1 hover:bg-gray-100 focus-within:bg-gray-100 rounded px-2 py-1 -ml-2 transition-colors cursor-pointer">
+                                                        {(() => {
+                                                          const reporterInitials = (item.reporter || '?').charAt(0).toUpperCase();
+                                                          return (
+                                                            <div className="w-6 h-6 rounded-full text-white flex items-center justify-center text-[11px] font-bold mr-2 flex-shrink-0 shadow-sm pointer-events-none" style={{ backgroundColor: getReporterColor(item.reporter) }}>
+                                                              {reporterInitials}
+                                                            </div>
+                                                          );
+                                                        })()}
+                                                        <div className="relative flex items-center group flex-1 min-w-0">
+                                                          <select
+                                                            value={item.reporter || ''}
+                                                            onChange={(e) => handleUpdateTaskField(item.id, 'reporter', e.target.value)}
+                                                            className="appearance-none peer text-[12px] font-semibold text-gray-800 w-full max-w-full bg-transparent focus:outline-none transition-colors cursor-pointer truncate pr-6 py-0.5"
+                                                          >
+                                                            <option value="" disabled>Reporter...</option>
+                                                            {uniqueReporters.map((rp, i) => (
+                                                              <option key={i} value={rp as string}>{rp as string}</option>
+                                                            ))}
+                                                          </select>
+                                                          <div className="absolute right-[-4px] opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                  );
+                                                })()
+                                              ) : (
+                                                <div className="flex flex-col flex-1 w-full text-left mt-0 overflow-hidden pr-2">
+                                                  <span className="text-[12px] font-black text-gray-900 truncate w-full leading-tight mb-[1px]">Ch: {item.chapter || '-'}</span>
+                                                  <span className="text-[10px] font-bold text-gray-800 truncate w-full leading-tight mb-[1px]">Tp: {item.topic || '-'}</span>
+                                                  {item.exercise && <span className="text-[9px] font-semibold text-gray-700 truncate w-full italic leading-tight mb-[1px]">Ex: {item.exercise}</span>}
+
+                                                  {item.description && <span className="text-[8px] text-black font-semibold mt-0.5 w-full leading-tight text-left line-clamp-2">Ds: {item.description}</span>}
+                                                </div>
+                                              )}
                                             </div>
-                                          )}
-                                        </div>
-                                      );
-                                    })}
-                                    
+                                          );
+                                        })}
 
-                                  </div>
-                                );
-                              })()}
-                            </div>
-                          </div>
-                        </td>
-                        );
-                      })}
+
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+
+                  {subjects.length === 0 && (
+                    <tr>
+                      <td colSpan={students.length + 1} className="px-6 py-8 text-center text-gray-500">
+                        No subjects or students found to display.
+                      </td>
                     </tr>
-                  );
-                })}
-                
-                {subjects.length === 0 && (
-                  <tr>
-                    <td colSpan={students.length + 1} className="px-6 py-8 text-center text-gray-500">
-                      No subjects or students found to display.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
+                  )}
+                </tbody>
               </table>
-              </div>
             </div>
+          </div>
         )}
       </div>
 
@@ -2412,35 +2416,35 @@ export default function BirdViewPage() {
             <span className="text-sm font-bold text-gray-800">{selectedTaskIds.length} Tasks Selected</span>
             <span className="text-xs text-gray-500">Choose action to apply</span>
           </div>
-          
+
           <div className="h-8 w-px bg-gray-200"></div>
-          
+
           <div className="flex items-center space-x-2">
-            <button 
+            <button
               onClick={() => handleBatchUpdate('status', 'DONE')}
               className="px-4 py-2 bg-[#237f5d] hover:bg-green-700 text-white rounded-lg text-xs font-bold transition-colors"
             >
               Mark Done
             </button>
-            <button 
+            <button
               onClick={() => handleBatchUpdate('status', 'IN_PROGRESS')}
               className="px-4 py-2 bg-[#007AFF] hover:bg-blue-600 text-white rounded-lg text-xs font-bold transition-colors"
             >
               Mark In Progress
             </button>
-            <button 
+            <button
               onClick={() => handleBatchUpdate('status', 'PENDING')}
               className="px-4 py-2 bg-[#f0be39] hover:bg-yellow-500 text-white rounded-lg text-xs font-bold transition-colors"
             >
               Mark Pending
             </button>
-            <button 
+            <button
               onClick={() => handleBatchUpdate('status', 'OPEN')}
               className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-xs font-bold transition-colors"
             >
               Mark Open
             </button>
-            <button 
+            <button
               onClick={() => {
                 setSelectedTaskIds([]);
                 setIsBatchMode(false);
@@ -2458,13 +2462,13 @@ export default function BirdViewPage() {
           <div className="absolute inset-0 bg-black/50" onClick={() => setNewEntryModal(null)}></div>
           <div className="w-full max-w-4xl relative z-10">
             {newEntryModal.type === 'task' ? (
-              <TaskEntryClient 
-                currentUser={currentUser} 
-                initialValues={{ 
-                  subject: newEntryModal.subject, 
+              <TaskEntryClient
+                currentUser={currentUser}
+                initialValues={{
+                  subject: newEntryModal.subject,
                   assignee: newEntryModal.studentName,
                   dueDate: newEntryModal.date
-                }} 
+                }}
                 onClose={() => setNewEntryModal(null)}
                 onSuccess={() => {
                   setNewEntryModal(null);
@@ -2472,12 +2476,12 @@ export default function BirdViewPage() {
                 }}
               />
             ) : (
-              <QueryEntryClient 
-                currentUser={currentUser} 
-                initialValues={{ 
-                  subject: newEntryModal.subject, 
-                  studentName: newEntryModal.studentName 
-                }} 
+              <QueryEntryClient
+                currentUser={currentUser}
+                initialValues={{
+                  subject: newEntryModal.subject,
+                  studentName: newEntryModal.studentName
+                }}
                 onClose={() => setNewEntryModal(null)}
                 onSuccess={() => {
                   setNewEntryModal(null);
@@ -2492,7 +2496,7 @@ export default function BirdViewPage() {
       {toastConfig.visible && (
         <div className="fixed bottom-6 right-6 z-[300] bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg flex items-center space-x-4 animate-slide-up">
           <span className="text-sm font-medium">Task deleted.</span>
-          <button 
+          <button
             onClick={handleUndoDelete}
             className="text-sm font-bold text-[#edab30] hover:text-yellow-300 focus:outline-none transition-colors"
           >

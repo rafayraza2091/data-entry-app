@@ -28,6 +28,7 @@ export async function POST(request: Request) {
         status: data.status || 'open',
         images: data.images || [],
         createdBy: data.createdBy || '',
+        createdAt: data.createdAt ? new Date(data.createdAt) : undefined,
       },
     });
 
