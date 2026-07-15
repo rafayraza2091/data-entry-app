@@ -231,13 +231,15 @@ export default function BirdViewPage() {
     // Generate a temporary ID for optimistic UI
     const tempId = Date.now() + Math.floor(Math.random() * 1000);
     const dateToUse = selectedDate ? getLocalDateString(selectedDate) : getLocalDateString(new Date());
+    const creatorName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}`.trim() : 'System';
 
     const newTask = {
       ...task,
       id: tempId,
       assignee: newAssignee,
       className: newClassName,
-      ...(activeView === 'task' ? { dueDate: dateToUse } : { createdAt: dateToUse }),
+      createdBy: creatorName,
+      ...(activeView === 'task' ? { reporter: creatorName, dueDate: dateToUse } : { studentName: newAssignee, createdAt: dateToUse }),
     };
 
     // Optimistic update
@@ -252,7 +254,8 @@ export default function BirdViewPage() {
           ...task,
           assignee: newAssignee,
           className: newClassName,
-          ...(activeView === 'task' ? { dueDate: dateToUse } : { createdAt: dateToUse }),
+          createdBy: creatorName,
+          ...(activeView === 'task' ? { reporter: creatorName, dueDate: dateToUse } : { studentName: newAssignee, createdAt: dateToUse }),
         })
       });
       if (res.ok) {
@@ -432,9 +435,7 @@ export default function BirdViewPage() {
           studentSearchInputRef.current?.blur();
           setStudentSearchQuery('');
           updateHighlight(activeSubjectIdRef.current, null);
-        } else if (activeDropdown !== null) {
-          setActiveDropdown(null);
-        } else if (newEntryModal !== null || clickedCellId !== null || isDatePickerOpen || isStudentPickerOpen || isFilterStatusOpen || isFilterTypeOpen) {
+        } else if (activeDropdown !== null || newEntryModal !== null || clickedCellId !== null || isDatePickerOpen || isStudentPickerOpen || isFilterStatusOpen || isFilterTypeOpen) {
           // If a modal, floating cell, or dropdown is open, close only them
           setNewEntryModal(null);
           setClickedCellId(null);
@@ -442,6 +443,7 @@ export default function BirdViewPage() {
           setIsStudentPickerOpen(false);
           setIsFilterStatusOpen(false);
           setIsFilterTypeOpen(false);
+          setActiveDropdown(null);
         } else {
           const activeEl = document.activeElement as HTMLElement;
           const isGridCell = activeEl?.tagName === 'TD' && activeEl?.hasAttribute('data-subject-id');
@@ -1961,11 +1963,57 @@ export default function BirdViewPage() {
                                     if (items.length === 0) return null;
 
                                     return (
-                                      <div className="w-full h-full flex flex-col items-center justify-center relative">
-                                        {items.slice(0, 1).map((item, idx) => {
+                                      <div 
+                                        className={`w-full flex flex-col relative ${isClicked ? 'absolute top-0 left-0 min-h-[100%] h-fit max-h-[60vh] overflow-y-auto overflow-x-visible z-[100] bg-white rounded-lg p-2 shadow-[0_0_30px_rgba(0,0,0,0.2)] border border-gray-200 custom-scrollbar gap-2' : 'h-full items-center justify-center'}`}
+                                        onClick={(e) => { if (isClicked) e.stopPropagation(); }}
+                                        ref={(el) => {
+                                          if (el) {
+                                            if (isClicked && el.dataset.opened !== 'true') {
+                                              el.dataset.opened = 'true';
+                                              setTimeout(() => {
+                                                const textareas = el.querySelectorAll('textarea');
+                                                if (textareas.length > 0) {
+                                                  const lastTa = textareas[textareas.length - 1] as HTMLTextAreaElement;
+                                                  lastTa.focus();
+                                                  lastTa.setSelectionRange(lastTa.value.length, lastTa.value.length);
+                                                } else {
+                                                  // Fallback: focus the first focusable element
+                                                  const firstFocusable = el.querySelector('button:not([tabindex="-1"]), [href]:not([tabindex="-1"]), input:not([tabindex="-1"]), select:not([tabindex="-1"]), textarea:not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])') as HTMLElement;
+                                                  if (firstFocusable) firstFocusable.focus();
+                                                }
+                                              }, 50);
+                                            } else if (!isClicked && el.dataset.opened === 'true') {
+                                              el.dataset.opened = 'false';
+                                            }
+                                          }
+                                        }}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Tab' && isClicked) {
+                                            const focusableElements = Array.from(e.currentTarget.querySelectorAll('button:not([tabindex="-1"]), [href]:not([tabindex="-1"]), input:not([tabindex="-1"]), select:not([tabindex="-1"]), textarea:not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])')) as HTMLElement[];
+                                            if (focusableElements.length > 0) {
+                                              e.preventDefault();
+                                              const currentIndex = focusableElements.indexOf(document.activeElement as HTMLElement);
+                                              if (e.shiftKey) {
+                                                if (currentIndex <= 0) {
+                                                  focusableElements[focusableElements.length - 1].focus();
+                                                } else {
+                                                  focusableElements[currentIndex - 1].focus();
+                                                }
+                                              } else {
+                                                if (currentIndex === -1 || currentIndex === focusableElements.length - 1) {
+                                                  focusableElements[0].focus();
+                                                } else {
+                                                  focusableElements[currentIndex + 1].focus();
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }}
+                                      >
+                                        {(isClicked ? items : items.slice(0, 1)).map((item, idx, arr) => {
                                           if (activeView === 'query') {
                                             return (
-                                              <div key={idx} className="w-full h-full bg-[#edab30]/10 border border-[#edab30]/30 p-1 flex flex-col items-center justify-center">
+                                              <div key={idx} className={`w-full ${isClicked ? 'min-h-[80px]' : 'h-full'} bg-[#edab30]/10 border border-[#edab30]/30 p-1 flex flex-col items-center justify-center relative`}>
                                                 <span className="text-[9px] font-bold text-[#254245] truncate w-full text-center uppercase">Query</span>
                                                 <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase mt-0.5 ${item.status === 'OPEN' || item.status === 'open' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
                                                   {item.status}
@@ -1976,6 +2024,7 @@ export default function BirdViewPage() {
 
                                           const typeBadge = getTaskTypeBadge(item.taskType || 'Task');
                                           const statusColor = getStatusColor(item.status);
+                                          const isLastNewItem = idx === arr.length - 1 && isClicked;
 
                                           return (
                                             <div
@@ -2000,34 +2049,181 @@ export default function BirdViewPage() {
                                                   setSelectedTaskIds(prev => prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]);
                                                 }
                                               }}
-                                              onKeyDown={(e) => {
-                                                if (e.key === 'Tab' && isClicked) {
-                                                  const focusableElements = e.currentTarget.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-                                                  if (focusableElements.length > 0) {
-                                                    const firstElement = focusableElements[0] as HTMLElement;
-                                                    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
-
-                                                    if (e.shiftKey) {
-                                                      if (document.activeElement === firstElement) {
-                                                        lastElement.focus();
-                                                        e.preventDefault();
-                                                      }
-                                                    } else {
-                                                      if (document.activeElement === lastElement) {
-                                                        firstElement.focus();
-                                                        e.preventDefault();
-                                                      }
-                                                    }
-                                                  }
-                                                }
-                                              }}
-                                              className={`w-full flex flex-col justify-start items-start shadow-sm transition-all duration-300 ease-in-out ${isClicked ? 'absolute top-0 left-0 min-h-[100%] h-fit z-[100] overflow-visible rounded-lg p-4 pb-10 shadow-[0_0_30px_rgba(0,0,0,0.2)]' : 'h-full relative overflow-hidden rounded-[4px] p-1.5 pb-5'} ${selectedTaskIds.includes(item.id) ? 'ring-4 ring-[#edab30] border-transparent' : ''}`}
+                                              className={`w-full flex flex-col justify-start items-start shadow-sm transition-all duration-300 ease-in-out ${isClicked ? 'relative min-h-[100px] h-fit overflow-visible rounded p-3 pb-8 mb-2' : 'h-full relative overflow-hidden rounded-[4px] p-1.5 pb-5'} ${selectedTaskIds.includes(item.id) ? 'ring-4 ring-[#edab30] border-transparent' : ''}`}
                                               style={
                                                 isClicked
                                                   ? { backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderLeft: `6px solid ${statusColor}` }
                                                   : (selectedTaskIds.includes(item.id) ? { backgroundColor: `${statusColor}15` } : { backgroundColor: `${statusColor}15`, border: `1px solid ${statusColor}40` })
                                               }
                                             >
+                                              {/* Main Content */}
+                                              {isClicked ? (
+                                                (() => {
+                                                  const availableChapters = chaptersList.filter(c => c.subject === item.subject && c.book === item.book);
+                                                  const availableTopics = topicsList.filter(t => t.subject === item.subject && t.book === item.book && t.chapterName === item.chapter);
+                                                  const uniqueTopicNames = Array.from(new Set(availableTopics.map(t => t.topicName)));
+                                                  const uniqueExercises = Array.from(new Set(availableTopics.filter(t => t.topicName === item.topic && t.exercise).map(t => t.exercise)));
+                                                  const uniqueReporters = Array.from(new Set([
+                                                    ...reportersList,
+                                                    ...cellData.map(d => d.reporter)
+                                                  ].filter(Boolean)));
+
+                                                  return (
+                                                    <div className="flex flex-col flex-1 w-full text-left mt-0 gap-[1px]" onClick={(e) => e.stopPropagation()}>
+                                                      <div className="flex items-center w-full relative group">
+                                                        <span className="text-sm font-black text-gray-900 mr-2">Ch:</span>
+                                                        <div className="relative flex items-center group flex-1 min-w-0">
+                                                          <select
+                                                            value={item.chapter || ''}
+                                                            onChange={(e) => {
+                                                              const val = e.target.value;
+                                                              handleUpdateTaskField(item.id, 'chapter', val);
+                                                              handleUpdateTaskField(item.id, 'topic', '');
+                                                              handleUpdateTaskField(item.id, 'exercise', '');
+                                                            }}
+                                                            className="appearance-none peer text-sm font-black text-gray-900 w-full max-w-full bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors rounded px-1 -ml-1 pr-6 py-0.5 truncate"
+                                                          >
+                                                            <option value="" disabled>-</option>
+                                                            {availableChapters.map(c => (
+                                                              <option key={c.id} value={c.chapterTitle || c.chapterName}>{c.chapterTitle || c.chapterName}</option>
+                                                            ))}
+                                                          </select>
+                                                          <div className="absolute right-1 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                      <div className="flex items-center w-full mt-1 relative group">
+                                                        <span className="text-sm font-bold text-gray-800 mr-2">Tp:</span>
+                                                        <div className="relative flex items-center group flex-1 min-w-0">
+                                                          <select
+                                                            value={item.topic || ''}
+                                                            onChange={(e) => {
+                                                              const val = e.target.value;
+                                                              handleUpdateTaskField(item.id, 'topic', val);
+                                                              handleUpdateTaskField(item.id, 'exercise', '');
+                                                            }}
+                                                            className="appearance-none peer text-sm font-bold text-gray-800 w-full max-w-full bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors rounded px-1 -ml-1 pr-6 py-0.5 truncate"
+                                                          >
+                                                            <option value="" disabled>Topic...</option>
+                                                            {uniqueTopicNames.map((tName, i) => (
+                                                              <option key={i} value={tName as string}>{tName as string}</option>
+                                                            ))}
+                                                          </select>
+                                                          <div className="absolute right-1 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                      <div className="flex items-center w-full mt-1 relative group">
+                                                        <span className="text-xs font-semibold text-gray-700 mr-2">Ex:</span>
+                                                        <div className="relative flex items-center group flex-1 min-w-0">
+                                                          <select
+                                                            value={item.exercise || ''}
+                                                            onChange={(e) => handleUpdateTaskField(item.id, 'exercise', e.target.value)}
+                                                            className="appearance-none peer text-xs font-semibold text-gray-700 w-full max-w-full italic bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors rounded px-1 -ml-1 pr-6 py-0.5 truncate"
+                                                          >
+                                                            <option value="" disabled>Exercise...</option>
+                                                            {uniqueExercises.map((ex, i) => (
+                                                              <option key={i} value={ex as string}>{ex as string}</option>
+                                                            ))}
+                                                          </select>
+                                                          <div className="absolute right-1 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                      <div className="flex items-start w-full mt-1.5">
+                                                        <span className="text-xs font-semibold text-gray-700 mr-2 mt-1.5">Ds:</span>
+                                                        <textarea
+                                                          defaultValue={item.description || ''}
+                                                          placeholder="Description..."
+                                                          ref={(el) => {
+                                                            if (el && !el.dataset.resized) {
+                                                              el.dataset.resized = 'true';
+                                                              setTimeout(() => {
+                                                                if (el) {
+                                                                  el.style.height = 'auto';
+                                                                  el.style.height = `${el.scrollHeight}px`;
+                                                                  if (isLastNewItem) {
+                                                                    el.focus();
+                                                                    el.setSelectionRange(el.value.length, el.value.length);
+                                                                  }
+                                                                }
+                                                              }, 10);
+                                                            }
+                                                          }}
+                                                          onFocus={(e) => {
+                                                            const target = e.currentTarget;
+                                                            setTimeout(() => {
+                                                              const val = target.value;
+                                                              target.setSelectionRange(val.length, val.length);
+                                                            }, 0);
+                                                          }}
+                                                          onBlur={(e) => { if (e.target.value !== (item.description || '')) handleUpdateTaskField(item.id, 'description', e.target.value) }}
+                                                          onInput={(e) => {
+                                                            const target = e.currentTarget;
+                                                            target.style.height = 'auto';
+                                                            target.style.height = `${target.scrollHeight}px`;
+                                                          }}
+                                                          onKeyDown={(e) => {
+                                                            if (e.key === 'Escape' || e.key === 'Esc') {
+                                                              if (e.currentTarget.value !== (item.description || '')) {
+                                                                handleUpdateTaskField(item.id, 'description', e.currentTarget.value);
+                                                              }
+                                                            } else if (e.key === 'Enter') {
+                                                              if (!e.shiftKey) {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                const nextElement = e.currentTarget.parentElement?.nextElementSibling?.querySelector('select');
+                                                                if (nextElement) {
+                                                                  nextElement.focus();
+                                                                } else {
+                                                                  e.currentTarget.blur();
+                                                                }
+                                                              }
+                                                            }
+                                                          }}
+                                                          className="text-xs text-black font-semibold w-[calc(100%+8px)] leading-relaxed text-left bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors resize-none min-h-[40px] whitespace-normal custom-scrollbar rounded px-2 py-1 -ml-2"
+                                                        />
+                                                      </div>
+                                                      <div className="flex items-center w-[calc(100%+8px)] mt-auto pt-1 relative group mb-1 hover:bg-gray-100 focus-within:bg-gray-100 rounded px-2 py-1 -ml-2 transition-colors cursor-pointer">
+                                                        {(() => {
+                                                          const reporterInitials = (item.reporter || '?').charAt(0).toUpperCase();
+                                                          return (
+                                                            <div className="w-6 h-6 rounded-full text-white flex items-center justify-center text-[11px] font-bold mr-2 flex-shrink-0 shadow-sm pointer-events-none" style={{ backgroundColor: getReporterColor(item.reporter) }}>
+                                                              {reporterInitials}
+                                                            </div>
+                                                          );
+                                                        })()}
+                                                        <div className="relative flex items-center group flex-1 min-w-0">
+                                                          <select
+                                                            value={item.reporter || ''}
+                                                            onChange={(e) => handleUpdateTaskField(item.id, 'reporter', e.target.value)}
+                                                            className="appearance-none peer text-[12px] font-semibold text-gray-800 w-full max-w-full bg-transparent focus:outline-none transition-colors cursor-pointer truncate pr-6 py-0.5"
+                                                          >
+                                                            <option value="" disabled>Reporter...</option>
+                                                            {uniqueReporters.map((rp, i) => (
+                                                              <option key={i} value={rp as string}>{rp as string}</option>
+                                                            ))}
+                                                          </select>
+                                                          <div className="absolute right-[-4px] opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
+                                                          </div>
+                                                        </div>
+                                                      </div>
+                                                    </div>
+                                                  );
+                                                })()
+                                              ) : (
+                                                <div className="flex flex-col flex-1 w-full text-left mt-0 overflow-hidden pr-2">
+                                                  <span className="text-[12px] font-black text-gray-900 truncate w-full leading-tight mb-[1px]">Ch: {item.chapter || '-'}</span>
+                                                  <span className="text-[10px] font-bold text-gray-800 truncate w-full leading-tight mb-[1px]">Tp: {item.topic || '-'}</span>
+                                                  {item.exercise && <span className="text-[9px] font-semibold text-gray-700 truncate w-full italic leading-tight mb-[1px]">Ex: {item.exercise}</span>}
+
+                                                  {item.description && <span className="text-[8px] text-black font-semibold mt-0.5 w-full leading-tight text-left line-clamp-2">Ds: {item.description}</span>}
+                                                </div>
+                                              )}
                                               {/* Footer area line separator */}
                                               {isClicked && (
                                                 <div className="absolute bottom-0 left-0 right-0 h-8 border-t border-gray-200 pointer-events-none z-[60]"></div>
@@ -2133,6 +2329,7 @@ export default function BirdViewPage() {
                                                         return (
                                                           <button
                                                             key={t}
+                                                            tabIndex={-1}
                                                             className="w-8 h-6 flex items-center justify-center text-white text-[10px] font-bold shadow-md hover:scale-110 transition-transform outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                                                             style={{ backgroundColor: b.color }}
                                                             onClick={() => {
@@ -2189,6 +2386,7 @@ export default function BirdViewPage() {
                                                       .map(s => (
                                                         <button
                                                           key={s}
+                                                          tabIndex={-1}
                                                           className="w-8 h-6 flex items-center justify-center text-white text-[10px] font-bold shadow-md hover:scale-110 transition-transform outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                                                           style={{ backgroundColor: getStatusColor(s) }}
                                                           onClick={() => {
@@ -2214,175 +2412,54 @@ export default function BirdViewPage() {
                                                 )}
                                               </div>
 
-                                              {/* Main Content */}
-                                              {isClicked ? (
-                                                (() => {
-                                                  const availableChapters = chaptersList.filter(c => c.subject === item.subject && c.book === item.book);
-                                                  const availableTopics = topicsList.filter(t => t.subject === item.subject && t.book === item.book && t.chapterName === item.chapter);
-                                                  const uniqueTopicNames = Array.from(new Set(availableTopics.map(t => t.topicName)));
-                                                  const uniqueExercises = Array.from(new Set(availableTopics.filter(t => t.topicName === item.topic && t.exercise).map(t => t.exercise)));
-                                                  const uniqueReporters = Array.from(new Set([
-                                                    ...reportersList,
-                                                    ...cellData.map(d => d.reporter)
-                                                  ].filter(Boolean)));
-
-                                                  return (
-                                                    <div className="flex flex-col flex-1 w-full text-left mt-0 gap-[1px]" onClick={(e) => e.stopPropagation()}>
-                                                      <div className="flex items-center w-full relative group">
-                                                        <span className="text-sm font-black text-gray-900 mr-2">Ch:</span>
-                                                        <div className="relative flex items-center group flex-1 min-w-0">
-                                                          <select
-                                                            value={item.chapter || ''}
-                                                            onChange={(e) => {
-                                                              const val = e.target.value;
-                                                              handleUpdateTaskField(item.id, 'chapter', val);
-                                                              handleUpdateTaskField(item.id, 'topic', '');
-                                                              handleUpdateTaskField(item.id, 'exercise', '');
-                                                            }}
-                                                            className="appearance-none peer text-sm font-black text-gray-900 w-full max-w-full bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors rounded px-1 -ml-1 pr-6 py-0.5 truncate"
-                                                          >
-                                                            <option value="" disabled>-</option>
-                                                            {availableChapters.map(c => (
-                                                              <option key={c.id} value={c.chapterTitle || c.chapterName}>{c.chapterTitle || c.chapterName}</option>
-                                                            ))}
-                                                          </select>
-                                                          <div className="absolute right-1 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                                                          </div>
-                                                        </div>
-                                                      </div>
-                                                      <div className="flex items-center w-full mt-1 relative group">
-                                                        <span className="text-sm font-bold text-gray-800 mr-2">Tp:</span>
-                                                        <div className="relative flex items-center group flex-1 min-w-0">
-                                                          <select
-                                                            value={item.topic || ''}
-                                                            onChange={(e) => {
-                                                              const val = e.target.value;
-                                                              handleUpdateTaskField(item.id, 'topic', val);
-                                                              handleUpdateTaskField(item.id, 'exercise', '');
-                                                            }}
-                                                            className="appearance-none peer text-sm font-bold text-gray-800 w-full max-w-full bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors rounded px-1 -ml-1 pr-6 py-0.5 truncate"
-                                                          >
-                                                            <option value="" disabled>Topic...</option>
-                                                            {uniqueTopicNames.map((tName, i) => (
-                                                              <option key={i} value={tName as string}>{tName as string}</option>
-                                                            ))}
-                                                          </select>
-                                                          <div className="absolute right-1 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                                                          </div>
-                                                        </div>
-                                                      </div>
-                                                      <div className="flex items-center w-full mt-1 relative group">
-                                                        <span className="text-xs font-semibold text-gray-700 mr-2">Ex:</span>
-                                                        <div className="relative flex items-center group flex-1 min-w-0">
-                                                          <select
-                                                            value={item.exercise || ''}
-                                                            onChange={(e) => handleUpdateTaskField(item.id, 'exercise', e.target.value)}
-                                                            className="appearance-none peer text-xs font-semibold text-gray-700 w-full max-w-full italic bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors rounded px-1 -ml-1 pr-6 py-0.5 truncate"
-                                                          >
-                                                            <option value="" disabled>Exercise...</option>
-                                                            {uniqueExercises.map((ex, i) => (
-                                                              <option key={i} value={ex as string}>{ex as string}</option>
-                                                            ))}
-                                                          </select>
-                                                          <div className="absolute right-1 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                                                          </div>
-                                                        </div>
-                                                      </div>
-                                                      <div className="flex items-start w-full mt-1.5">
-                                                        <span className="text-xs font-semibold text-gray-700 mr-2 mt-1.5">Ds:</span>
-                                                        <textarea
-                                                          defaultValue={item.description || ''}
-                                                          placeholder="Description..."
-                                                          ref={(el) => {
-                                                            if (el && !el.dataset.resized) {
-                                                              el.dataset.resized = 'true';
-                                                              setTimeout(() => {
-                                                                if (el) {
-                                                                  el.style.height = 'auto';
-                                                                  el.style.height = `${el.scrollHeight}px`;
-                                                                }
-                                                              }, 10);
-                                                            }
-                                                          }}
-                                                          onFocus={(e) => {
-                                                            const target = e.currentTarget;
-                                                            setTimeout(() => {
-                                                              const val = target.value;
-                                                              target.setSelectionRange(val.length, val.length);
-                                                            }, 0);
-                                                          }}
-                                                          onBlur={(e) => { if (e.target.value !== (item.description || '')) handleUpdateTaskField(item.id, 'description', e.target.value) }}
-                                                          onInput={(e) => {
-                                                            const target = e.currentTarget;
-                                                            target.style.height = 'auto';
-                                                            target.style.height = `${target.scrollHeight}px`;
-                                                          }}
-                                                          onKeyDown={(e) => {
-                                                            if (e.key === 'Escape' || e.key === 'Esc') {
-                                                              if (e.currentTarget.value !== (item.description || '')) {
-                                                                handleUpdateTaskField(item.id, 'description', e.currentTarget.value);
-                                                              }
-                                                            } else if (e.key === 'Enter') {
-                                                              if (!e.shiftKey) {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                const nextElement = e.currentTarget.parentElement?.nextElementSibling?.querySelector('select');
-                                                                if (nextElement) {
-                                                                  nextElement.focus();
-                                                                } else {
-                                                                  e.currentTarget.blur();
-                                                                }
-                                                              }
-                                                            }
-                                                          }}
-                                                          className="text-xs text-black font-semibold w-[calc(100%+8px)] leading-relaxed text-left bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors resize-none min-h-[40px] whitespace-normal custom-scrollbar rounded px-2 py-1 -ml-2"
-                                                        />
-                                                      </div>
-                                                      <div className="flex items-center w-[calc(100%+8px)] mt-auto pt-1 relative group mb-1 hover:bg-gray-100 focus-within:bg-gray-100 rounded px-2 py-1 -ml-2 transition-colors cursor-pointer">
-                                                        {(() => {
-                                                          const reporterInitials = (item.reporter || '?').charAt(0).toUpperCase();
-                                                          return (
-                                                            <div className="w-6 h-6 rounded-full text-white flex items-center justify-center text-[11px] font-bold mr-2 flex-shrink-0 shadow-sm pointer-events-none" style={{ backgroundColor: getReporterColor(item.reporter) }}>
-                                                              {reporterInitials}
-                                                            </div>
-                                                          );
-                                                        })()}
-                                                        <div className="relative flex items-center group flex-1 min-w-0">
-                                                          <select
-                                                            value={item.reporter || ''}
-                                                            onChange={(e) => handleUpdateTaskField(item.id, 'reporter', e.target.value)}
-                                                            className="appearance-none peer text-[12px] font-semibold text-gray-800 w-full max-w-full bg-transparent focus:outline-none transition-colors cursor-pointer truncate pr-6 py-0.5"
-                                                          >
-                                                            <option value="" disabled>Reporter...</option>
-                                                            {uniqueReporters.map((rp, i) => (
-                                                              <option key={i} value={rp as string}>{rp as string}</option>
-                                                            ))}
-                                                          </select>
-                                                          <div className="absolute right-[-4px] opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                                                          </div>
-                                                        </div>
-                                                      </div>
-                                                    </div>
-                                                  );
-                                                })()
-                                              ) : (
-                                                <div className="flex flex-col flex-1 w-full text-left mt-0 overflow-hidden pr-2">
-                                                  <span className="text-[12px] font-black text-gray-900 truncate w-full leading-tight mb-[1px]">Ch: {item.chapter || '-'}</span>
-                                                  <span className="text-[10px] font-bold text-gray-800 truncate w-full leading-tight mb-[1px]">Tp: {item.topic || '-'}</span>
-                                                  {item.exercise && <span className="text-[9px] font-semibold text-gray-700 truncate w-full italic leading-tight mb-[1px]">Ex: {item.exercise}</span>}
-
-                                                  {item.description && <span className="text-[8px] text-black font-semibold mt-0.5 w-full leading-tight text-left line-clamp-2">Ds: {item.description}</span>}
-                                                </div>
-                                              )}
                                             </div>
                                           );
                                         })}
 
-
+                                        {isClicked && (
+                                          <button
+                                            className="w-full flex items-center justify-center py-2 mt-1 border-2 border-dashed border-gray-300 rounded hover:bg-gray-50 text-gray-400 hover:text-gray-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#254245]"
+                                            onClick={async (e) => {
+                                              e.stopPropagation();
+                                              const tempId = Date.now() + Math.floor(Math.random() * 1000);
+                                              const dateToUse = selectedDate ? getLocalDateString(selectedDate) : getLocalDateString(new Date());
+                                              const creatorName = currentUser ? `${currentUser.firstName} ${currentUser.lastName}`.trim() : 'System';
+                                              const newTask = {
+                                                id: tempId,
+                                                subject: subject ? subject.name : '',
+                                                className: subject ? subject.name : '',
+                                                assignee: studentFullName,
+                                                reporter: creatorName,
+                                                createdBy: creatorName,
+                                                description: '',
+                                                status: 'OPEN',
+                                                taskType: 'Tuition Work',
+                                                ...(activeView === 'task' ? { dueDate: dateToUse } : { studentName: studentFullName, createdAt: dateToUse }),
+                                              };
+                                              setCellData(prev => [...prev, newTask]);
+                                              try {
+                                                const endpoint = activeView === 'task' ? '/api/tasks' : '/api/queries';
+                                                const res = await fetch(endpoint, {
+                                                  method: 'POST',
+                                                  headers: { 'Content-Type': 'application/json' },
+                                                  body: JSON.stringify(newTask)
+                                                });
+                                                if (res.ok) {
+                                                  const createdTask = await res.json();
+                                                  setCellData(prev => prev.map(t => t.id === tempId ? createdTask : t));
+                                                } else {
+                                                  setCellData(prev => prev.filter(t => t.id !== tempId));
+                                                  alert("Failed to create task");
+                                                }
+                                              } catch (err) {
+                                                setCellData(prev => prev.filter(t => t.id !== tempId));
+                                                alert("Failed to create task");
+                                              }
+                                            }}
+                                          >
+                                            <i className="fa-solid fa-plus"></i>
+                                          </button>
+                                        )}
                                       </div>
                                     );
                                   })()}
