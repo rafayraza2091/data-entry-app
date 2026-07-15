@@ -79,7 +79,13 @@ export default function TaskEntryClient({
           
           if (currentUser) {
             const userName = `${currentUser.firstName} ${currentUser.lastName}`.trim();
-            setReporter(ownerName);
+            
+            if (currentUser.role !== 'STUDENT') {
+              setReporter(userName);
+            } else {
+              setReporter(ownerName);
+            }
+
             if (currentUser.role === 'STUDENT') {
               setAssignee(userName);
             }

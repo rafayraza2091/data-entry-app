@@ -46,12 +46,12 @@ export default function Sidebar({
           {/* Daily Quest Section */}
           {isExpanded && <div className="text-xs uppercase text-subtextGray font-bold mt-2 mb-1 px-2 tracking-wider">Daily Quest</div>}
           
-          <Link href="/task" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/task' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Task Entry">
+          <Link href="/task" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/task' ? 'bg-customMustard/20 text-customMustard border-l-2 border-customMustard' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Task Entry">
             <i className="fa-solid fa-clipboard-check w-6 text-center"></i>
             {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Task Entry</span>}
           </Link>
 
-          <Link href="/query" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/query' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Query Entry">
+          <Link href="/query" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/query' ? 'bg-customMustard/20 text-customMustard border-l-2 border-customMustard' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Query Entry">
             <i className="fa-solid fa-question-circle w-6 text-center"></i>
             {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Query Entry</span>}
           </Link>
@@ -60,37 +60,37 @@ export default function Sidebar({
           <div className="mt-2 pt-2 border-t border-white/10">
             {isExpanded && <div className="text-xs uppercase text-subtextGray font-bold mb-1 px-2 tracking-wider">Entry</div>}
             
-            <Link href="/" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Syllabus">
+            <Link href="/" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/' ? 'bg-customMustard/20 text-customMustard border-l-2 border-customMustard' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Syllabus">
               <i className="fa-solid fa-book-open w-6 text-center"></i>
               {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Syllabus</span>}
             </Link>
 
-          <Link href="/book" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/book' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Book Entry">
+          <Link href="/book" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/book' ? 'bg-customMustard/20 text-customMustard border-l-2 border-customMustard' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Book Entry">
             <i className="fa-solid fa-book w-6 text-center"></i>
             {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Book Entry</span>}
           </Link>
 
-          <Link href="/subject" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/subject' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Subject Entry">
+          <Link href="/subject" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/subject' ? 'bg-customMustard/20 text-customMustard border-l-2 border-customMustard' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Subject Entry">
             <i className="fa-solid fa-bookmark w-6 text-center"></i>
             {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Subject Entry</span>}
           </Link>
 
-          <Link href="/classes" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/classes' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Class Entry">
+          <Link href="/classes" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/classes' ? 'bg-customMustard/20 text-customMustard border-l-2 border-customMustard' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Class Entry">
             <i className="fa-solid fa-chalkboard-user w-6 text-center"></i>
             {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Class Entry</span>}
           </Link>
 
-          <Link href="/school" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/school' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="School Entry">
+          <Link href="/school" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/school' ? 'bg-customMustard/20 text-customMustard border-l-2 border-customMustard' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="School Entry">
             <i className="fa-solid fa-school w-6 text-center"></i>
             {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">School Entry</span>}
           </Link>
 
-          <Link href="/chapter" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/chapter' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Chapter Entry">
+          <Link href="/chapter" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/chapter' ? 'bg-customMustard/20 text-customMustard border-l-2 border-customMustard' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Chapter Entry">
             <i className="fa-solid fa-list-ol w-6 text-center"></i>
             {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Chapter Entry</span>}
           </Link>
 
-          <Link href="/topic" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/topic' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Topic Entry">
+          <Link href="/topic" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/topic' ? 'bg-customMustard/20 text-customMustard border-l-2 border-customMustard' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Topic Entry">
             <i className="fa-solid fa-file-lines w-6 text-center"></i>
             {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Topic Entry</span>}
           </Link>
@@ -101,22 +101,22 @@ export default function Sidebar({
           <div className="mt-2 pt-2 border-t border-white/10">
             {isExpanded && <div className="text-xs uppercase text-subtextGray font-bold mb-1 px-2 tracking-wider">View</div>}
             
-            <Link href="/bird-view" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/bird-view' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Bird View">
+            <Link href="/bird-view" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/bird-view' ? 'bg-customMustard/20 text-customMustard border-l-2 border-customMustard' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Bird View">
               <i className="fa-solid fa-chart-pie w-6 text-center"></i>
               {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Bird View</span>}
             </Link>
 
-            <Link href="/view-data" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/view-data' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Data View">
+            <Link href="/view-data" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/view-data' ? 'bg-customMustard/20 text-customMustard border-l-2 border-customMustard' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Data View">
               <i className="fa-solid fa-table w-6 text-center"></i>
               {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Data View</span>}
             </Link>
 
-            <Link href="/view-queries" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/view-queries' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Query View">
+            <Link href="/view-queries" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/view-queries' ? 'bg-customMustard/20 text-customMustard border-l-2 border-customMustard' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Query View">
               <i className="fa-solid fa-clipboard-question w-6 text-center"></i>
               {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Query View</span>}
             </Link>
 
-            <Link href="/view-tasks" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/view-tasks' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Task View">
+            <Link href="/view-tasks" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/view-tasks' ? 'bg-customMustard/20 text-customMustard border-l-2 border-customMustard' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Task View">
               <i className="fa-solid fa-tasks w-6 text-center"></i>
               {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Task View</span>}
             </Link>
@@ -127,12 +127,12 @@ export default function Sidebar({
             <div className="mt-2 pt-2 border-t border-white/10">
               {isExpanded && <div className="text-xs uppercase text-subtextGray font-bold mb-1 px-2 tracking-wider">Management</div>}
               
-              <Link href="/employee-record" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/employee-record' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Employee Record">
+              <Link href="/employee-record" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/employee-record' ? 'bg-customMustard/20 text-customMustard border-l-2 border-customMustard' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Employee Record">
                 <i className="fa-solid fa-address-card w-6 text-center"></i>
                 {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Employee Record</span>}
               </Link>
 
-              <Link href="/view-employees" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/view-employees' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="View Employees">
+              <Link href="/view-employees" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/view-employees' ? 'bg-customMustard/20 text-customMustard border-l-2 border-customMustard' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="View Employees">
                 <i className="fa-solid fa-users-viewfinder w-6 text-center"></i>
                 {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">View Employees</span>}
               </Link>
@@ -144,22 +144,22 @@ export default function Sidebar({
             <div className="mt-2 pt-2 border-t border-white/10">
               {isExpanded && <div className="text-xs uppercase text-subtextGray font-bold mb-1 px-2 tracking-wider">Owner Tools</div>}
               
-              <Link href="/agent" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/agent' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Agent Assistant">
+              <Link href="/agent" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/agent' ? 'bg-customMustard/20 text-customMustard border-l-2 border-customMustard' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Agent Assistant">
                 <i className="fa-solid fa-robot w-6 text-center"></i>
                 {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Agent Assistant</span>}
               </Link>
               
-              <Link href="/admin/users" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/admin/users' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="User Roles">
+              <Link href="/admin/users" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/admin/users' ? 'bg-customMustard/20 text-customMustard border-l-2 border-customMustard' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="User Roles">
                 <i className="fa-solid fa-user-shield w-6 text-center"></i>
                 {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">User Roles</span>}
               </Link>
               
-              <Link href="/users" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/users' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Users">
+              <Link href="/users" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/users' ? 'bg-customMustard/20 text-customMustard border-l-2 border-customMustard' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Users">
                 <i className="fa-solid fa-users w-6 text-center"></i>
                 {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Users</span>}
               </Link>
               
-              <Link href="/notification" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/notification' ? 'bg-primary/20 text-primary border-l-2 border-primary' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Notification">
+              <Link href="/notification" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/notification' ? 'bg-customMustard/20 text-customMustard border-l-2 border-customMustard' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Notification">
                 <i className="fa-solid fa-bell w-6 text-center"></i>
                 {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Notification</span>}
               </Link>

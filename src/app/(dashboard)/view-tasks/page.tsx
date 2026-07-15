@@ -42,7 +42,10 @@ export default function ViewTasksPage() {
           fetch('/api/classes')
         ]);
         
-        if (tasksRes.ok) setTasks(await tasksRes.json());
+        if (tasksRes.ok) {
+          const json = await tasksRes.json();
+          setTasks(json.data || json);
+        }
         if (subjRes.ok) setSubjectsList(await subjRes.json());
         if (booksRes.ok) setBooksList(await booksRes.json());
         if (chapRes.ok) setChaptersList(await chapRes.json());

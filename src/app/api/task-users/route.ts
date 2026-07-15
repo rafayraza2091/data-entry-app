@@ -24,10 +24,16 @@ export async function GET() {
     });
 
     const students = rawStudents.map(u => {
-      const studentData = studentsDb.find(s => 
-        s.firstName?.trim().toLowerCase() === u.firstName?.trim().toLowerCase() && 
-        (s.secondName || '')?.trim().toLowerCase() === (u.lastName || '')?.trim().toLowerCase()
-      );
+      const studentData = studentsDb.find(s => {
+        const uFirst = u.firstName?.trim().toLowerCase() || '';
+        const sFirst = s.firstName?.trim().toLowerCase() || '';
+        if (uFirst !== sFirst) return false;
+
+        const uLast = (u.lastName || '').trim().toLowerCase();
+        const sLast = (s.secondName || '').trim().toLowerCase();
+        
+        return uLast === sLast || uLast === '.' || uLast === '';
+      });
       return {
         ...u,
         className: studentData?.className || '',

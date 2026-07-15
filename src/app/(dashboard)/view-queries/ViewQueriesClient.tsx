@@ -54,7 +54,8 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
         ]);
 
         if (!qRes.ok) throw new Error('Failed to fetch queries');
-        const data = await qRes.json();
+        const json = await qRes.json();
+        const data = json.data || json;
 
         // Apply filtering based on role
         if (currentUser.role === 'STUDENT') {

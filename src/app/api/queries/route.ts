@@ -38,12 +38,86 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const studentName = searchParams.get('studentName');
+    const teacherName = searchParams.get('teacherName');
+    const subject = searchParams.get('subject');
+    const status = searchParams.get('status');
+    const dateFilter = searchParams.get('dateFilter');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+    const search = searchParams.get('search');
+
+    let whereClause: any = {};
+
+    if (studentName) whereClause.studentName = studentName;
+    if (teacherName) whereClause.teacherName = teacherName;
+    if (subject) whereClause.subject = subject;
+    if (status) whereClause.status = status;
+    if (search) {
+      whereClause.queryStatement = { contains: search, mode: 'insensitive' };
+    }
+
+    if (startDate && endDate) {
+      whereClause.createdAt = {
+        gte: new Date(startDate),
+        lte: new Date(endDate),
+      };
+    } else if (dateFilter) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (dateFilter === 'today') {
+        whereClause.createdAt = { gte: today };
+      } else if (dateFilter === 'this_week') {
+        const lastWeek = new Date(today);
+        lastWeek.setDate(lastWeek.getDate() - 7);
+        whereClause.createdAt = { gte: lastWeek };
+      } else if (dateFilter === 'this_month') {
+        const lastMonth = new Date(today);
+        lastMonth.setMonth(lastMonth.getMonth() - 1);
+        whereClause.createdAt = { gte: lastMonth };
+      }
+    } else if (!startDate && !endDate && !dateFilter) {
+      // Default fallback: 7 days
+      const lastWeek = new Date();
+      lastWeek.setHours(0, 0, 0, 0);
+      lastWeek.setDate(lastWeek.getDate() - 7);
+      whereClause.createdAt = { gte: lastWeek };
+    }
+
     const queries = await prisma.queryEntry.findMany({
+      where: whereClause,
       orderBy: { createdAt: 'desc' },
     });
-    return NextResponse.json(queries, { status: 200 });
+
+    // Generate Analytics
+    const statusCounts = await prisma.queryEntry.groupBy({
+      by: ['status'],
+      where: whereClause,
+      _count: { id: true }
+    });
+
+    const subjectCounts = await prisma.queryEntry.groupBy({
+      by: ['subject'],
+      where: whereClause,
+      _count: { id: true }
+    });
+
+    const analytics = {
+      byStatus: statusCounts.reduce((acc: any, curr) => ({ ...acc, [curr.status]: curr._count.id }), {}),
+      bySubject: subjectCounts.reduce((acc: any, curr) => ({ ...acc, [curr.subject || 'Unknown']: curr._count.id }), {})
+    };
+
+    return NextResponse.json({
+      success: true,
+      data: queries,
+      analytics: analytics,
+      meta: {
+        totalRecords: queries.length
+      }
+    }, { status: 200 });
   } catch (error: any) {
     console.error('Error fetching queries:', error);
     return NextResponse.json({ error: 'Failed to fetch queries', details: error.message }, { status: 500 });

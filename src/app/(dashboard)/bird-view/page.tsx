@@ -225,12 +225,16 @@ export default function BirdViewPage() {
   };
 
   const handleCloneTask = async (task: any, newAssignee: string) => {
+    const newStudent = students.find(s => `${s.firstName} ${s.secondName}`.trim() === newAssignee.trim());
+    const newClassName = newStudent?.className || task.className;
+
     // Generate a temporary ID for optimistic UI
     const tempId = Date.now() + Math.floor(Math.random() * 1000);
     const newTask = {
       ...task,
       id: tempId,
       assignee: newAssignee,
+      className: newClassName,
     };
     
     // Optimistic update
@@ -244,6 +248,7 @@ export default function BirdViewPage() {
         body: JSON.stringify({
           ...task,
           assignee: newAssignee,
+          className: newClassName,
         })
       });
       if (res.ok) {
@@ -389,6 +394,34 @@ export default function BirdViewPage() {
           studentSearchInputRef.current?.focus();
         }
         return;
+      }
+
+      const isInputFocused = document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
+      
+      if (!isInputFocused) {
+        if ((event.metaKey || event.ctrlKey) && event.key === 'ArrowRight') {
+          event.preventDefault();
+          setSelectedDate(prev => {
+            const d = prev ? new Date(prev) : new Date();
+            d.setDate(d.getDate() + 1);
+            return new Date(d);
+          });
+          return;
+        }
+        if ((event.metaKey || event.ctrlKey) && event.key === 'ArrowLeft') {
+          event.preventDefault();
+          setSelectedDate(prev => {
+            const d = prev ? new Date(prev) : new Date();
+            d.setDate(d.getDate() - 1);
+            return new Date(d);
+          });
+          return;
+        }
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'b') {
+          event.preventDefault();
+          setSelectedDate(new Date());
+          return;
+        }
       }
       if (event.key === 'Escape' || event.key === 'Esc') {
         if (document.activeElement === studentSearchInputRef.current || studentSearchQuery !== '') {
@@ -788,7 +821,7 @@ export default function BirdViewPage() {
         setNewEntryModal(null);
       }
       
-      if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes((event.target as HTMLElement).tagName)) return;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes((event.target as HTMLElement).tagName)) return;
       
       const digitMatch = event.code.match(/^Digit([0-9])$/);
       if (digitMatch) {
@@ -954,7 +987,7 @@ export default function BirdViewPage() {
         updateHighlight(activeSubjectIdRef.current, newId, true);
       }
 
-      if (viewMode === 'grid' && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+      if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
         event.preventDefault();
         const prev = activeSubjectIdRef.current;
         let newId = prev;
@@ -986,9 +1019,12 @@ export default function BirdViewPage() {
       const timeoutId = setTimeout(() => {
         const cellEl = document.getElementById(`cell-${clickedCellId}`);
         if (cellEl) {
-          const formElements = cellEl.querySelectorAll('select, input, textarea');
-          if (formElements.length > 0) {
-            (formElements[0] as HTMLElement).focus();
+          let targetElement = cellEl.querySelector('textarea');
+          if (!targetElement) {
+            targetElement = cellEl.querySelector('select, input, textarea');
+          }
+          if (targetElement) {
+            (targetElement as HTMLElement).focus();
           } else {
             const focusableElements = cellEl.querySelectorAll('button, [href], [tabindex]:not([tabindex="-1"])');
             if (focusableElements.length > 0) {
@@ -1776,7 +1812,7 @@ export default function BirdViewPage() {
                           if (!stackedTask) {
                             if (index === (studentData?.tasks?.length || 0)) {
                               return (
-                                <td key={`stacked-${student.id}-${index}`} className="p-0 text-center border-none bg-transparent h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px]">
+                                <td key={`stacked-${student.id}-${index}`} className={`p-0 text-center border-none bg-transparent h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] relative cell-student-${student.id} cell-subject-${row.id} ${activeStudentIdRef.current === student.id || activeSubjectIdRef.current === row.id ? 'cell-subject-highlight' : ''}`}>
                                   <div className="w-full h-full relative p-1.5 pb-5">
                                     <div 
                                       className="w-full h-full flex flex-col items-center justify-center cursor-pointer bg-gray-50/50 hover:bg-gray-100 transition-colors border-2 border-dashed border-gray-300 rounded-[4px] group"
@@ -1797,7 +1833,7 @@ export default function BirdViewPage() {
                               );
                             }
                             // Otherwise completely empty cell without borders
-                            return <td key={`stacked-${student.id}-${index}`} className="p-0 border-none bg-transparent h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px]"></td>;
+                            return <td key={`stacked-${student.id}-${index}`} className={`p-0 border-none bg-transparent h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] relative cell-student-${student.id} cell-subject-${row.id} ${activeStudentIdRef.current === student.id || activeSubjectIdRef.current === row.id ? 'cell-subject-highlight' : ''}`}></td>;
                           }
                         }
 
@@ -1818,7 +1854,7 @@ export default function BirdViewPage() {
                           <td 
                             key={cellId} 
                             id={`cell-${cellId}`}
-                            className={`p-0 text-center border-b border-r border-gray-200 last:border-r-0 h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] relative scroll-ml-16 md:scroll-ml-[80px] scroll-mt-[100px] ${isGrid && subject ? `cell-subject-${subject.id} cell-student-${student.id}` : ''} ${(isGrid && subject && activeSubjectIdRef.current === subject.id) || activeStudentIdRef.current === student.id ? 'cell-subject-highlight' : ''}`}
+                            className={`p-0 text-center border-b border-r border-gray-200 last:border-r-0 h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] relative scroll-ml-16 md:scroll-ml-[80px] scroll-mt-[100px] cell-student-${student.id} cell-subject-${isGrid && subject ? subject.id : row.id} ${(isGrid && subject && activeSubjectIdRef.current === subject.id) || activeStudentIdRef.current === student.id || (!isGrid && activeSubjectIdRef.current === row.id) ? 'cell-subject-highlight' : ''}`}
                             onDragEnter={(e) => {
                               if (!isAssigned) return;
                               if (draggedTaskId !== null && draggedTaskSource && (e.shiftKey || e.altKey || e.metaKey)) {
@@ -1981,7 +2017,7 @@ export default function BirdViewPage() {
                                                 }
                                               }
                                             }}
-                                            className={`w-full h-full relative flex flex-col justify-start items-start shadow-sm transition-all duration-300 ease-in-out ${isClicked ? 'overflow-visible rounded-lg p-4 pb-10 shadow-[0_0_30px_rgba(0,0,0,0.2)]' : 'overflow-hidden rounded-[4px] p-1.5 pb-5'} ${selectedTaskIds.includes(item.id) ? 'ring-4 ring-[#edab30] border-transparent' : ''}`}
+                                            className={`w-full flex flex-col justify-start items-start shadow-sm transition-all duration-300 ease-in-out ${isClicked ? 'absolute top-0 left-0 min-h-[100%] h-fit z-[100] overflow-visible rounded-lg p-4 pb-10 shadow-[0_0_30px_rgba(0,0,0,0.2)]' : 'h-full relative overflow-hidden rounded-[4px] p-1.5 pb-5'} ${selectedTaskIds.includes(item.id) ? 'ring-4 ring-[#edab30] border-transparent' : ''}`}
                                             style={
                                               isClicked
                                                 ? { backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderLeft: `6px solid ${statusColor}` }
@@ -2100,6 +2136,15 @@ export default function BirdViewPage() {
                                                         setActiveDropdown(null);
                                                         document.getElementById(`badge-type-${item.id}`)?.focus();
                                                       }}
+                                                      onKeyDown={(e) => {
+                                                        if (e.key === 'Enter' || e.key === ' ') {
+                                                          e.preventDefault();
+                                                          e.stopPropagation();
+                                                          handleUpdateTaskField(item.id, 'taskType', t);
+                                                          setActiveDropdown(null);
+                                                          document.getElementById(`badge-type-${item.id}`)?.focus();
+                                                        }
+                                                      }}
                                                       title={t}
                                                     >
                                                       {b.initials}
@@ -2146,6 +2191,15 @@ export default function BirdViewPage() {
                                                       handleUpdateTaskField(item.id, 'status', s);
                                                       setActiveDropdown(null);
                                                       document.getElementById(`badge-status-${item.id}`)?.focus();
+                                                    }}
+                                                    onKeyDown={(e) => {
+                                                      if (e.key === 'Enter' || e.key === ' ') {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                      handleUpdateTaskField(item.id, 'status', s);
+                                                      setActiveDropdown(null);
+                                                      document.getElementById(`badge-status-${item.id}`)?.focus();
+                                                      }
                                                     }}
                                                     title={s}
                                                   >
@@ -2239,9 +2293,14 @@ export default function BirdViewPage() {
                                                       defaultValue={item.description || ''}
                                                       placeholder="Description..."
                                                       ref={(el) => {
-                                                        if (el && el.scrollHeight > 0) {
-                                                          el.style.height = 'auto';
-                                                          el.style.height = `${el.scrollHeight}px`;
+                                                        if (el && !el.dataset.resized) {
+                                                          el.dataset.resized = 'true';
+                                                          setTimeout(() => {
+                                                            if (el) {
+                                                              el.style.height = 'auto';
+                                                              el.style.height = `${el.scrollHeight}px`;
+                                                            }
+                                                          }, 10);
                                                         }
                                                       }}
                                                       onFocus={(e) => {
