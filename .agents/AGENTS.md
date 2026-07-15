@@ -784,3 +784,665 @@ After changing code:
 5. Update this reference when routes, fields, services, commands, or invariants change.
 6. Commit only the completed logical chunk; never push unless explicitly requested.
 <!-- END:deep-project-reference -->
+
+<!-- BEGIN:bird-view-operational-reference -->
+# Bird View Operational Reference (Primary Workspace)
+
+The project owner identifies Bird View as the application's most important and most frequently used workspace. Treat every change that can alter its data, layout, keyboard behavior, focus, dates, authorization, or mutations as high risk. This section supplements the critical rules at the top of this file; it does not replace them.
+
+This is a description of the implementation audited on 2026-07-15. Statements under **current limitation** describe the code as it exists; they are not instructions to preserve a defect and are not authorization to fix it during an unrelated task.
+
+## 19. Bird View Ownership and Change Boundary
+
+The primary route is `/bird-view`, implemented by the 2,610-line Client Component at `src/app/(dashboard)/bird-view/page.tsx`. It is a matrix workspace whose rows and columns provide the main operational view of Tasks and Queries.
+
+Any of the following is a Bird View change, even when the page itself is not edited:
+
+- Changing Task or Query request/response fields, status strings, date handling, or authorization.
+- Changing Student full-name construction, Student status, Subjects, class names, or assigned Subject arrays.
+- Changing `/api/bird-view`, `/api/task-users`, `/api/auth/me`, `/api/tasks`, `/api/queries`, `/api/chapters`, or `/api/topics`.
+- Changing `TaskEntryClient`, `QueryEntryClient`, upload behavior, dashboard overflow, global table styles, Tailwind configuration, or shared keyboard handlers.
+- Changing Prisma fields used by Task, Query, Student, Subject, account, Chapter, or Topic records.
+
+The directly coupled files are:
+
+| File | Bird View responsibility |
+|---|---|
+| `src/app/(dashboard)/bird-view/page.tsx` | Board state, toolbar, filtering, grid/stacked rendering, tickets, keyboard behavior, drag/drop, optimistic mutations, modals, delete/undo |
+| `src/app/api/bird-view/route.ts` | Authenticated read model for Subjects, active Students, and date-specific Task/Query cells |
+| `src/app/api/tasks/route.ts` | Task create, list, inline update, move, batch update, and delete contract |
+| `src/app/api/queries/route.ts` | Query create/list/delete contract used by the board and Query form |
+| `src/app/api/queries/[id]/route.ts` | Query update contract; uses `PUT`, not the board's shared `PATCH` shape |
+| `src/app/api/task-users/route.ts` | Reporter, teacher, owner, assistant, and Student choices; profile enrichment is name-based |
+| `src/app/(dashboard)/task/TaskEntryClient.tsx` | Full Task form opened from an empty grid cell or global shortcut |
+| `src/app/(dashboard)/query/QueryEntryClient.tsx` | Full Query form and optional image upload flow |
+| `src/app/globals.css` | Dashboard sizing, shared form styling, animation/style availability |
+| `prisma/schema.prisma` | Persisted Task, Query, Student, Subject, user, Chapter, and Topic fields |
+
+Do not split, rewrite, virtualize, or replace the board merely because the page is large. First establish behavioral parity for Safari geometry, mouse use, keyboard use, focus, all roles, both modes, both layouts, optimistic failure, and date boundaries.
+
+## 20. End-to-End Read Flow
+
+Bird View is a Client Component. On mount it performs two independent startup flows:
+
+1. `GET /api/auth/me` populates `currentUser` for creator/reporter defaults and the embedded entry forms.
+2. The main initialization sets today as `selectedDate`, then requests `/api/bird-view?date=<local YYYY-MM-DD>&view=task`, `/api/chapters`, `/api/topics`, and `/api/task-users` in parallel.
+
+When the initial Bird response succeeds, the page:
+
+1. Reads `subjects`, `students`, and `cellData`.
+2. Applies the browser's saved `localStorage.birdViewOrder` to Subjects and Students.
+3. Selects every fetched Student ID.
+4. Stores the initial Task cells.
+5. Ends the full-page loading state even if some requests failed.
+
+A second effect watches `selectedDate`, `activeView`, and `refreshTrigger`. It requests `/api/bird-view` again and replaces only `cellData`. It does not refresh Subjects, Students, their assignments, saved selection, Chapters, Topics, or reporter choices.
+
+### Current request-lifecycle limitations
+
+- Setting the initial date activates the second effect, so the page commonly sends two overlapping requests for today's Tasks. The apparent “skip initial fetch” block does not return.
+- Date/view requests have no `AbortController`, request ID, or latest-response guard. An older request can resolve last and overwrite a newer date or mode.
+- A later non-2xx response leaves the previous `cellData` in place. The displayed date/mode can therefore disagree with the visible records.
+- There is no board-level error, empty-error distinction, retry control, stale-data label, or partial-load message; errors are logged only.
+- `/api/bird-view` returns Subjects and Students on every date/mode refresh even though the refresh effect ignores them.
+- Opening an entry modal before `/api/auth/me` resolves can initialize the child form with `user = null`. The child copies the prop into state only on first render, so it can remain on “Please log in.” Quick actions in the same race use `System` as creator/reporter.
+- A successful full-form submission increments `refreshTrigger`. Clone and quick-add instead reconcile their temporary row directly and do not trigger a canonical board refresh.
+
+## 21. Exact `/api/bird-view` Read Contract
+
+Request:
+
+```text
+GET /api/bird-view?date=YYYY-MM-DD&view=task|query
+Cookie: session=<JWT>
+```
+
+Successful response:
+
+```text
+{
+  subjects: SubjectCell[],
+  students: StudentColumn[],
+  cellData: TaskCell[] | QueryCell[]
+}
+```
+
+Selected fields are deliberately narrower than the underlying tables:
+
+| Shape | Returned fields |
+|---|---|
+| Subject | `id`, `name`, `code` |
+| Student | `id`, `firstName`, `secondName`, `subjects`, `className` |
+| Task cell | `id`, `assignee`, `subject`, `status`, `taskType`, `book`, `chapter`, `topic`, `exercise`, `description`, `reporter`, `createdBy`, `className`, `dueDate` |
+| Query cell | `id`, `studentName`, `subject`, `status` only |
+
+The endpoint always loads Subjects first, active Students second, and cell data third. It creates a module-level `PrismaClient` but disconnects it in every request's `finally`, causing connection churn and possible interference between concurrent requests.
+
+### Date meaning
+
+| Board mode | Database field | Inclusion rule |
+|---|---|---|
+| Task | `TaskEntry.dueDate` | Between server-local start and end of the requested day |
+| Query | `QueryEntry.createdAt` | Between server-local start and end of the requested day |
+
+The browser creates a local `YYYY-MM-DD`, while the server parses the date-only value and applies its own local hours. Browser, Node process, container, and database timezone differences can move records around midnight. The normal Task list filters Tasks by `createdAt`, while Bird View groups them by `dueDate`; those screens intentionally have different current meanings.
+
+Unknown `view` values return Subjects and Students with empty `cellData` and status 200. Invalid dates can reach the database as invalid bounds and produce status 500.
+
+### Current role behavior
+
+| Session | Student columns | Cell payload | Board controls |
+|---|---|---|---|
+| Student | Exact active Student whose first and second names equal session names | Currently all matching-date Tasks/Queries, not only that Student | Full edit/drag/batch/delete/create UI is rendered |
+| Parent | All active Students | All matching-date Tasks/Queries | Full controls are rendered; no Parent-specific row restriction |
+| Teacher/Coordinator/Assistant/Owner | All active Students | All matching-date Tasks/Queries | Full controls are rendered |
+
+This is a critical privacy fact: hiding other Student columns does not remove their rows from the Student session's network response or React state. `/api/bird-view` must enforce row-level visibility before data leaves the server.
+
+Task mutations call `getSession`; Students may modify/delete a Task assigned to or created by their exact full name. Other authenticated roles are not further restricted there. Query POST/GET/DELETE and Query `PUT /api/queries/[id]` have no handler-level identity or ownership checks and depend only on global routing/middleware. There is no school/tenant boundary.
+
+## 22. Placement, Identity, and Assignment Rules
+
+Bird View currently uses display strings as relationships:
+
+- Task-to-Student: `task.assignee === "<firstName> <secondName>".trim()`.
+- Query-to-Student: `query.studentName === "<firstName> <secondName>".trim()`.
+- Record-to-row: `record.subject === subject.name` with exact case and whitespace.
+- Student-to-Subject assignment: a trimmed, case-insensitive comparison between `student.subjects[]` and `subject.name` in the main grid.
+
+Consequences that every change must account for:
+
+- Renaming a Student does not migrate existing Task assignees or Query student names.
+- Duplicate full names can cause one record to appear under multiple Student columns.
+- Case, punctuation, blank surnames, `.` surnames, or repeated spaces can orphan a record from the grid.
+- `/api/task-users` enriches accounts from Student profiles through normalized name matching; ambiguous first-name fallbacks can attach the wrong class/school.
+- Assignment may recognize a cell as valid while exact record placement fails because Subject comparison is stricter.
+- Task drag-to-Student updates only `assignee`; it does not update `className`.
+- No Task or Query foreign key points to Student or Subject. Stable identity cannot be inferred from the current response.
+
+Until a deliberate migration introduces `studentId`/`subjectId`, preserve exact string construction consistently and test rename/duplicate-name cases. A future ID migration must include schema migration, backfill, ambiguous-row reporting, dual-read/dual-write transition if required, API DTOs, forms, lists, Bird View, analytics, and rollback.
+
+## 23. Board State Model
+
+The monolithic page holds several independent state systems. Understand which system a change touches before editing it.
+
+| State group | Important state/refs | Responsibility |
+|---|---|---|
+| Directory | `subjects`, `students`, `selectedStudentIds`, `studentCategoryFilter` | Rows, columns, assignment, visibility |
+| Read data | `cellData`, `loading`, `refreshTrigger`, `selectedDate`, `activeView` | Selected-day Task/Query dataset |
+| Presentation | `viewMode`, `clickedCellId`, `mousePos` | Grid/stacked shape, ticket expansion, drag previews |
+| Crosshair | `activeSubjectIdRef`, `activeStudentIdRef`, `gridContainerRef` | Imperative row/column highlight without normal React state |
+| Edit cursor | `isEditMode`, `currentRow`, `currentCol`, `copiedTaskRef` | Spreadsheet-like keyboard operations |
+| Toolbar | filter dropdown booleans, `studentSearchQuery`, `calendarMonth`, `boardFilters` | Menus, filtering, search, date selection |
+| Reorder | dragged/hovered Student and Subject indexes | Local row/column ordering |
+| Task drag | `draggedTaskId`, `draggedTaskSource`, `clonedCells` | Task move and modifier-clone gesture |
+| Batch | `isBatchMode`, `selectedTaskIds` | Multi-Task status update |
+| Delete | `taskToDelete`, `pendingDeletions`, `toastConfig`, `deleteTimeoutsRef` | Confirmation, seven-second delay, undo |
+| Ticket/form | `activeDropdown`, `newEntryModal`, Chapters, Topics, reporters, `currentUser` | Inline editor and full entry modal |
+
+These state systems are not automatically reset when the date, Task/Query mode, Grid/Stacked layout, filter, or Student selection changes. Before adding a reset, specify whether state should persist or be scoped. Silent persistence currently creates several cross-mode ID and stale-index hazards described below.
+
+## 24. Filtering, Search, Selection, and Ordering
+
+The derived `filteredCellData` first removes pending-deletion IDs and then applies four client-side filters:
+
+- `status`: case-normalized, with `IN_PROGRESS` recognized by substring `PROGRESS`.
+- `taskType`: exact string equality.
+- `assignee`: exact string equality; state exists but there is no toolbar control.
+- `reporter`: exact string equality; state exists but there is no toolbar control.
+
+Status and Task Type are the only visible board filters. Filters persist when Task/Query mode changes. Because Query cells do not contain `taskType`, any active Task Type filter removes every Query.
+
+Filtering is applied before the board determines whether a cell is occupied. A cell containing records hidden by a filter behaves like an empty cell and can open a create form, allowing accidental duplicates. Header counts, stacked ordering, keyboard copy, keyboard delete, and the visible first ticket also operate on filtered data rather than the full day dataset.
+
+Student visibility is the intersection of:
+
+1. IDs in `selectedStudentIds`.
+2. Students still present in the loaded directory.
+3. Case-insensitive full-name containment for `studentSearchQuery`.
+
+Search cannot rediscover a Student who was deselected in the picker. A category tab does more than filter the picker: it replaces `selectedStudentIds` with every Student in that category.
+
+Category classification is heuristic:
+
+- `O1`, `O2`, `O3`, `O LEVEL`, or `OLEVEL` -> Olevels.
+- `F.S.C`, `FSC`, `MATRIC`, or any occurrence of `9` or `10` -> Matric.
+- Missing/unmatched class -> Junior.
+
+Substring `9`/`10` checks can misclassify unrelated labels. An empty category can show “Deselect All” because JavaScript `.every()` is true for an empty list.
+
+### Local order
+
+Subject and Student drag reorder persists this shape in `localStorage.birdViewOrder`:
+
+```text
+{
+  subjectIds: number[],
+  studentIds: number[]
+}
+```
+
+It is per browser profile, not per user, school, device, or server account. New IDs absent from saved order are appended. Corrupt JSON is logged and ignored. `localStorage.setItem` errors are not handled.
+
+Rendered columns follow the reordered `students` array, but keyboard order follows `visibleStudentIds`, whose base order comes from `selectedStudentIds`. Reordering a Student, or deselecting then reselecting one, does not align those arrays. Digit shortcuts, Left/Right navigation, and edit-mode column movement can therefore disagree with the visual column order.
+
+## 25. Render Tree, Geometry, and Layering
+
+The component renders in this order:
+
+1. Dynamic global crosshair and Bird View CSS.
+2. Fixed click-away overlay for an expanded ticket.
+3. Floating Student and Subject drag previews.
+4. The 35px toolbar.
+5. The scrollable board and table.
+6. Batch action bar.
+7. Full Task/Query entry modal.
+8. Undo toast.
+9. Delete confirmation modal.
+
+The main grid geometry is intentionally explicit:
+
+| Dimension | Small screens | `md` and wider |
+|---|---:|---:|
+| Subject column | 64px | 80px |
+| Student column | 96px | 120px |
+| Board row | 96px | 120px |
+| Table width | `64 + visibleStudents * 96` | `80 + visibleStudents * 120` |
+| Expanded ticket shell | 280×210px | 340×220px |
+| Expanded ticket content | Up to 60vh | Up to 60vh |
+
+The table uses `table-fixed`, `border-separate`, an explicit `colgroup`, an explicit pixel width, and `mx-0 mr-auto`. Do not replace this with flexible width utilities. Continue to obey the Safari inner-`div` interaction rules at the top of this file.
+
+Current stacking order is approximately:
+
+| Layer | z-index |
+|---|---:|
+| Crosshair pseudo-elements | 5 / 6 |
+| Sticky Subject column | 10 |
+| Sticky Student header | 20 |
+| Sticky corner | 30 |
+| Ticket click-away overlay / edit ring | 50 |
+| Expanded ticket shell | 60 |
+| Ticket badges/footer | 70 |
+| Badge option stacks | 80 |
+| Expanded content, toolbar menus, entry modal | 100 |
+| Batch action bar | 200 |
+| Undo toast | 300 |
+| Delete confirmation | 400 |
+| Drag previews | 9999 |
+
+The board's scroll/overflow ancestors can still clip expanded tickets vertically. Horizontal edge anchoring compares the Student's index in the full array with boundaries from the visible array; when Students are hidden, the first/last visible ticket can use the wrong left/right anchor and clip.
+
+The page globally changes `.dashboard-content` padding to 4px while mounted. Long Subject names/codes are not truncated inside the narrow sticky column. The 35px toolbar contains several fixed-width controls and has no toolbar-level horizontal scrolling or compact mobile layout; only one inner group wraps.
+
+The dynamic crosshair CSS emits one selector per Subject and Student. `updateHighlight` mutates `data-active-subject` and `data-active-student` on the grid DOM node through refs. Header background classes also read those refs, but ref mutation does not cause a React render; pseudo-element highlights update immediately while header classes can wait for an unrelated render.
+
+## 26. Grid and Stacked Layout Semantics
+
+### Grid
+
+- One row per Subject and one column per visible Student.
+- A cell is assigned when the Student's Subject list contains the row Subject after trim/case normalization.
+- An assigned empty cell opens the full entry form when clicked.
+- An occupied cell expands into its ticket popup.
+- An unassigned cell uses the striped background and ignores the create/open portion of the click, although its wrapper still looks clickable.
+- Row/column headers toggle crosshair highlighting and are also native drag handles.
+
+### Stacked
+
+- Records are grouped per Student without Subject rows.
+- Row count is `max(filtered records for any Student) + 1`, with at least one row.
+- Each Student receives one explicit dashed plus cell immediately after their final visible record.
+- Tasks sort by `IN_PROGRESS`, `OPEN`, `PENDING`, `DONE`; unknown/lowercase statuses have index `-1` and sort before recognized statuses.
+- A Subject badge on each Task identifies its original Subject.
+- `handleStackedDrop` exists but is not wired to JSX.
+
+Edit mode can still be toggled while Stacked is visible, but its commands continue indexing `subjects[currentRow]` and `visibleStudentIds[currentCol]`; the visual edit ring is Grid-only. This can mutate a hidden logical Grid cell. Switching layout, changing Student visibility, or reordering does not clamp/reset edit indexes; empty arrays can produce `-1` indexes.
+
+Task drop in either visual layout changes only the assignee. A drop over another Subject row does not change Subject, so the card returns to its original row under the new Student. Modifier clone also retains the original Subject while marking the visually entered target cell as cloned.
+
+## 27. Cell and Ticket Rendering
+
+Task/Query placement is recalculated from names and Subject strings. In compact mode, only the first filtered record in a cell renders, with no `+N` indicator. Expansion renders every filtered record in that cell.
+
+The API supplies no `orderBy` for Bird cell records. Therefore “first record” is not a stable business rule across reloads. It controls:
+
+- Compact preview.
+- Edit-mode copy.
+- Edit-mode Delete/Backspace.
+- Which item a user may assume is primary.
+
+Task tickets provide inline controls for Chapter, Topic, Exercise, Description, Reporter, Task Type, and status. The compact card shows Chapter, Topic, optional Exercise/Description, reporter avatar, type badge, and status badge.
+
+Chapter selection sends three separate optimistic PATCH calls: Chapter value, blank Topic, and blank Exercise. Topic sends two: Topic and blank Exercise. The inline Topic list matches `TopicEntry.chapterName` exactly, while the full Task form accepts chapter title or name; title-backed Tasks can have no inline Topic options.
+
+Reporter choices merge `/api/task-users` teachers/admins/owners with reporter strings already present in current `cellData`. The three hard-coded reporter-name color overrides are Rafay, Tayyaba, and Rabia; all other colors are deterministic hashes.
+
+Task item React keys use the array index, while Description is an uncontrolled textarea using `defaultValue`. After deletion, filtering, reordering, or a server refresh, React can reuse a textarea DOM node for another record and preserve the wrong displayed value/focus.
+
+### Query rendering is intentionally much narrower in current code
+
+The Query branch returns a minimal card with only the word `Query` and its status. It does not render query statement, Student/teacher details, images, inline fields, delete button, task/status badges, drag source, or batch click handler. Expanded Query cells still show the generic trailing plus button.
+
+Task/Query switching does not reset filters, ticket ID, edit mode, copied record, selected batch IDs, pending deletions, or badge state. Task and Query tables use independent integer ID sequences, so an ID from one mode can accidentally match an ID in the other mode's client state.
+
+## 28. Mutation and Failure Matrix
+
+| Operation | Browser behavior | HTTP contract | Current failure behavior |
+|---|---|---|---|
+| Inline Task field | Immediately replaces field in `cellData` | `PATCH /api/tasks {id,fieldName,newValue}` | Logs non-2xx/network error; does not restore old value |
+| Task drag move | Optimistically changes `assignee` | Same Task PATCH | No rollback; class and Subject are not updated |
+| Task clone/copy | Appends temporary record | `POST /api/tasks` | Replaces temp on 2xx; removes it on non-2xx/network error |
+| Chapter/topic cascade | Sends multiple optimistic requests | Several independent Task PATCH calls | Partial success can leave dependent fields inconsistent |
+| Batch Task status | Optimistically changes all selected IDs | One Task PATCH per ID | `Promise.all` treats HTTP errors as success; selection clears and batch exits |
+| Full Task form | Waits for POST, then refreshes board | `POST /api/tasks` | Shows form error and retains form |
+| Full Query form | Uploads images, POSTs Query, then refreshes | `POST /api/upload`, then `POST /api/queries` | Upload/query errors remain in form |
+| Ticket quick plus | Appends temp Task-shaped object | Task or Query POST based on mode | Removes temp and alerts on non-2xx/network error |
+| Delayed delete | Hides ID, waits seven seconds | Task or Query DELETE based on mode at confirmation | Does not inspect response status; non-2xx is treated as deletion success |
+| Undo | Clears pending timeout and unhides ID | No request if used before timeout | Only currently visible toast ID can be undone |
+
+### Verified quick-plus contract failures
+
+- Task quick plus sends `description: ''`, but Task POST requires a truthy description. It is expected to return 400.
+- It sets `className` to `subject.name`, not the target Student's class.
+- Query quick plus sends a Task-shaped body without required `teacherName`, `className`, or `queryStatement`. It is expected to return 400 and displays “Failed to create task.”
+- Query cloning cannot succeed from the four-field Bird Query DTO because required Query creation fields were never loaded.
+
+### Full-modal date behavior
+
+- Task modal receives the board's selected date as `dueDate` and submits it as an ISO timestamp.
+- Query modal receives Subject and Student but does not receive/use the stored board date. A Query created while viewing a historical/future date is created at the current server time, then disappears when the selected date refreshes.
+
+### Delete/undo details
+
+- Confirmation adds the numeric ID to `pendingDeletions`, which hides it from filtered data immediately.
+- One timeout per ID can exist, but `toastConfig` represents only the newest deletion. Earlier pending deletions lose their visible Undo action.
+- Cmd/Ctrl+Z undoes only the currently visible toast ID and can intercept normal text undo while the toast exists.
+- A thrown network error unhides the row but can leave the success toast visible.
+- Outstanding timers are not cleared on component unmount; leaving the page does not cancel the eventual DELETE.
+- Confirmation, toast, and alerts always use Task wording, including Query mode.
+- Pending IDs persist across mode/date changes. Because Task and Query IDs can overlap, a pending Task deletion can hide a same-numbered Query.
+- A delayed delete has no record version check; another user's intervening edit does not prevent deletion.
+
+### Concurrency details
+
+- Inline PATCH is last-response-wins at the database, which may not be the last user action.
+- There is no optimistic version, ETag, `updatedAt` precondition, idempotency key, or duplicate-clone constraint.
+- Temporary IDs are `Date.now() + random(0..999)` and can collide during rapid operations.
+- Clone/add responses can arrive after date/mode changes and append or reconcile an old-mode record into the currently displayed `cellData`.
+- `copiedTaskRef` persists across dates, modes, filters, and deletion.
+- Batch selected IDs persist across filters, dates, layout, and Task/Query mode. Hidden records remain counted and submitted.
+
+## 29. Drag, Drop, Copy, and Reorder Contracts
+
+Student/Subject reorder uses native HTML5 drag, a transparent native drag image, and a custom fixed preview. It has no keyboard or touch equivalent. Subject preview includes hidden Students and uses exact Subject assignment matching, unlike the normalized main grid.
+
+Task cards are drag sources only in the Task branch and outside Batch mode.
+
+- Plain drop: update assignee.
+- Shift, Alt, or Meta: clone for the target Student.
+- Cmd/Ctrl+C in edit mode: copy the first filtered Task into an in-memory ref.
+- `+` in edit mode: same copy behavior.
+- Cmd/Ctrl+V: clone only when current row Subject equals copied Task Subject; otherwise alert.
+
+Modifier cloning currently begins on `dragenter`, before a drop. Crossing multiple cells can issue multiple POST requests without dropping. Rapid repeated drag-enter events can race the React `Set` update. Releasing the modifier after entering can leave the clone already submitted and then move the original on drop.
+
+For a future correction, define one explicit semantic contract before editing: either a drop targets only a Student, or it targets Student+Subject and updates both fields. Never allow the visual target and persisted target to disagree silently.
+
+## 30. Keyboard, Escape, and Focus Model
+
+Bird View installs multiple native listeners:
+
+1. Document handler for search, date shortcuts, and layered Escape.
+2. Document handler for Cmd/Ctrl+Shift+M.
+3. Document handler for edit mode, numbers, arrows, copy/paste, Delete, Enter, and another Escape implementation.
+4. Window handler for Cmd/Ctrl+Z.
+5. While delete confirmation is open, a window capture handler that stops every key before the others.
+
+Current shortcuts are:
+
+| Input | Behavior |
+|---|---|
+| Cmd/Ctrl+Shift+F | Focus Student Search; if already focused, blur, clear it, and clear Student highlight |
+| Cmd/Ctrl+Left / Right | Previous/next selected date outside input, textarea, or select |
+| Cmd/Ctrl+B | Today outside input, textarea, or select |
+| Cmd/Ctrl+Shift+M | Open Task/Query form, optionally with highlighted Student; no input/modal context guard |
+| `E` | Close toolbar menus, blur active element, toggle edit mode, initialize indexes to zero |
+| Digits | One-based Student highlight using a 200ms multi-digit buffer |
+| Shift+Digits | One-based Subject highlight in Grid mode |
+| Normal arrows | Move Subject/Student crosshair and scroll headers into view |
+| Edit arrows | Change index-based active cell |
+| Edit Enter | Expand occupied cell or open entry form for assigned empty cell |
+| Edit Backspace/Delete | Confirm deletion of the first filtered record |
+| Edit Cmd/Ctrl+C or `+` | Copy first filtered Task |
+| Edit Cmd/Ctrl+V | Horizontal same-Subject clone |
+| Cmd/Ctrl+Z | Undo the newest visible pending deletion |
+| Escape | Several overlapping close/clear behaviors described below |
+
+### Input guard limitation
+
+Global grid handlers exclude `INPUT`, `TEXTAREA`, and `SELECT`, but not normal buttons, focusable labels, interactive divs, or contenteditable elements. Arrow, digit, `E`, Enter, Delete, and copy/paste behavior can act on the grid while a toolbar button or other non-form control has focus unless a local handler stops propagation.
+
+Cmd/Ctrl+Shift+M has no context guard and can open/reinitialize a form while typing, while another modal/ticket is open, or while a menu is open. Cmd/Ctrl+Z can override native text undo whenever the Bird delete toast is visible.
+
+### Escape precedence limitation
+
+The first Escape handler intends to clear Search, otherwise close open UI, otherwise return focus to a grid cell, otherwise clear crosshair highlight. The later document handler also processes the same Escape and closes Batch mode, toolbar menus, the ticket, and the entry modal. One Escape can therefore affect more than one layer.
+
+The first handler reads Search and filter state that is absent from its effect dependency array, so its closure can be stale. Its focus-return query expects `td[data-subject-id][data-student-id]`, but rendered cells have neither attribute nor `tabIndex`; that branch cannot currently focus a cell.
+
+### Ticket focus contract
+
+The required ticket order is currently preserved:
+
+```text
+Chapter -> Topic -> Exercise -> Description -> Reporter
+-> Delete -> Task Type badge -> Status badge
+-> next Task's controls, if present -> Plus
+```
+
+Tab and Shift+Tab are trapped and wrapped within the expanded ticket. Badge option buttons remain `tabIndex={-1}` and are reached only by Arrow keys. Badge triggers are focusable interactive `div`s, open their menu on focus, and lack native button/menu ARIA semantics.
+
+Three autofocus paths can compete when a ticket opens: the `clickedCellId` effect, the expanded wrapper ref, and the last Description textarea's resize ref. Two use 50ms timers; the textarea uses 10ms. Focus outcome depends on timer ordering, and some timers are not cancelled if the ticket closes quickly. Focusing a Description also moves the caret to the end after a timer, overriding a mouse-selected caret position.
+
+Backdrop/cell close does not explicitly clear `activeDropdown`, restore focus to the originating cell, or cancel all focus timers. The required Escape behavior remains: Escape inside a ticket must close the entire ticket and all badge menus, not only one menu.
+
+### Delete-dialog focus limitation
+
+The capture handler calls `preventDefault`, `stopPropagation`, and `stopImmediatePropagation` for every key. It handles Enter as confirm and Escape as cancel. As a result, Tab/Shift+Tab cannot reach Cancel/Delete, Space cannot activate a focused button, focus is not placed or trapped in the dialog, and Enter confirms regardless of intended focus. The dialog also lacks explicit dialog semantics and focus restoration.
+
+## 31. Toolbar and Picker Behavior
+
+- Task/Query and Grid/Stacked toggles are ordinary buttons and do not reset incompatible state.
+- Status and Task Type triggers open on click, or on keyboard-visible focus. ArrowDown moves to the first option after a 50ms timer.
+- Status/Type option buttons are outside ordinary Tab order. Selecting an option does not explicitly close its menu.
+- Opening one toolbar menu does not explicitly close the others.
+- Outside mousedown and wrapper blur close menus.
+- Calendar and Student picker controls are programmatically Arrow-focused and mostly `tabIndex={-1}`.
+- Calendar Right/Down moves one focusable item forward; Left/Up moves one backward. It is linear, not day/week calendar navigation.
+- Selecting a day changes `selectedDate` but does not close the calendar.
+- Date keyboard shortcuts do not synchronize `calendarMonth`, so crossing a month can leave the open picker showing a different month.
+- Batch Select has a focusable label and a default-focusable nested checkbox, creating two Tab stops.
+- Student checkboxes are labelled but deliberately removed from ordinary Tab traversal.
+- Custom dropdowns, calendar, badge menus, entry overlay, and delete overlay do not expose a complete dialog/menu/listbox/calendar ARIA model.
+
+## 32. Task and Query Capability Matrix
+
+| Capability | Task | Query |
+|---|---|---|
+| Read by selected date | Yes, by due date | Yes, by created date |
+| Grid and stacked display | Yes | Yes, minimal cards |
+| Empty-cell full form | Yes | Yes |
+| Selected date honored by full form | Yes | No |
+| Compact business detail | Chapter/topic/description/badges | Status only |
+| Expanded inline editor | Yes | No |
+| Ticket mouse delete | Yes | No |
+| Edit-mode first-record delete | Yes | Can reach generic delete flow |
+| Drag source/move | Yes | No |
+| Modifier clone | Yes | No usable Query source/DTO |
+| Batch pointer selection | Yes | No |
+| Shared PATCH endpoint | Supported | Not supported; actual update is `PUT /api/queries/[id]` |
+| Ticket quick plus | Rendered but currently fails required description | Rendered but currently sends invalid shape |
+| Status vocabulary | Usually uppercase | Form normally creates lowercase |
+
+Do not advertise or expose a Query action unless its API contract, authorization, DTO, rollback, wording, and tests actually exist.
+
+## 33. Performance Profile
+
+The board is an unvirtualized `Subjects × visible Students` table. Current hot paths include:
+
+- `filteredCellData` recreates a new array on every render.
+- `tasksPerStudent` scans all filtered records once per Student and sorts each group.
+- Every Student header scans all filtered records again for its active count.
+- Every rendered cell scans filtered records to find its items, and some click/render paths repeat the scan.
+- The Grid worst case approaches `Subjects × Students × records` string comparisons per render.
+- Dynamic CSS generates one Subject selector and one Student selector.
+- Every toggle, menu, drag position, optimistic write, and focus-related state update can rerender the monolith.
+- The API has no pagination/hard limit and the schema has no declared indexes for Task due date, Query created date, Student status/name, assignee, Query student name, or Subject placement.
+- `/api/task-users` performs nested in-memory normalized-name matching.
+
+Use at least 100 Students, 20 Subjects, and 5,000 selected-day records for a realistic performance regression fixture. Measure request count, server query time/plan, JSON size, first usable render, scroll, menu open, ticket open, filter, date switch, and drag latency.
+
+If optimization is authorized, first introduce a typed indexed read model keyed by stable Student/Subject IDs and memoize derived maps. Request cancellation/sequence protection and database indexes are lower-risk early improvements. Virtualization is high risk because sticky cells, explicit Safari geometry, scroll-to-highlight, ticket overflow, native drag, and keyboard coordinates all depend on real table DOM.
+
+## 34. Known Bird View Limitations by Priority
+
+### Critical: privacy and authorization
+
+1. Student Bird responses include other Students' date-matching cell records.
+2. All authenticated roles receive editing controls; visual hiding is not authorization.
+3. Query handlers lack handler-level ownership and school isolation.
+4. Names act as foreign keys and allow collisions, orphaning, and misattribution.
+
+### High: mutation correctness
+
+1. Query shared PATCH does not exist.
+2. Task and Query ticket quick-plus requests fail current validation.
+3. Historical/future Query modal creation ignores selected date.
+4. Inline/move/batch mutations do not reconcile HTTP failure.
+5. Delete treats HTTP failure as success.
+6. Old date/view responses can overwrite the latest selection.
+7. Modifier drag can clone before an actual drop.
+8. Cross-Subject visual drop changes only Student.
+9. Cross-mode/date selected and pending numeric IDs can affect unrelated records.
+10. No deterministic cell record order defines preview/copy/delete target.
+
+### High: keyboard/focus safety
+
+1. Two Escape implementations respond to the same event.
+2. Grid focus restoration targets attributes that are not rendered.
+3. Delete confirmation blocks Tab and Space and always maps Enter to deletion.
+4. Global shortcuts can operate while ordinary buttons are focused.
+5. Edit indexes become stale after layout/filter/order changes.
+6. Multiple autofocus timers compete.
+
+### Medium: usability and observability
+
+1. No visible fetch error, retry, stale marker, or partial-load state.
+2. Compact cells hide additional record count.
+3. Query cards omit the statement and core context.
+4. Toolbar can overflow narrow screens.
+5. Expanded edge positioning is wrong for some hidden-Student layouts.
+6. Filters can make an occupied cell look creatable.
+7. Menus lack complete semantics and consistent close/focus restoration.
+8. There is no keyboard/touch equivalent for drag operations.
+
+## 35. Mandatory Bird View Regression Checklist
+
+There is currently no automated browser suite. Use a disposable database with synthetic identities; never run root `test-*`, `fix-*`, or scratch rewrite scripts against a real configured database merely because they look relevant.
+
+### Read, role, and privacy
+
+- [ ] Owner, Coordinator, Teacher, Assistant, Parent, and Student can load only their intended Students and cells.
+- [ ] Inspect the network response, not only rendered columns, for Student/Parent privacy.
+- [ ] Direct Task and Query API calls enforce the same policy as the UI.
+- [ ] School/tenant isolation is verified if introduced.
+- [ ] Duplicate names, blank/`.` surnames, case/spacing variants, and renamed Students are covered.
+
+### Initial load, dates, and races
+
+- [ ] Exactly one intended initial Bird request occurs.
+- [ ] Today, yesterday, tomorrow, leap day, month/year boundary, and daylight/timezone boundary are correct.
+- [ ] Task due-date and Query created-date semantics are explicitly asserted.
+- [ ] Test with Node in UTC and `Asia/Karachi`, using one declared academy timezone as expected truth.
+- [ ] Delay date A response, select B, resolve A last, and verify B remains visible.
+- [ ] Repeat the stale-response test for Task -> Query.
+- [ ] Non-2xx refresh does not present old data as the new date/mode.
+- [ ] Newly changed Subjects/Students/assignments have a defined refresh path.
+
+### Safari and responsive geometry
+
+- [ ] Safari verifies explicit computed table width and stable 64/80px Subject column.
+- [ ] Safari verifies stable 96/120px Student columns and 96/120px rows.
+- [ ] No transform, transition, scale, or interactive background is applied directly to `td`/`th`.
+- [ ] Sticky top row, left column, and corner remain aligned during two-axis scrolling.
+- [ ] Zero, one, many, selected, deselected, searched, and reordered Students preserve width.
+- [ ] First/middle/last visible tickets expand without clipping, including hidden columns.
+- [ ] Long Subject codes/names and narrow/mobile toolbar behavior are tested.
+
+### Filters, selection, and ordering
+
+- [ ] Status/Type filters work for every accepted case/spelling and do not create false empty cells.
+- [ ] Task Type state does not unintentionally blank Query mode.
+- [ ] Search only/also includes deselected Students according to the specified product rule.
+- [ ] Category tabs and Select/Deselect All handle empty categories.
+- [ ] Drag Student, then verify digits, Left/Right, edit movement, and visual order agree.
+- [ ] Deselect/reselect a Student and repeat keyboard-order tests.
+- [ ] Saved local order reloads safely for added/removed IDs and different signed-in users.
+
+### Grid, stacked, and multiple records
+
+- [ ] Assigned/unassigned cells use normalized Subject rules consistently.
+- [ ] Empty assigned Grid cells and Stacked plus cells open the correct form.
+- [ ] Multiple records have deterministic preview/count/expanded ordering.
+- [ ] Copy and Delete target the documented record.
+- [ ] Grid -> Stacked with edit mode active cannot mutate a hidden Grid coordinate.
+- [ ] Stacked status order covers uppercase, lowercase, completed, and unknown values.
+- [ ] Zero Subjects and zero visible Students show an accurate empty state.
+
+### Ticket and keyboard focus
+
+- [ ] Opening a populated cell focuses Description or first valid control exactly once.
+- [ ] Mouse caret placement in Description is not moved unexpectedly.
+- [ ] Tab order remains Inputs -> Delete -> Type -> Status -> Plus and wraps.
+- [ ] Shift+Tab is the exact reverse.
+- [ ] Badge options never enter Tab order; Arrow navigation follows visual order.
+- [ ] Enter/Space selects a badge option and returns focus to the trigger.
+- [ ] Escape closes the entire ticket and every badge dropdown in one defined layer.
+- [ ] Backdrop close clears dropdown state and restores focus.
+- [ ] Toolbar buttons cannot accidentally activate grid Arrow/E/Delete/digit actions.
+- [ ] Multi-digit buffer always clears after 200ms even across rerenders.
+- [ ] Cmd/Ctrl+Shift+M is tested from body, input, textarea, menu, ticket, and existing modal.
+
+### Create, inline edit, copy, and drag
+
+- [ ] Full Task creation honors Student, Subject, class, reporter, creator, and selected date.
+- [ ] Full Query creation honors Student, teacher, class, school, Subject, attachments, and intended date.
+- [ ] Quick plus is hidden or sends a valid mode-specific contract.
+- [ ] Inline 400/403/404/500/network failure restores or refetches canonical state.
+- [ ] Chapter/topic/exercise cascades cannot partially corrupt dependent values.
+- [ ] Copy state is reset or validated across date/mode changes.
+- [ ] Plain drop moves exactly once and updates every required field.
+- [ ] Modifier drop clones exactly once and only under the specified drop semantic.
+- [ ] Crossing a cell without dropping cannot create an unintended record.
+- [ ] Same-Student and cross-Subject drops are deterministic.
+- [ ] Drag end always clears preview, hover, source, and cloned-cell state.
+- [ ] Keyboard/touch alternatives are tested if drag remains core functionality.
+
+### Batch, delete, and undo
+
+- [ ] Selections are scoped/cleared across filter, date, layout, and Task/Query changes.
+- [ ] Query cards are selectable only if Query batch is genuinely supported.
+- [ ] Batch 400/403/405/500 and partial failure are surfaced and reconciled per record.
+- [ ] Repeated action clicks cannot submit duplicate batches.
+- [ ] Delete dialog receives focus; Tab, Shift+Tab, Space, Enter, and Escape are safe.
+- [ ] A non-2xx DELETE restores the record and shows an error.
+- [ ] Network failure restores the record and removes stale success messaging.
+- [ ] Undo button and Cmd/Ctrl+Z work within seven seconds.
+- [ ] Multiple pending deletions each have deterministic undo behavior.
+- [ ] Navigation/unmount behavior for pending timers is explicitly specified.
+- [ ] Task and Query wording is correct.
+
+### Accessibility and performance
+
+- [ ] Table has useful interaction instructions/caption where appropriate.
+- [ ] Clickable headers/cells and badges have keyboard semantics and accessible names.
+- [ ] Menus expose expanded/selected relationships; dialogs expose modal/name relationships.
+- [ ] Toast and selection changes are announced through an appropriate live region.
+- [ ] Color is not the only status/type indicator and tiny text remains readable.
+- [ ] Screen-reader and keyboard-only flows cover every core operation.
+- [ ] The 100 Student / 20 Subject / 5,000 record fixture remains usable.
+- [ ] Request counts, query plans, payload size, render time, scroll, ticket open, filter, and date switch meet agreed budgets.
+
+## 36. Safe Bird View Modification Workflow
+
+Before implementation:
+
+1. Read the top-level `AGENTS.md`, this complete file, and the relevant Next.js 16 guide in `node_modules/next/dist/docs/` before writing Next.js code.
+2. Inspect Git status and preserve all unrelated user work.
+3. State the exact current behavior and the intended behavior; do not silently “clean up” a keyboard, date, drag, or layout contract.
+4. Identify affected DTO fields, API methods, authorization, Prisma fields/indexes, Task/Query forms, both board modes, both layouts, and failure states.
+5. Create a small synthetic regression dataset with multiple records per cell, hidden Students, duplicate-like names, historical/future dates, and at least one unauthorized role.
+6. Capture Safari and another browser baseline for geometry/focus when UI layout is involved.
+
+During implementation:
+
+1. Prefer a small, reviewable change over a monolithic Bird View rewrite.
+2. Keep server authorization authoritative; never rely on hidden controls.
+3. Use stable IDs in new contracts where possible, but do not partially migrate one consumer.
+4. Define pending/success/failure reconciliation for every optimistic mutation.
+5. Guard async reads against stale responses.
+6. Preserve explicit table geometry and apply interactive effects to inner wrappers.
+7. Preserve the ticket DOM/Tab order and badge `tabIndex={-1}` rule.
+8. Test both Task and Query explicitly; shared-looking UI does not imply a shared API contract.
+
+Before handoff:
+
+1. Run focused static/type/lint checks with a Node version supported by this Next.js version.
+2. Run the applicable regression groups above, including deliberate non-2xx and delayed responses.
+3. Verify network payload privacy for Student/Parent sessions.
+4. Re-test Safari table width, sticky geometry, ticket focus, badge arrows, and Escape.
+5. Confirm no root maintenance script or real database was mutated unintentionally.
+6. Update this section if a current limitation, contract, shortcut, field, or invariant changed.
+7. Commit the logical chunk; do not push unless explicitly requested.
+<!-- END:bird-view-operational-reference -->
