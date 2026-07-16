@@ -2184,7 +2184,7 @@ export default function BirdViewPage() {
                                                               }
                                                             }
                                                           }}
-                                                          className="text-xs text-black font-semibold w-[calc(100%+8px)] leading-relaxed text-left bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors resize-none min-h-[40px] whitespace-normal custom-scrollbar rounded px-2 py-1 -ml-2"
+                                                          className="text-xs text-black font-semibold w-[calc(100%+8px)] leading-relaxed text-left bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors resize-none min-h-[40px] max-h-[120px] overflow-y-auto whitespace-normal custom-scrollbar rounded px-2 py-1 -ml-2"
                                                         />
                                                       </div>
                                                       <div className="flex items-center w-[calc(100%+8px)] mt-auto pt-1 relative group mb-1 hover:bg-gray-100 focus-within:bg-gray-100 rounded px-2 py-1 -ml-2 transition-colors cursor-pointer">
