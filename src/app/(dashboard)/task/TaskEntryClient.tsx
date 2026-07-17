@@ -175,8 +175,9 @@ export default function TaskEntryClient({
   const userName = `${user.firstName} ${user.lastName}`.trim();
 
   let derivedClassName = user.className || '';
+  let assignedStudent: any = null;
   if (assignee) {
-    const assignedStudent = studentsList.find(s => 
+    assignedStudent = studentsList.find(s => 
       `${s.firstName} ${s.lastName}`.trim().toLowerCase() === assignee.trim().toLowerCase()
     );
     if (assignedStudent && assignedStudent.className) {
@@ -185,6 +186,13 @@ export default function TaskEntryClient({
       derivedClassName = '';
     }
   }
+
+  const availableSubjects = subjectsList.filter(subj => {
+    if (assignedStudent && assignedStudent.subjects && assignedStudent.subjects.length > 0) {
+      return assignedStudent.subjects.includes(subj.name);
+    }
+    return true;
+  });
 
   const availableBooks = booksList.filter(b => 
     b.subject === subject && 
@@ -352,7 +360,7 @@ export default function TaskEntryClient({
                 required
               >
                 <option value="" disabled>Select Subject</option>
-                {subjectsList.map(s => (
+                {availableSubjects.map(s => (
                   <option key={s.id} value={s.name}>{s.name}</option>
                 ))}
               </select>

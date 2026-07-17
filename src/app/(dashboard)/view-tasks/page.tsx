@@ -12,6 +12,12 @@ export default function ViewTasksPage() {
   const [classesList, setClassesList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Reschedule Modal State
+  const [isRescheduleDatePickerOpen, setIsRescheduleDatePickerOpen] = useState(false);
+  const [rescheduleDate, setRescheduleDate] = useState<Date | null>(null);
+  const [rescheduleTaskId, setRescheduleTaskId] = useState<number | null>(null);
+  const [rescheduleCalendarMonth, setRescheduleCalendarMonth] = useState(new Date());
+
   // Inline editing state for text inputs only
   const [editingTask, setEditingTask] = useState<number | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
@@ -102,7 +108,56 @@ export default function ViewTasksPage() {
     setEditingField(null);
   };
 
+  const handleReschedule = async (originalTaskId: number, targetDate: Date) => {
+    try {
+      const formattedDate = targetDate.toISOString();
+      const res = await fetch('/api/tasks/reschedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ originalTaskId, newDate: formattedDate })
+      });
+      if (!res.ok) throw new Error('Failed to reschedule task');
+      
+      const newTasks = await res.json();
+      
+      setTasks(prev => {
+        let updated = [...prev];
+        const originalIndex = updated.findIndex(t => t.id === originalTaskId);
+        if (originalIndex !== -1) {
+          updated[originalIndex] = newTasks.originalTask;
+        }
+        updated.push(newTasks.newTask);
+        return updated;
+      });
+
+      alert(`Task successfully rescheduled to ${targetDate.toLocaleDateString()}`);
+    } catch (error) {
+      console.error('Error rescheduling task:', error);
+      alert('Failed to reschedule task');
+    } finally {
+      setIsRescheduleDatePickerOpen(false);
+      setRescheduleDate(null);
+      setRescheduleTaskId(null);
+    }
+  };
+
   const handleSaveEditDirect = async (taskId: number, field: string, value: string) => {
+    if (field === 'status' && value === 'PENDING') {
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+        if (task.rescheduledToId) {
+          alert('This task has already been rescheduled!');
+          return;
+        }
+        setRescheduleTaskId(taskId);
+        const dt = task.dueDate ? new Date(task.dueDate) : new Date();
+        setRescheduleDate(dt);
+        setRescheduleCalendarMonth(new Date(dt.getFullYear(), dt.getMonth(), 1));
+        setIsRescheduleDatePickerOpen(true);
+      }
+      return;
+    }
+
     // Optimistic UI update
     setTasks(tasks.map(t => t.id === taskId ? { ...t, [field]: value } : t));
     
@@ -526,6 +581,121 @@ export default function ViewTasksPage() {
       <div className="animate-slide-up w-full">
         {renderTable()}
       </div>
+
+      {/* Reschedule Date Picker Modal */}
+      {isRescheduleDatePickerOpen && (
+        <div className="fixed inset-0 z-[400] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={() => { setIsRescheduleDatePickerOpen(false); setRescheduleDate(null); setRescheduleTaskId(null); }}>
+          <div 
+            className="bg-white rounded-xl shadow-2xl p-6 w-[320px] max-w-full transform transition-all outline-none" 
+            onClick={e => e.stopPropagation()}
+            tabIndex={0}
+            ref={el => el?.focus()}
+            onKeyDown={(e) => {
+              if (!rescheduleDate) return;
+              const newDate = new Date(rescheduleDate);
+              if (e.key === 'ArrowRight') {
+                newDate.setDate(newDate.getDate() + 1);
+              } else if (e.key === 'ArrowLeft') {
+                newDate.setDate(newDate.getDate() - 1);
+              } else if (e.key === 'ArrowUp') {
+                newDate.setDate(newDate.getDate() - 7);
+              } else if (e.key === 'ArrowDown') {
+                newDate.setDate(newDate.getDate() + 7);
+              } else if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                if (rescheduleTaskId) handleReschedule(rescheduleTaskId, rescheduleDate);
+                return;
+              } else {
+                return;
+              }
+              e.preventDefault();
+              e.stopPropagation();
+              setRescheduleDate(newDate);
+              if (newDate.getMonth() !== rescheduleCalendarMonth.getMonth() || newDate.getFullYear() !== rescheduleCalendarMonth.getFullYear()) {
+                setRescheduleCalendarMonth(new Date(newDate.getFullYear(), newDate.getMonth(), 1));
+              }
+            }}
+          >
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Select Reschedule Date</h3>
+            {(() => {
+              const reschDaysInMonth = new Date(rescheduleCalendarMonth.getFullYear(), rescheduleCalendarMonth.getMonth() + 1, 0).getDate();
+              const reschFirstDayOfMonth = new Date(rescheduleCalendarMonth.getFullYear(), rescheduleCalendarMonth.getMonth(), 1).getDay();
+              
+              return (
+                <div className="select-none">
+                  <div className="flex justify-between items-center mb-4">
+                    <button 
+                      onClick={() => setRescheduleCalendarMonth(new Date(rescheduleCalendarMonth.getFullYear(), rescheduleCalendarMonth.getMonth() - 1, 1))}
+                      className="p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-600"
+                    >
+                      <i className="fas fa-chevron-left"></i>
+                    </button>
+                    <span className="font-semibold text-gray-800">
+                      {rescheduleCalendarMonth.toLocaleDateString('default', { month: 'long', year: 'numeric' })}
+                    </span>
+                    <button 
+                      onClick={() => setRescheduleCalendarMonth(new Date(rescheduleCalendarMonth.getFullYear(), rescheduleCalendarMonth.getMonth() + 1, 1))}
+                      className="p-1 hover:bg-gray-100 rounded-full transition-colors text-gray-600"
+                    >
+                      <i className="fas fa-chevron-right"></i>
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-7 gap-1 mb-2 text-center text-xs font-semibold text-gray-400">
+                    <div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
+                  </div>
+                  <div className="grid grid-cols-7 gap-1">
+                    {Array.from({ length: reschFirstDayOfMonth }).map((_, i) => <div key={`empty-${i}`} />)}
+                    {Array.from({ length: reschDaysInMonth }).map((_, i) => {
+                      const d = i + 1;
+                      const isSelected = rescheduleDate && rescheduleDate.getDate() === d && rescheduleDate.getMonth() === rescheduleCalendarMonth.getMonth() && rescheduleDate.getFullYear() === rescheduleCalendarMonth.getFullYear();
+                      return (
+                        <div 
+                          key={d} 
+                          onClick={() => {
+                            const newDate = new Date(rescheduleCalendarMonth.getFullYear(), rescheduleCalendarMonth.getMonth(), d);
+                            setRescheduleDate(newDate);
+                          }}
+                          className={`
+                            aspect-square flex items-center justify-center rounded-full text-sm cursor-pointer transition-all
+                            ${isSelected ? 'bg-teal-600 text-white font-bold shadow-md transform scale-110' : 'text-gray-700 hover:bg-teal-50 hover:text-teal-700'}
+                          `}
+                        >
+                          {d}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setIsRescheduleDatePickerOpen(false);
+                  setRescheduleDate(null);
+                  setRescheduleTaskId(null);
+                }}
+                className="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (rescheduleTaskId && rescheduleDate) {
+                    handleReschedule(rescheduleTaskId, rescheduleDate);
+                  }
+                }}
+                disabled={!rescheduleDate}
+                className="px-4 py-2 text-sm font-bold text-white bg-teal-600 hover:bg-teal-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow active:scale-95"
+              >
+                Reschedule
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

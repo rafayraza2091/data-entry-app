@@ -74,7 +74,10 @@ export async function GET(request: Request) {
             reporter: true,
             createdBy: true,
             className: true,
-            dueDate: true
+            dueDate: true,
+            rescheduleCount: true,
+            rescheduledFromId: true,
+            rescheduledToId: true
           }
         });
       } else if (viewType === 'query') {

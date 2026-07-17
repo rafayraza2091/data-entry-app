@@ -186,6 +186,49 @@ export default function BirdViewPage() {
   const [chaptersList, setChaptersList] = useState<any[]>([]);
   const [topicsList, setTopicsList] = useState<any[]>([]);
 
+  // Reschedule states
+  const [rescheduleTaskId, setRescheduleTaskId] = useState<number | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState<Date | null>(null);
+  const [isRescheduleDatePickerOpen, setIsRescheduleDatePickerOpen] = useState(false);
+  const [rescheduleCalendarMonth, setRescheduleCalendarMonth] = useState<Date>(new Date());
+  const [rescheduleToast, setRescheduleToast] = useState<string | null>(null);
+
+  const handleReschedule = async (originalTaskId: number, targetDate: Date) => {
+    try {
+      const formattedDate = targetDate.toISOString();
+      const res = await fetch('/api/tasks/reschedule', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ originalTaskId, newDate: formattedDate })
+      });
+      if (!res.ok) throw new Error('Failed to reschedule task');
+      
+      const newTasks = await res.json();
+      
+      setCellData(prev => {
+        let updated = [...prev];
+        const originalIndex = updated.findIndex(t => t.id === originalTaskId);
+        if (originalIndex !== -1) {
+          updated[originalIndex] = newTasks.originalTask;
+        }
+        const currentBoardDate = selectedDate ? getLocalDateString(selectedDate) : getLocalDateString(new Date());
+        if (getLocalDateString(targetDate) === currentBoardDate) {
+          updated.push(newTasks.newTask);
+        }
+        return updated;
+      });
+
+      setRescheduleToast(`Task successfully rescheduled to ${targetDate.toLocaleDateString()}`);
+      setTimeout(() => setRescheduleToast(null), 3000);
+    } catch (error) {
+      console.error('Error rescheduling task:', error);
+      alert('Failed to reschedule task');
+    } finally {
+      setIsRescheduleDatePickerOpen(false);
+      setRescheduleDate(null);
+      setRescheduleTaskId(null);
+    }
+  };
   const handleUpdateTaskField = async (taskId: number, fieldName: string, newValue: string) => {
     // Optimistic UI update
     setCellData(prev => prev.map(d => d.id === taskId ? { ...d, [fieldName]: newValue } : d));
@@ -435,7 +478,7 @@ export default function BirdViewPage() {
           studentSearchInputRef.current?.blur();
           setStudentSearchQuery('');
           updateHighlight(activeSubjectIdRef.current, null);
-        } else if (activeDropdown !== null || newEntryModal !== null || clickedCellId !== null || isDatePickerOpen || isStudentPickerOpen || isFilterStatusOpen || isFilterTypeOpen) {
+        } else if (activeDropdown !== null || newEntryModal !== null || clickedCellId !== null || isDatePickerOpen || isStudentPickerOpen || isFilterStatusOpen || isFilterTypeOpen || isRescheduleDatePickerOpen) {
           // If a modal, floating cell, or dropdown is open, close only them
           setNewEntryModal(null);
           setClickedCellId(null);
@@ -444,6 +487,9 @@ export default function BirdViewPage() {
           setIsFilterStatusOpen(false);
           setIsFilterTypeOpen(false);
           setActiveDropdown(null);
+          setIsRescheduleDatePickerOpen(false);
+          setRescheduleTaskId(null);
+          setRescheduleDate(null);
         } else {
           const activeEl = document.activeElement as HTMLElement;
           const isGridCell = activeEl?.tagName === 'TD' && activeEl?.hasAttribute('data-subject-id');
@@ -1963,7 +2009,7 @@ export default function BirdViewPage() {
                                     if (items.length === 0) return null;
 
                                     return (
-                                      <div 
+                                      <div
                                         className={`w-full flex flex-col relative ${isClicked ? 'absolute top-0 left-0 min-h-[100%] h-fit max-h-[60vh] overflow-y-auto overflow-x-visible z-[100] bg-white rounded-lg p-2 shadow-[0_0_30px_rgba(0,0,0,0.2)] border border-gray-200 custom-scrollbar gap-2' : 'h-full items-center justify-center'}`}
                                         onClick={(e) => { if (isClicked) e.stopPropagation(); }}
                                         ref={(el) => {
@@ -2184,7 +2230,7 @@ export default function BirdViewPage() {
                                                               }
                                                             }
                                                           }}
-                                                          className="text-xs text-black font-semibold w-[calc(100%+8px)] leading-relaxed text-left bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors resize-none min-h-[40px] max-h-[120px] overflow-y-auto whitespace-normal custom-scrollbar rounded px-2 py-1 -ml-2"
+                                                          className="text-xs text-black font-semibold w-[calc(100%+8px)] leading-relaxed text-left bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors resize-none min-h-[40px] whitespace-normal custom-scrollbar rounded px-2 py-1 -ml-2"
                                                         />
                                                       </div>
                                                       <div className="flex items-center w-[calc(100%+8px)] mt-auto pt-1 relative group mb-1 hover:bg-gray-100 focus-within:bg-gray-100 rounded px-2 py-1 -ml-2 transition-colors cursor-pointer">
@@ -2216,13 +2262,23 @@ export default function BirdViewPage() {
                                                   );
                                                 })()
                                               ) : (
-                                                <div className="flex flex-col flex-1 w-full text-left mt-0 overflow-hidden pr-2">
-                                                  <span className="text-[12px] font-black text-gray-900 truncate w-full leading-tight mb-[1px]">Ch: {item.chapter || '-'}</span>
-                                                  <span className="text-[10px] font-bold text-gray-800 truncate w-full leading-tight mb-[1px]">Tp: {item.topic || '-'}</span>
-                                                  {item.exercise && <span className="text-[9px] font-semibold text-gray-700 truncate w-full italic leading-tight mb-[1px]">Ex: {item.exercise}</span>}
+                                                <>
+                                                  {/* Unclicked Card Overlay for Rescheduled */}
+                                                  {item.rescheduledToId && (
+                                                    <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden rounded-[4px]">
+                                                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[12px] bg-gray-500/80 -rotate-45 flex items-center justify-center shadow-sm backdrop-blur-[1px]">
+                                                        <span className="text-white text-[7px] font-black uppercase tracking-widest px-4">Rescheduled</span>
+                                                      </div>
+                                                    </div>
+                                                  )}
+                                                  <div className="flex flex-col flex-1 w-full text-left mt-0 overflow-hidden pr-2">
+                                                    <span className="text-[12px] font-black text-gray-900 truncate w-full leading-tight mb-[1px]">Ch: {item.chapter || '-'}</span>
+                                                    <span className="text-[10px] font-bold text-gray-800 truncate w-full leading-tight mb-[1px]">Tp: {item.topic || '-'}</span>
+                                                    {item.exercise && <span className="text-[9px] font-semibold text-gray-700 truncate w-full italic leading-tight mb-[1px]">Ex: {item.exercise}</span>}
 
-                                                  {item.description && <span className="text-[8px] text-black font-semibold mt-0.5 w-full leading-tight text-left line-clamp-2">Ds: {item.description}</span>}
-                                                </div>
+                                                    {item.description && <span className="text-[8px] text-black font-semibold mt-0.5 w-full leading-tight text-left line-clamp-2">Ds: {item.description}</span>}
+                                                  </div>
+                                                </>
                                               )}
                                               {/* Footer area line separator */}
                                               {isClicked && (
@@ -2296,6 +2352,16 @@ export default function BirdViewPage() {
                                                     {subjects.find(s => s.name === item.subject)?.code || item.subject}
                                                   </div>
                                                 )}
+                                                {/* Rescheduled Badge (If it's a new rescheduled task) */}
+                                                {item.rescheduledFromId && item.rescheduleCount && item.rescheduleCount > 0 && (
+                                                  <div
+                                                    className={`flex items-center justify-center text-white font-bold ${isClicked ? 'w-auto px-1.5 h-6 text-[10px]' : 'w-auto px-1 h-4 text-[8px]'}`}
+                                                    style={{ backgroundColor: '#6b7280' }}
+                                                    title={`Rescheduled ${item.rescheduleCount} time(s)`}
+                                                  >
+                                                    Rs {item.rescheduleCount}
+                                                  </div>
+                                                )}
                                                 {/* Task Type Badge */}
                                                 <div
                                                   id={`badge-type-${item.id}`}
@@ -2330,7 +2396,7 @@ export default function BirdViewPage() {
                                                           <button
                                                             key={t}
                                                             tabIndex={-1}
-                                                            className="w-8 h-6 flex items-center justify-center text-white text-[10px] font-bold shadow-md hover:scale-110 transition-transform outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                                            className="w-8 h-6 flex items-center justify-center text-white text-[10px] font-bold shadow-md hover:scale-110 focus:scale-110 transition-transform outline-none focus:ring-2 focus:ring-blue-500 z-10"
                                                             style={{ backgroundColor: b.color }}
                                                             onClick={() => {
                                                               handleUpdateTaskField(item.id, 'taskType', t);
@@ -2387,20 +2453,50 @@ export default function BirdViewPage() {
                                                         <button
                                                           key={s}
                                                           tabIndex={-1}
-                                                          className="w-8 h-6 flex items-center justify-center text-white text-[10px] font-bold shadow-md hover:scale-110 transition-transform outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                                                          className="w-8 h-6 flex items-center justify-center text-white text-[10px] font-bold shadow-md hover:scale-110 focus:scale-110 transition-transform outline-none focus:ring-2 focus:ring-blue-500 z-10"
                                                           style={{ backgroundColor: getStatusColor(s) }}
                                                           onClick={() => {
-                                                            handleUpdateTaskField(item.id, 'status', s);
-                                                            setActiveDropdown(null);
-                                                            document.getElementById(`badge-status-${item.id}`)?.focus();
+                                                            if (s === 'PENDING') {
+                                                              if (item.rescheduledToId) {
+                                                                setRescheduleToast('This task has already been rescheduled!');
+                                                                setTimeout(() => setRescheduleToast(null), 3000);
+                                                                setActiveDropdown(null);
+                                                              } else {
+                                                                setRescheduleTaskId(item.id);
+                                                                const dt = item.dueDate ? new Date(item.dueDate) : (selectedDate || new Date());
+                                                                setRescheduleDate(dt);
+                                                                setRescheduleCalendarMonth(new Date(dt.getFullYear(), dt.getMonth(), 1));
+                                                                setIsRescheduleDatePickerOpen(true);
+                                                                setActiveDropdown(null);
+                                                              }
+                                                            } else {
+                                                              handleUpdateTaskField(item.id, 'status', s);
+                                                              setActiveDropdown(null);
+                                                              document.getElementById(`badge-status-${item.id}`)?.focus();
+                                                            }
                                                           }}
                                                           onKeyDown={(e) => {
                                                             if (e.key === 'Enter' || e.key === ' ') {
                                                               e.preventDefault();
                                                               e.stopPropagation();
-                                                              handleUpdateTaskField(item.id, 'status', s);
-                                                              setActiveDropdown(null);
-                                                              document.getElementById(`badge-status-${item.id}`)?.focus();
+                                                              if (s === 'PENDING') {
+                                                                if (item.rescheduledToId) {
+                                                                  setRescheduleToast('This task has already been rescheduled!');
+                                                                  setTimeout(() => setRescheduleToast(null), 3000);
+                                                                  setActiveDropdown(null);
+                                                                } else {
+                                                                  setRescheduleTaskId(item.id);
+                                                                  const dt = item.dueDate ? new Date(item.dueDate) : (selectedDate || new Date());
+                                                                  setRescheduleDate(dt);
+                                                                  setRescheduleCalendarMonth(new Date(dt.getFullYear(), dt.getMonth(), 1));
+                                                                  setIsRescheduleDatePickerOpen(true);
+                                                                  setActiveDropdown(null);
+                                                                }
+                                                              } else {
+                                                                handleUpdateTaskField(item.id, 'status', s);
+                                                                setActiveDropdown(null);
+                                                                document.getElementById(`badge-status-${item.id}`)?.focus();
+                                                              }
                                                             }
                                                           }}
                                                           title={s}
@@ -2581,6 +2677,118 @@ export default function BirdViewPage() {
           </button>
         </div>
       )}
+
+      {/* Reschedule Date Picker Modal */}
+      {isRescheduleDatePickerOpen && (
+        <div className="fixed inset-0 z-[400] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in" onClick={() => { setIsRescheduleDatePickerOpen(false); setRescheduleDate(null); setRescheduleTaskId(null); }}>
+          <div 
+            className="bg-white rounded-xl shadow-2xl p-6 w-[320px] max-w-full transform transition-all outline-none" 
+            onClick={e => e.stopPropagation()}
+            tabIndex={0}
+            ref={el => el?.focus()}
+            onKeyDown={(e) => {
+              if (!rescheduleDate) return;
+              const newDate = new Date(rescheduleDate);
+              if (e.key === 'ArrowRight') {
+                newDate.setDate(newDate.getDate() + 1);
+              } else if (e.key === 'ArrowLeft') {
+                newDate.setDate(newDate.getDate() - 1);
+              } else if (e.key === 'ArrowUp') {
+                newDate.setDate(newDate.getDate() - 7);
+              } else if (e.key === 'ArrowDown') {
+                newDate.setDate(newDate.getDate() + 7);
+              } else if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                if (rescheduleTaskId) handleReschedule(rescheduleTaskId, rescheduleDate);
+                return;
+              } else {
+                return;
+              }
+              e.preventDefault();
+              e.stopPropagation();
+              setRescheduleDate(newDate);
+              if (newDate.getMonth() !== rescheduleCalendarMonth.getMonth() || newDate.getFullYear() !== rescheduleCalendarMonth.getFullYear()) {
+                setRescheduleCalendarMonth(new Date(newDate.getFullYear(), newDate.getMonth(), 1));
+              }
+            }}
+          >
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Select Reschedule Date</h3>
+            {(() => {
+              const reschDaysInMonth = new Date(rescheduleCalendarMonth.getFullYear(), rescheduleCalendarMonth.getMonth() + 1, 0).getDate();
+              const reschStartDay = new Date(rescheduleCalendarMonth.getFullYear(), rescheduleCalendarMonth.getMonth(), 1).getDay();
+              const reschBlanksArray = Array.from({ length: reschStartDay }, (_, i) => i);
+              const reschDaysArray = Array.from({ length: reschDaysInMonth }, (_, i) => i + 1);
+
+              return (
+                <div className="border border-gray-200 rounded p-3">
+                  {/* Calendar Header */}
+                  <div className="flex items-center justify-between mb-4">
+                    <button onClick={() => setRescheduleCalendarMonth(new Date(rescheduleCalendarMonth.getFullYear(), rescheduleCalendarMonth.getMonth() - 1, 1))} className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#edab30]"><i className="fa-solid fa-chevron-left"></i></button>
+                    <span className="font-bold text-gray-700">
+                      {rescheduleCalendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    </span>
+                    <button onClick={() => setRescheduleCalendarMonth(new Date(rescheduleCalendarMonth.getFullYear(), rescheduleCalendarMonth.getMonth() + 1, 1))} className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#edab30]"><i className="fa-solid fa-chevron-right"></i></button>
+                  </div>
+                  {/* Calendar Grid */}
+                  <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-gray-400 mb-2">
+                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => <div key={d}>{d}</div>)}
+                  </div>
+                  <div className="grid grid-cols-7 gap-1 text-sm">
+                    {reschBlanksArray.map(b => <div key={`blank-${b}`} className="w-8 h-8"></div>)}
+                    {reschDaysArray.map(d => {
+                      const isSelected = rescheduleDate && rescheduleDate.getDate() === d && rescheduleDate.getMonth() === rescheduleCalendarMonth.getMonth() && rescheduleDate.getFullYear() === rescheduleCalendarMonth.getFullYear();
+                      return (
+                        <button
+                          key={d}
+                          onClick={() => {
+                            setRescheduleDate(new Date(rescheduleCalendarMonth.getFullYear(), rescheduleCalendarMonth.getMonth(), d));
+                          }}
+                          className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#254245] ${isSelected ? 'bg-[#edab30] text-white font-bold shadow-md' : 'text-gray-700 hover:bg-gray-100'}`}
+                        >
+                          {d}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setIsRescheduleDatePickerOpen(false);
+                  setRescheduleDate(null);
+                  setRescheduleTaskId(null);
+                }}
+                className="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (rescheduleTaskId && rescheduleDate) {
+                    handleReschedule(rescheduleTaskId, rescheduleDate);
+                  }
+                }}
+                disabled={!rescheduleDate}
+                className="px-4 py-2 text-sm font-semibold text-white bg-[#edab30] hover:bg-[#d99820] disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors shadow-sm"
+              >
+                Reschedule
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reschedule Toast Notification */}
+      {rescheduleToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[300] bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg flex items-center space-x-4 animate-slide-up">
+          <span className="text-sm font-medium">{rescheduleToast}</span>
+        </div>
+      )}
+
 
       {/* Confirmation Modal */}
       {taskToDelete !== null && (

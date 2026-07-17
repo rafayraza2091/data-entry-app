@@ -188,7 +188,7 @@ export async function PATCH(request: Request) {
     }
 
     // Allowed fields
-    const allowedFields = ['description', 'status', 'subject', 'book', 'chapter', 'topic', 'exercise', 'taskType', 'dueDate', 'assignee', 'reporter'];
+    const allowedFields = ['description', 'status', 'subject', 'book', 'chapter', 'topic', 'exercise', 'taskType', 'dueDate', 'assignee', 'reporter', 'rescheduledToId'];
     if (!allowedFields.includes(fieldName)) {
       return NextResponse.json({ error: 'Invalid field' }, { status: 400 });
     }

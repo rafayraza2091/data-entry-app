@@ -199,9 +199,12 @@ model TaskEntry {
   assignee    String
   status      String   @default("OPEN")
   taskType    String   @default("Home Work")
-  dueDate     DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  dueDate           DateTime?
+  rescheduleCount   Int?
+  rescheduledFromId Int?
+  rescheduledToId   Int?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 model PendingUser {

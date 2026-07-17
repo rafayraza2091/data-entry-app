@@ -24,6 +24,12 @@ When modifying the Bird View grid, strictly follow these layout and functionalit
 8. **Ticket Escape Key Behavior**: The global Escape key handler must close the *entire* ticket (e.g., setting `clickedCellId` to null) and clear any open badge dropdowns simultaneously. Do not trap the Escape key to only close the dropdown while leaving the ticket open.
    
 9. **Ticket Autofocus on Open**: When a ticket popup opens, it must automatically focus the Description textarea (or the first focusable input) using a `ref` callback on the popup wrapper. If this is missed, focus remains outside the popup (e.g., on the body), which causes the `Tab` key to jump to elements completely outside the ticket popup.
+
+10. **Reschedule Date Picker Keyboard Navigation**: The reschedule modal calendar must support Arrow key navigation to change dates and Enter to submit. Ensure `e.stopPropagation()` is called alongside `e.preventDefault()` inside the `onKeyDown` handler of the date picker to prevent arrow keys from bubbling up and triggering the main board's cell navigation.
+
+11. **Badge Dropdown Focus Highlighting**: Since badge dropdown options are navigated programmatically via Arrow keys and not via `Tab` (due to `tabIndex={-1}`), their highlight state cannot rely solely on `focus-visible`. Use standard `focus:` tailwind classes (e.g., `focus:scale-110 focus:ring-2 focus:ring-blue-500 z-10`) to ensure they visibly highlight when focused programmatically.
+
+12. **Task View Pending Reschedule**: The "PENDING" status behavior from Bird View (prompting for a reschedule date) is also mirrored in the Task View table (`src/app/(dashboard)/view-tasks/page.tsx`). Do not blindly save a "PENDING" status change; intercept it, open the Reschedule Modal, and hit `/api/tasks/reschedule`.
 <!-- END:bird-view-rules -->
 
 <!-- BEGIN:general-workflow-rules -->
