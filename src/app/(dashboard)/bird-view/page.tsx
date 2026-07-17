@@ -799,15 +799,41 @@ export default function BirdViewPage() {
     setHoveredSubjectIdx(null);
   };
 
+  const hasAbsencesOrLeaves = useMemo(() => {
+    return attendanceData?.some(a => a.status === 'ABSENT' || a.status === 'LEAVE') || false;
+  }, [attendanceData]);
+
+  const displayStudents = useMemo(() => {
+    let sorted = [...students];
+    if (hasAbsencesOrLeaves) {
+      const withOriginalIndex = sorted.map((student, idx) => ({ student, idx }));
+      withOriginalIndex.sort((a, b) => {
+        const aStatus = attendanceData?.find(att => att.userId === (a.student as any).userId)?.status;
+        const bStatus = attendanceData?.find(att => att.userId === (b.student as any).userId)?.status;
+        const getWeight = (status: string | undefined) => {
+          if (status === 'ABSENT') return 2;
+          if (status === 'LEAVE') return 1;
+          return 0;
+        };
+        const aWeight = getWeight(aStatus);
+        const bWeight = getWeight(bStatus);
+        if (aWeight !== bWeight) return aWeight - bWeight;
+        return a.idx - b.idx;
+      });
+      return withOriginalIndex.map(item => item.student);
+    }
+    return sorted;
+  }, [students, attendanceData, hasAbsencesOrLeaves]);
+
   const tasksPerStudent = useMemo(() => {
-    return students.map(student => {
+    return displayStudents.map(student => {
       const studentFullName = `${student.firstName} ${student.secondName}`.trim();
       const studentTasks = filteredCellData.filter(t => t.assignee === studentFullName || t.studentName === studentFullName);
       const statusOrder = ['IN_PROGRESS', 'OPEN', 'PENDING', 'DONE'];
       studentTasks.sort((a, b) => statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status));
       return { studentId: student.id, tasks: studentTasks };
     });
-  }, [students, filteredCellData]);
+  }, [displayStudents, filteredCellData]);
 
   const maxTasks = Math.max(...tasksPerStudent.map(s => s.tasks.length), 0);
   const stackedRowCount = Math.max(maxTasks + 1, 1);
@@ -1198,7 +1224,41 @@ export default function BirdViewPage() {
         }
 
         .unassigned-cell {
-          background: repeating-linear-gradient(45deg, #f9fafb, #f9fafb 4px, #f3f4f6 4px, #f3f4f6 8px) !important;
+          background: repeating-linear-gradient(-45deg, #f9fafb, #f9fafb 4px, #f3f4f6 4px, #f3f4f6 8px) !important;
+        }
+        .absent-cell {
+          background: repeating-linear-gradient(-45deg, rgba(239, 68, 68, 0.01), rgba(239, 68, 68, 0.01) 4px, rgba(239, 68, 68, 0.04) 4px, rgba(239, 68, 68, 0.04) 8px) !important;
+          position: relative;
+        }
+        .absent-cell::after {
+          content: "ABSENT";
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%) rotate(-45deg);
+          color: rgba(239, 68, 68, 0.08);
+          font-size: 1.1rem;
+          font-weight: 800;
+          letter-spacing: 0.1em;
+          pointer-events: none;
+          z-index: 10;
+        }
+        .leave-cell {
+          background: repeating-linear-gradient(-45deg, rgba(168, 85, 247, 0.01), rgba(168, 85, 247, 0.01) 4px, rgba(168, 85, 247, 0.04) 4px, rgba(168, 85, 247, 0.04) 8px) !important;
+          position: relative;
+        }
+        .leave-cell::after {
+          content: "LEAVE";
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%) rotate(-45deg);
+          color: rgba(168, 85, 247, 0.08);
+          font-size: 1.1rem;
+          font-weight: 800;
+          letter-spacing: 0.1em;
+          pointer-events: none;
+          z-index: 10;
         }
       `}</style>
 
@@ -1261,7 +1321,7 @@ export default function BirdViewPage() {
                 <th scope="row" className="px-6 py-4 font-medium text-gray-900 border-r border-gray-200 bg-gray-50 whitespace-nowrap min-w-[200px]">
                   {subjects[draggedSubjectIdx].name}
                 </th>
-                {students.map((student) => {
+                {displayStudents.map((student) => {
                   const isAssigned = student.subjects.includes(subjects[draggedSubjectIdx].name);
                   return (
                     <td
@@ -1744,7 +1804,7 @@ export default function BirdViewPage() {
               <table className="text-sm text-left border-separate border-spacing-0 table-fixed responsive-table-width mx-0 mr-auto">
                 <colgroup>
                   <col className="w-16 min-w-[4rem] max-w-[4rem] md:w-[80px] md:min-w-[80px] md:max-w-[80px]" />
-                  {students.map((student) => {
+                  {displayStudents.map((student) => {
                     if (!visibleStudentIds.includes(student.id)) return null;
                     return <col key={student.id} className="w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px]" />;
                   })}
@@ -1753,7 +1813,7 @@ export default function BirdViewPage() {
                   <tr>
                     <th scope="col" className="w-16 min-w-[4rem] max-w-[4rem] md:w-[80px] md:min-w-[80px] md:max-w-[80px] px-2 py-4 sticky left-0 bg-gray-100 z-30 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] border-b border-r border-gray-200">
                     </th>
-                    {students.map((student, index) => {
+                    {displayStudents.map((student, index) => {
                       if (!visibleStudentIds.includes(student.id)) return null;
                       const isDragged = draggedStudentIdx === index;
                       const isHovered = hoveredStudentIdx === index && !isDragged;
@@ -1770,6 +1830,10 @@ export default function BirdViewPage() {
 
                       const studentAttendance = attendanceData?.find(a => a.userId === (student as any).userId);
                       const isAbsent = studentAttendance?.status === 'ABSENT';
+                      const isLeave = studentAttendance?.status === 'LEAVE';
+                      const disableCol = isAbsent || isLeave;
+
+                      const isDraggable = !disableCol && !hasAbsencesOrLeaves;
 
                       return (
                         <th
@@ -1779,20 +1843,22 @@ export default function BirdViewPage() {
                           className={`p-0 text-center border-b border-r border-gray-200 whitespace-nowrap w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] relative scroll-ml-16 md:scroll-ml-[80px] cell-student-${student.id}`}
                         >
                           <div
-                            className={`w-full h-full px-1 py-2 md:px-4 md:py-4 cursor-pointer active:cursor-grabbing hover:bg-gray-100 group flex flex-col items-center justify-center relative
+                            className={`w-full h-full px-1 py-2 md:px-4 md:py-4 cursor-pointer hover:bg-gray-100 group flex flex-col items-center justify-center relative
+                            ${isDraggable ? 'active:cursor-grabbing' : ''}
                             ${isDragged ? 'dragged-column' : ''}
                             ${showLeftIndicator ? 'drop-target-left' : ''}
                             ${showRightIndicator ? 'drop-target-right' : ''}
                             ${activeStudentIdRef.current === student.id ? 'bg-gray-100' : ''}
+                            ${disableCol ? 'pointer-events-none' : ''}
                           `}
                             onClick={() => updateHighlight(activeSubjectIdRef.current, activeStudentIdRef.current === student.id ? null : student.id)}
-                            draggable
-                            onDragStart={(e) => handleStudentDragStart(e, index)}
-                            onDragEnter={(e) => handleStudentDragEnter(e, index)}
-                            onDragOver={(e) => { e.preventDefault(); handleDrag(e); }}
-                            onDrag={(e) => handleDrag(e)}
-                            onDrop={(e) => handleStudentDrop(e, index)}
-                            onDragEnd={handleStudentDragEnd}
+                            draggable={isDraggable}
+                            onDragStart={(e) => isDraggable && handleStudentDragStart(e, index)}
+                            onDragEnter={(e) => isDraggable && handleStudentDragEnter(e, index)}
+                            onDragOver={(e) => { if (isDraggable) { e.preventDefault(); handleDrag(e); } }}
+                            onDrag={(e) => { if (isDraggable) handleDrag(e); }}
+                            onDrop={(e) => isDraggable && handleStudentDrop(e, index)}
+                            onDragEnd={isDraggable ? handleStudentDragEnd : undefined}
                           >
                             <div className={`flex flex-col items-center justify-center relative ${isDragged ? 'opacity-50' : ''}`}>
                               {isAbsent && (
@@ -1800,8 +1866,13 @@ export default function BirdViewPage() {
                                   Absent
                                 </div>
                               )}
+                              {isLeave && (
+                                <div className="absolute -top-3 text-[10px] bg-purple-100 text-purple-600 px-1 py-0.5 rounded font-bold border border-purple-200 whitespace-nowrap z-10 shadow-sm animate-pulse">
+                                  Leave
+                                </div>
+                              )}
                               <div className="relative mt-2 md:mt-1">
-                                <div className={`w-6 h-6 text-[10px] md:w-8 md:h-8 md:text-sm rounded-full text-white flex items-center justify-center font-bold mb-1 md:mb-2 shadow-sm ${isAbsent ? 'opacity-60 ring-2 ring-red-400 ring-offset-1' : ''}`} style={{ backgroundColor: getVibrantColor(student.firstName + ' ' + student.secondName) }}>
+                                <div className={`w-6 h-6 text-[10px] md:w-8 md:h-8 md:text-sm rounded-full text-white flex items-center justify-center font-bold mb-1 md:mb-2 shadow-sm ${isAbsent ? 'ring-2 ring-red-400 ring-offset-1' : isLeave ? 'ring-2 ring-purple-400 ring-offset-1' : ''}`} style={{ backgroundColor: getVibrantColor(student.firstName + ' ' + student.secondName) }}>
                                   {student.firstName.charAt(0)}{student.secondName.charAt(0)}
                                 </div>
                                 {activeTaskCount > 0 && (
@@ -1813,7 +1884,7 @@ export default function BirdViewPage() {
                                   </div>
                                 )}
                               </div>
-                              <span className={`truncate w-full text-[9px] md:text-xs text-center max-w-[80px] md:max-w-[100px] ${isAbsent ? 'text-red-500 font-semibold' : ''}`} title={`${student.firstName} ${student.secondName}`}>
+                              <span className="truncate w-full text-[9px] md:text-xs text-center max-w-[80px] md:max-w-[100px] text-gray-800 font-bold" title={`${student.firstName} ${student.secondName}`}>
                                 {student.firstName} {student.secondName}
                               </span>
                             </div>
@@ -1868,7 +1939,7 @@ export default function BirdViewPage() {
                           </div>
                         </th>
 
-                        {students.map((student, studentIndex) => {
+                        {displayStudents.map((student, studentIndex) => {
                           if (!visibleStudentIds.includes(student.id)) return null;
 
                           let stackedTask = null;
@@ -1919,14 +1990,16 @@ export default function BirdViewPage() {
 
                           const studentAttendance = attendanceData?.find(a => a.userId === (student as any).userId);
                           const isAbsent = studentAttendance?.status === 'ABSENT';
+                          const isLeave = studentAttendance?.status === 'LEAVE';
+                          const disableCol = isAbsent || isLeave;
 
                           return (
                             <td
                               key={cellId}
                               id={`cell-${cellId}`}
-                              className={`p-0 text-center border-b border-r border-gray-200 last:border-r-0 h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] relative scroll-ml-16 md:scroll-ml-[80px] scroll-mt-[100px] cell-student-${student.id} cell-subject-${isGrid && subject ? subject.id : row.id} ${(isGrid && subject && activeSubjectIdRef.current === subject.id) || activeStudentIdRef.current === student.id || (!isGrid && activeSubjectIdRef.current === row.id) ? 'cell-subject-highlight' : ''}`}
+                              className={`p-0 text-center border-b border-r border-gray-200 last:border-r-0 h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] relative scroll-ml-16 md:scroll-ml-[80px] scroll-mt-[100px] cell-student-${student.id} cell-subject-${isGrid && subject ? subject.id : row.id} ${(isGrid && subject && activeSubjectIdRef.current === subject.id) || activeStudentIdRef.current === student.id || (!isGrid && activeSubjectIdRef.current === row.id) ? 'cell-subject-highlight' : ''} ${isAbsent ? 'absent-cell' : isLeave ? 'leave-cell' : ''}`}
                               onDragEnter={(e) => {
-                                if (!isAssigned) return;
+                                if (!isAssigned || disableCol) return;
                                 if (draggedTaskId !== null && draggedTaskSource && (e.shiftKey || e.altKey || e.metaKey)) {
                                   const studentFullName = `${student.firstName} ${student.secondName}`.trim();
                                   if (!clonedCells.has(cellId)) {
@@ -1936,14 +2009,14 @@ export default function BirdViewPage() {
                                 }
                               }}
                               onDragOver={(e) => {
-                                if (!isAssigned) return;
+                                if (!isAssigned || disableCol) return;
                                 if (draggedTaskId !== null) {
                                   e.preventDefault(); // allow drop
                                   e.dataTransfer.dropEffect = (e.shiftKey || e.altKey || e.metaKey) ? 'copy' : 'move';
                                 }
                               }}
                               onDrop={(e) => {
-                                if (!isAssigned) return;
+                                if (!isAssigned || disableCol) return;
                                 if (draggedTaskId !== null) {
                                   e.preventDefault();
                                   e.stopPropagation();
@@ -1966,7 +2039,7 @@ export default function BirdViewPage() {
                               <div className="w-full h-full relative">
                                 <div
                                   onClick={() => {
-                                    if (isBatchMode) return;
+                                    if (isBatchMode || disableCol) return;
 
                                     // Always toggle highlight for this column when clicking any cell
                                     updateHighlight(activeSubjectIdRef.current, activeStudentIdRef.current === student.id ? null : student.id);
@@ -2001,8 +2074,8 @@ export default function BirdViewPage() {
                                   className={`
                                   w-full h-full flex items-center justify-center cursor-pointer transition-all duration-300 ease-in-out
                                   ${isClicked ? 'overflow-visible cell-clicked' : 'overflow-hidden'}
-                                ${(!isAssigned && !isDragged && !isStudentDragged) ? 'unassigned-cell' : 'bg-white grid-cell-assigned'}
-                                ${isAssigned ? 'hover:bg-gray-50' : ''}
+                                ${disableCol ? (isAbsent ? 'absent-cell' : 'leave-cell') : (!isAssigned && !isDragged && !isStudentDragged) ? 'unassigned-cell' : 'bg-white grid-cell-assigned'}
+                                ${isAssigned && !disableCol ? 'hover:bg-gray-50' : ''}
                                   ${isClicked ? `z-[60] absolute top-1/2 -translate-y-1/2 ${studentIndex === 0 ? 'left-0' : studentIndex === visibleStudentIds.length - 1 ? 'right-0' : 'left-1/2 -translate-x-1/2'} w-[280px] h-[210px] md:w-[340px] md:h-[220px] bg-transparent p-0` : 'z-0 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full rounded-none p-0'}
                                 ${isDragged || isStudentDragged ? 'dragged-column dragged-row' : ''}
                                 ${showLeftIndicator ? 'drop-target-left' : ''}
