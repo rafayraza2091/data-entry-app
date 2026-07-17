@@ -56,6 +56,19 @@ export default function Sidebar({
             {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Query Entry</span>}
           </Link>
 
+          {/* Daily Operations Section */}
+          {(role === 'OWNER' || role === 'COORDINATOR' || role === 'TEACHER') && (
+            <div className="mt-2 pt-2 border-t border-white/10">
+              {isExpanded && <div className="text-xs uppercase text-subtextGray font-bold mb-1 px-2 tracking-wider">Daily Operations</div>}
+              {!isExpanded && <div className="w-full h-px bg-white/10 my-2"></div>}
+              
+              <Link href="/attendance" className={`flex items-center px-3 py-1.5 rounded-md transition-colors ${pathname === '/attendance' ? 'bg-customMustard/20 text-customMustard border-l-2 border-customMustard' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Attendance">
+                <i className="fa-solid fa-calendar-check w-6 text-center"></i>
+                {isExpanded && <span className="ml-3 font-medium whitespace-nowrap">Attendance</span>}
+              </Link>
+            </div>
+          )}
+
           {/* Entry Section */}
           <div className="mt-2 pt-2 border-t border-white/10">
             {isExpanded && <div className="text-xs uppercase text-subtextGray font-bold mb-1 px-2 tracking-wider">Entry</div>}

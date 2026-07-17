@@ -29,7 +29,7 @@ export async function GET(request: Request) {
     let students;
     if (session.role === 'STUDENT') {
       students = await prisma.$queryRaw`
-        SELECT id, "firstName", "secondName", subjects, "className" 
+        SELECT id, "userId", "firstName", "secondName", subjects, "className" 
         FROM "Student" 
         WHERE status = 'Active' 
         AND "firstName" = ${session.firstName} 
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
       `;
     } else {
       students = await prisma.$queryRaw`
-        SELECT id, "firstName", "secondName", subjects, "className" 
+        SELECT id, "userId", "firstName", "secondName", subjects, "className" 
         FROM "Student" 
         WHERE status = 'Active' 
         ORDER BY "firstName" ASC
@@ -46,6 +46,15 @@ export async function GET(request: Request) {
     }
 
     let cellData: any[] = [];
+    let attendanceData: any[] = [];
+    
+    if (dateStr) {
+      attendanceData = await prisma.attendance.findMany({
+        where: { date: dateStr },
+        select: { userId: true, status: true }
+      });
+    }
+
     if (dateStr && viewType) {
       const startOfDay = new Date(dateStr);
       startOfDay.setHours(0, 0, 0, 0);
@@ -98,7 +107,7 @@ export async function GET(request: Request) {
       }
     }
 
-    return NextResponse.json({ subjects, students, cellData });
+    return NextResponse.json({ subjects, students, cellData, attendanceData });
     } catch (error: any) {
       console.error('Error fetching bird view data:', error);
       try {

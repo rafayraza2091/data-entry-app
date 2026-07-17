@@ -246,3 +246,19 @@ model EmployeeRecord {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
+
+model Attendance {
+  id          Int      @id @default(autoincrement())
+  userId      Int      // References DataentryUser.id
+  date        String   // Stored as YYYY-MM-DD
+  status      String   @default("ABSENT") // PRESENT, ABSENT, LATE, LEAVE
+  reason      String?  // Reason for absence
+  markedBy    String   // Username of who initially marked it
+  isLocked    Boolean  @default(false) // True when saved by Teacher/Coordinator
+  isConfirmed Boolean  @default(false) // True when confirmed by Owner
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Ensure only one attendance record per user per day
+  @@unique([userId, date])
+}

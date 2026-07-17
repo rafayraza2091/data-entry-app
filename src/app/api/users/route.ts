@@ -30,7 +30,7 @@ export async function POST(request: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await prisma.dataentryUser.create({
+    const newUser = await prisma.dataentryUser.create({
       data: {
         username,
         password: hashedPassword,
@@ -44,12 +44,12 @@ export async function POST(request: Request) {
     if (category === 'student') {
       const res = await prisma.$queryRaw`
         INSERT INTO "Student" (
-          "firstName", "secondName", "address", "mobileNumber", "email",
+          "userId", "firstName", "secondName", "address", "mobileNumber", "email",
           "fatherName", "parentContact1", "parentContact2", "otherInfo",
           "className", "schoolName", "status", "subjects",
           "createdAt", "updatedAt"
         ) VALUES (
-          ${userData.firstName}, ${userData.secondName}, ${userData.address}, ${userData.mobileNumber}, ${userData.email},
+          ${newUser.id}, ${userData.firstName}, ${userData.secondName}, ${userData.address}, ${userData.mobileNumber}, ${userData.email},
           ${userData.fatherName || null}, ${userData.parentContact1 || null}, ${userData.parentContact2 || null}, ${userData.otherInfo || null},
           ${userData.class}, ${userData.schoolName}, ${userData.status || 'Active'}, ${userData.subjects || []},
           NOW(), NOW()
@@ -60,6 +60,7 @@ export async function POST(request: Request) {
     } else if (category === 'teacher') {
       const teacher = await prisma.teacher.create({
         data: {
+          userId: newUser.id,
           firstName: userData.firstName,
           secondName: userData.secondName,
           address: userData.address,
@@ -75,6 +76,7 @@ export async function POST(request: Request) {
     } else if (category === 'admin') {
       const admin = await prisma.admin.create({
         data: {
+          userId: newUser.id,
           firstName: userData.firstName,
           secondName: userData.secondName,
           address: userData.address,

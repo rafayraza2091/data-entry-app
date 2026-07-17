@@ -96,6 +96,7 @@ export default function BirdViewPage() {
   const [loading, setLoading] = useState(true);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
+  const [attendanceData, setAttendanceData] = useState<any[]>([]);
 
   // Visual drag state
   const [draggedStudentIdx, setDraggedStudentIdx] = useState<number | null>(null);
@@ -641,6 +642,7 @@ export default function BirdViewPage() {
           setStudents(fetchedStudents);
           setSelectedStudentIds(fetchedStudents.map(s => s.id));
           if (data.cellData) setCellData(data.cellData);
+          if (data.attendanceData) setAttendanceData(data.attendanceData);
         }
       } catch (error) {
         console.error('Failed to fetch bird view data:', error);
@@ -666,6 +668,11 @@ export default function BirdViewPage() {
             setCellData(data.cellData);
           } else {
             setCellData([]);
+          }
+          if (data.attendanceData) {
+            setAttendanceData(data.attendanceData);
+          } else {
+            setAttendanceData([]);
           }
         }
       } catch (error) {
@@ -1761,6 +1768,9 @@ export default function BirdViewPage() {
                         d.status !== 'COMPLETED'
                       ).length;
 
+                      const studentAttendance = attendanceData?.find(a => a.userId === (student as any).userId);
+                      const isAbsent = studentAttendance?.status === 'ABSENT';
+
                       return (
                         <th
                           key={student.id}
@@ -1785,8 +1795,13 @@ export default function BirdViewPage() {
                             onDragEnd={handleStudentDragEnd}
                           >
                             <div className={`flex flex-col items-center justify-center relative ${isDragged ? 'opacity-50' : ''}`}>
-                              <div className="relative">
-                                <div className="w-6 h-6 text-[10px] md:w-8 md:h-8 md:text-sm rounded-full text-white flex items-center justify-center font-bold mb-1 md:mb-2 shadow-sm" style={{ backgroundColor: getVibrantColor(student.firstName + ' ' + student.secondName) }}>
+                              {isAbsent && (
+                                <div className="absolute -top-3 text-[10px] bg-red-100 text-red-600 px-1 py-0.5 rounded font-bold border border-red-200 whitespace-nowrap z-10 shadow-sm animate-pulse">
+                                  Absent
+                                </div>
+                              )}
+                              <div className="relative mt-2 md:mt-1">
+                                <div className={`w-6 h-6 text-[10px] md:w-8 md:h-8 md:text-sm rounded-full text-white flex items-center justify-center font-bold mb-1 md:mb-2 shadow-sm ${isAbsent ? 'opacity-60 ring-2 ring-red-400 ring-offset-1' : ''}`} style={{ backgroundColor: getVibrantColor(student.firstName + ' ' + student.secondName) }}>
                                   {student.firstName.charAt(0)}{student.secondName.charAt(0)}
                                 </div>
                                 {activeTaskCount > 0 && (
@@ -1798,7 +1813,7 @@ export default function BirdViewPage() {
                                   </div>
                                 )}
                               </div>
-                              <span className="truncate w-full text-[9px] md:text-xs text-center max-w-[80px] md:max-w-[100px]" title={`${student.firstName} ${student.secondName}`}>
+                              <span className={`truncate w-full text-[9px] md:text-xs text-center max-w-[80px] md:max-w-[100px] ${isAbsent ? 'text-red-500 font-semibold' : ''}`} title={`${student.firstName} ${student.secondName}`}>
                                 {student.firstName} {student.secondName}
                               </span>
                             </div>
@@ -1901,6 +1916,9 @@ export default function BirdViewPage() {
                           const cellId = isGrid && subject ? `${subject.id}-${student.id}` : `stacked-${student.id}-${index}`;
                           const isClicked = clickedCellId === cellId;
                           const isEditModeActiveCell = isEditMode && isGrid && currentRow === index && currentCol === visibleStudentIds.indexOf(student.id);
+
+                          const studentAttendance = attendanceData?.find(a => a.userId === (student as any).userId);
+                          const isAbsent = studentAttendance?.status === 'ABSENT';
 
                           return (
                             <td
@@ -2060,6 +2078,7 @@ export default function BirdViewPage() {
                                           if (activeView === 'query') {
                                             return (
                                               <div key={idx} className={`w-full ${isClicked ? 'min-h-[80px]' : 'h-full'} bg-[#edab30]/10 border border-[#edab30]/30 p-1 flex flex-col items-center justify-center relative`}>
+                                                {isAbsent && <span className="absolute top-0.5 right-0.5 text-[10px] text-red-500" title="Student absent">⚠️</span>}
                                                 <span className="text-[9px] font-bold text-[#254245] truncate w-full text-center uppercase">Query</span>
                                                 <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded uppercase mt-0.5 ${item.status === 'OPEN' || item.status === 'open' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
                                                   {item.status}
@@ -2272,7 +2291,10 @@ export default function BirdViewPage() {
                                                     </div>
                                                   )}
                                                   <div className="flex flex-col flex-1 w-full text-left mt-0 overflow-hidden pr-2">
-                                                    <span className="text-[12px] font-black text-gray-900 truncate w-full leading-tight mb-[1px]">Ch: {item.chapter || '-'}</span>
+                                                    <span className="text-[12px] font-black text-gray-900 truncate w-full leading-tight mb-[1px]">
+                                                      {isAbsent && <span className="text-red-500 mr-1" title="Student absent">⚠️</span>}
+                                                      Ch: {item.chapter || '-'}
+                                                    </span>
                                                     <span className="text-[10px] font-bold text-gray-800 truncate w-full leading-tight mb-[1px]">Tp: {item.topic || '-'}</span>
                                                     {item.exercise && <span className="text-[9px] font-semibold text-gray-700 truncate w-full italic leading-tight mb-[1px]">Ex: {item.exercise}</span>}
 

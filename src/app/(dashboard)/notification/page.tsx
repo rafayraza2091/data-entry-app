@@ -20,19 +20,29 @@ type PendingUser = {
 };
 
 export default function NotificationPage() {
+  const [activeTab, setActiveTab] = useState<'REGISTRATIONS' | 'ATTENDANCE'>('REGISTRATIONS');
+  
+  // Registration State
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [processingId, setProcessingId] = useState<number | null>(null);
-
-  // Edit Modal State
   const [editingUser, setEditingUser] = useState<PendingUser | null>(null);
 
+  // Attendance State
+  const [pendingAttendance, setPendingAttendance] = useState<{date: string, count: number}[]>([]);
+  const [isLoadingAttendance, setIsLoadingAttendance] = useState(false);
+
   useEffect(() => {
-    fetchPendingUsers();
-  }, []);
+    if (activeTab === 'REGISTRATIONS') {
+      fetchPendingUsers();
+    } else {
+      fetchPendingAttendance();
+    }
+  }, [activeTab]);
 
   const fetchPendingUsers = async () => {
+    setIsLoading(true);
     try {
       const res = await fetch('/api/admin/pending-users');
       if (!res.ok) throw new Error('Failed to fetch pending users');
@@ -42,6 +52,20 @@ export default function NotificationPage() {
       setError(err.message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchPendingAttendance = async () => {
+    setIsLoadingAttendance(true);
+    try {
+      const res = await fetch('/api/attendance/pending');
+      if (!res.ok) throw new Error('Failed to fetch pending attendance');
+      const data = await res.json();
+      setPendingAttendance(data);
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      setIsLoadingAttendance(false);
     }
   };
 
@@ -102,44 +126,81 @@ export default function NotificationPage() {
     }
   };
 
-  if (isLoading) {
-    return <div style={{ padding: '2rem', color: '#f8fafc' }}>Loading pending users...</div>;
-  }
-
   return (
     <div className="animate-fade-in" style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto' }}>
       <h2 style={{ fontSize: '1.5rem', fontWeight: 600, marginBottom: '1.5rem', color: '#f8fafc' }}>
         Notification / Approval Dashboard
       </h2>
       <p style={{ color: '#94a3b8', marginBottom: '2rem' }}>
-        Review newly registered users. You can edit their information (like changing their designation/role) before approving them.
+        Review newly registered users and pending daily attendance records.
       </p>
+
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        <button 
+          onClick={() => setActiveTab('REGISTRATIONS')}
+          style={{ padding: '0.75rem 1.5rem', fontWeight: 600, borderBottom: activeTab === 'REGISTRATIONS' ? '2px solid #3b82f6' : 'none', color: activeTab === 'REGISTRATIONS' ? '#3b82f6' : '#94a3b8' }}
+        >
+          Pending Registrations
+        </button>
+        <button 
+          onClick={() => setActiveTab('ATTENDANCE')}
+          style={{ padding: '0.75rem 1.5rem', fontWeight: 600, borderBottom: activeTab === 'ATTENDANCE' ? '2px solid #3b82f6' : 'none', color: activeTab === 'ATTENDANCE' ? '#3b82f6' : '#94a3b8' }}
+        >
+          Pending Attendance
+        </button>
+      </div>
 
       {error && <div className="status-message status-error" style={{ marginBottom: '1rem' }}>{error}</div>}
 
-      <div className="glass-panel" style={{ overflowX: 'auto' }}>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Name</th>
-              <th>Username</th>
-              <th>Designation</th>
-              <th>Status</th>
-              <th>Resolved At</th>
-              <th>Email</th>
-              <th>Contact</th>
-              <th style={{ textAlign: 'right' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pendingUsers.length === 0 ? (
-              <tr>
-                <td colSpan={7} style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>
-                  No pending registrations to review.
-                </td>
-              </tr>
-            ) : (
+      {activeTab === 'ATTENDANCE' ? (
+        <div className="glass-panel">
+          {isLoadingAttendance ? (
+            <div style={{ padding: '2rem', color: '#f8fafc', textAlign: 'center' }}>Loading pending attendance...</div>
+          ) : pendingAttendance.length === 0 ? (
+            <div style={{ padding: '2rem', color: '#94a3b8', textAlign: 'center' }}>No pending attendance to review. All caught up!</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {pendingAttendance.map((record) => (
+                <div key={record.date} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '8px' }}>
+                  <div>
+                    <div style={{ fontWeight: 600, color: '#f8fafc', fontSize: '1.1rem' }}>{new Date(record.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                    <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginTop: '0.25rem' }}>{record.count} unconfirmed records</div>
+                  </div>
+                  <a href={`/attendance`} style={{ padding: '0.5rem 1rem', background: '#3b82f6', color: 'white', borderRadius: '4px', fontWeight: 600, textDecoration: 'none' }}>
+                    Review & Confirm <i className="fas fa-arrow-right ml-2"></i>
+                  </a>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="glass-panel" style={{ overflowX: 'auto' }}>
+          {isLoading ? (
+            <div style={{ padding: '2rem', color: '#f8fafc', textAlign: 'center' }}>Loading pending users...</div>
+          ) : (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Name</th>
+                  <th>Username</th>
+                  <th>Designation</th>
+                  <th>Status</th>
+                  <th>Resolved At</th>
+                  <th>Email</th>
+                  <th>Contact</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem' }}>
+                      No pending registrations to review.
+                    </td>
+                  </tr>
+                ) : (
               pendingUsers.map((user) => (
                 <tr key={user.id}>
                   <td>{new Date(user.createdAt).toLocaleDateString()}</td>
@@ -204,7 +265,9 @@ export default function NotificationPage() {
             )}
           </tbody>
         </table>
+        )}
       </div>
+      )}
 
       {/* Edit Modal */}
       {editingUser && (

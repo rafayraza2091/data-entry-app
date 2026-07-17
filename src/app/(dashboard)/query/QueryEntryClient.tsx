@@ -1,5 +1,12 @@
 'use client';
 
+const getLocalDateString = (d: Date) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 import { useState, useEffect } from 'react';
 import ImageCropper from '@/components/ImageCropper';
 
@@ -36,6 +43,9 @@ export default function QueryEntryClient({
   const [pageNumber, setPageNumber] = useState('');
   const [queryStatement, setQueryStatement] = useState('');
   const [queryStatus, setQueryStatus] = useState('open');
+  const [queryDate, setQueryDate] = useState(() => initialValues?.date || initialValues?.createdAt || getLocalDateString(new Date()));
+  const [studentStatus, setStudentStatus] = useState<'PRESENT' | 'ABSENT' | 'LEAVE' | null>(null);
+  const [studentReason, setStudentReason] = useState<string>('');
   
   const [status, setStatus] = useState({ type: '', message: '' });
   const [ownerName, setOwnerName] = useState('');
@@ -44,6 +54,35 @@ export default function QueryEntryClient({
   const [croppedImages, setCroppedImages] = useState<Blob[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isCropping, setIsCropping] = useState(false);
+
+  useEffect(() => {
+    async function checkAttendance() {
+      if (!queryDate || !studentName) {
+        setStudentStatus(null);
+        setStudentReason('');
+        return;
+      }
+      try {
+        let dateStr = queryDate;
+        if (dateStr.includes('T')) {
+          dateStr = getLocalDateString(new Date(dateStr));
+        }
+        const res = await fetch(`/api/attendance?date=${dateStr}`);
+        if (res.ok) {
+          const data = await res.json();
+          const record = data.find((u: any) => `${u.firstName} ${u.lastName}`.trim().toLowerCase() === studentName.trim().toLowerCase());
+          if (record && record.attendanceId && record.status !== 'PRESENT') {
+            setStudentStatus(record.status);
+            setStudentReason(record.reason || '');
+          } else {
+            setStudentStatus(null);
+            setStudentReason('');
+          }
+        }
+      } catch (err) {}
+    }
+    checkAttendance();
+  }, [queryDate, studentName]);
 
   useEffect(() => {
     async function fetchData() {
@@ -95,6 +134,12 @@ export default function QueryEntryClient({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
+
+    if (studentStatus === 'ABSENT' || studentStatus === 'LEAVE') {
+      const confirmSubmit = window.confirm(`Warning: The selected student (${studentName}) is marked as ${studentStatus} for the selected date. Are you sure you want to save this query?`);
+      if (!confirmSubmit) return;
+    }
+
     setStatus({ type: '', message: '' });
     setIsSubmitting(true);
 
@@ -216,7 +261,12 @@ export default function QueryEntryClient({
       <div className="bg-teal-50 border-l-[3px] md:border-l-4 border-teal-500 p-2 md:p-5 mb-3 md:mb-8 rounded shadow-sm grid grid-cols-2 md:flex md:flex-wrap gap-2 md:gap-12">
         <div className="w-full md:w-auto">
           <span className="block text-[8px] md:text-xs uppercase tracking-wider text-teal-700/60 font-bold mb-0 md:mb-1">Student</span>
-          <span className="text-xs md:text-base text-gray-900 font-semibold truncate block leading-tight">{studentName}</span>
+          <span className="text-xs md:text-base text-gray-900 font-semibold truncate block leading-tight">
+            {studentName}
+            {(studentStatus === 'ABSENT' || studentStatus === 'LEAVE') && (
+              <span className="text-red-500 ml-1 text-sm" title={`Marked ${studentStatus}`}>⚠️ ({studentStatus})</span>
+            )}
+          </span>
         </div>
         <div className="w-full md:w-auto">
           <span className="block text-[8px] md:text-xs uppercase tracking-wider text-teal-700/60 font-bold mb-0 md:mb-1">Class</span>
@@ -281,6 +331,14 @@ export default function QueryEntryClient({
                       </option>
                     ))}
                   </select>
+                )}
+                {(studentStatus === 'ABSENT' || studentStatus === 'LEAVE') && (
+                  <div className="mt-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded p-1.5 flex items-start gap-1.5">
+                    <span className="text-sm">⚠️</span>
+                    <span>
+                      <strong>{studentStatus}:</strong> {studentReason || 'No reason provided.'}
+                    </span>
+                  </div>
                 )}
               </div>
 

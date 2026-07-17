@@ -46,8 +46,35 @@ export default function TaskEntryClient({
   const [reporter, setReporter] = useState('');
   const [assignee, setAssignee] = useState(initialValues?.assignee || '');
   const [dueDate, setDueDate] = useState(() => initialValues?.dueDate || getLocalDateString(new Date()));
+  const [assigneeStatus, setAssigneeStatus] = useState<'PRESENT' | 'ABSENT' | 'LEAVE' | null>(null);
+  const [assigneeReason, setAssigneeReason] = useState<string>('');
   
   const [status, setStatus] = useState({ type: '', message: '' });
+
+  useEffect(() => {
+    async function checkAttendance() {
+      if (!dueDate || !assignee) {
+        setAssigneeStatus(null);
+        setAssigneeReason('');
+        return;
+      }
+      try {
+        const res = await fetch(`/api/attendance?date=${dueDate}`);
+        if (res.ok) {
+          const data = await res.json();
+          const record = data.find((u: any) => `${u.firstName} ${u.lastName}`.trim().toLowerCase() === assignee.trim().toLowerCase());
+          if (record && record.attendanceId && record.status !== 'PRESENT') {
+            setAssigneeStatus(record.status);
+            setAssigneeReason(record.reason || '');
+          } else {
+            setAssigneeStatus(null);
+            setAssigneeReason('');
+          }
+        }
+      } catch (err) {}
+    }
+    checkAttendance();
+  }, [dueDate, assignee]);
 
   useEffect(() => {
     async function fetchData() {
@@ -108,6 +135,12 @@ export default function TaskEntryClient({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
+
+    if (assigneeStatus === 'ABSENT' || assigneeStatus === 'LEAVE') {
+      const confirmSubmit = window.confirm(`Warning: The selected assignee (${assignee}) is marked as ${assigneeStatus} for the selected date. Are you sure you want to save this task?`);
+      if (!confirmSubmit) return;
+    }
+
     setStatus({ type: '', message: '' });
     setIsSubmitting(true);
 
@@ -243,7 +276,12 @@ export default function TaskEntryClient({
         )}
         <div className="w-full md:w-auto">
           <span className="block text-[8px] md:text-xs uppercase tracking-wider text-teal-700/60 font-bold mb-0 md:mb-1">Assignee</span>
-          <span className="text-xs md:text-base text-gray-900 font-semibold truncate block leading-tight">{assignee}</span>
+          <span className="text-xs md:text-base text-gray-900 font-semibold truncate block leading-tight">
+            {assignee}
+            {(assigneeStatus === 'ABSENT' || assigneeStatus === 'LEAVE') && (
+              <span className="text-red-500 ml-1 text-sm" title={`Marked ${assigneeStatus}`}>⚠️ ({assigneeStatus})</span>
+            )}
+          </span>
         </div>
         {user.role === 'TEACHER' && (
           <div className="w-full md:w-auto">
@@ -336,6 +374,14 @@ export default function TaskEntryClient({
                           <option key={i} value={u}>{u}</option>
                         ))}
                       </select>
+                    )}
+                    {(assigneeStatus === 'ABSENT' || assigneeStatus === 'LEAVE') && (
+                      <div className="mt-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded p-1.5 flex items-start gap-1.5">
+                        <span className="text-sm">⚠️</span>
+                        <span>
+                          <strong>{assigneeStatus}:</strong> {assigneeReason || 'No reason provided.'}
+                        </span>
+                      </div>
                     )}
                   </div>
                 </div>
