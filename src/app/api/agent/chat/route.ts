@@ -11,8 +11,8 @@ export async function POST(request: Request) {
     const body = await request.json();
     
     // Proxy the request to the local agent running on port 8000
-    // Using host.docker.internal so the Docker container can reach the agent running on the host machine
-    const agentUrl = process.env.AGENT_API_URL || 'http://host.docker.internal:8000/api/agent/chat';
+    // Using 127.0.0.1 since the app is now being run locally via npm run dev instead of Docker
+    const agentUrl = process.env.AGENT_API_URL || 'http://127.0.0.1:8000/api/agent/chat';
     const res = await fetch(agentUrl, {
       method: 'POST',
       headers: {

@@ -121,7 +121,7 @@ export default function AgentChatPage() {
                   h1: ({node, ...props}) => <h1 className="text-2xl font-bold mt-6 mb-3" {...props} />,
                   h2: ({node, ...props}) => <h2 className="text-xl font-bold mt-5 mb-3" {...props} />,
                   h3: ({node, ...props}) => <h3 className="text-lg font-bold mt-4 mb-2" {...props} />,
-                  p: ({node, ...props}) => <p className="mb-3 last:mb-0" {...props} />,
+                  p: ({node, ...props}) => <div className="mb-3 last:mb-0" {...props} />,
                   a: ({node, ...props}) => <a className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer" {...props} />,
                   code: ({node, inline, className, children, ...props}: any) => {
                     return inline ? (
