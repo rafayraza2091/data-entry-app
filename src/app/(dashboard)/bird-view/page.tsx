@@ -937,6 +937,38 @@ export default function BirdViewPage() {
           numberBufferRef.current = '';
         }, 200);
       }
+
+      if (!isEditMode) {
+        if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+          if (!['INPUT', 'TEXTAREA', 'SELECT'].includes((event.target as HTMLElement).tagName)) {
+            event.preventDefault();
+            const prev = activeStudentIdRef.current;
+            let currentIndex = visibleStudentIds.findIndex(id => id === prev);
+            if (currentIndex === -1) currentIndex = 0;
+            let newIndex = event.key === 'ArrowRight' ? currentIndex + 1 : currentIndex - 1;
+            if (newIndex >= 0 && newIndex < visibleStudentIds.length) {
+              const next = visibleStudentIds[newIndex];
+              updateHighlight(activeSubjectIdRef.current, next, true);
+            }
+            return;
+          }
+        }
+        if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+          if (!['INPUT', 'TEXTAREA', 'SELECT'].includes((event.target as HTMLElement).tagName)) {
+            event.preventDefault();
+            const prev = activeSubjectIdRef.current;
+            let currentIndex = subjects.findIndex(s => s.id === prev);
+            if (currentIndex === -1) currentIndex = 0;
+            let newIndex = event.key === 'ArrowDown' ? currentIndex + 1 : currentIndex - 1;
+            if (newIndex >= 0 && newIndex < subjects.length) {
+              const next = subjects[newIndex].id;
+              updateHighlight(next, activeStudentIdRef.current, true);
+            }
+            return;
+          }
+        }
+      }
+
       if (isEditMode) {
         if (event.key === '+' || (event.key.toLowerCase() === 'c' && (event.metaKey || event.ctrlKey))) {
           if (currentRow !== null && currentCol !== null && subjects[currentRow]) {
@@ -1805,10 +1837,10 @@ export default function BirdViewPage() {
                           key={student.id}
                           id={`student-col-${student.id}`}
                           scope="col"
-                          className={`p-0 text-center border-b border-r border-gray-200 whitespace-nowrap w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] scroll-ml-16 md:scroll-ml-[80px] cell-student-${student.id}`}
+                          className={`p-0 text-center border-b border-r border-gray-200 whitespace-nowrap w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] scroll-ml-16 md:scroll-ml-[80px]`}
                         >
                           <div
-                            className={`w-full h-full px-1 py-2 md:px-4 md:py-4 cursor-pointer hover:bg-gray-100 group flex flex-col items-center justify-center relative
+                            className={`w-full h-full px-1 py-2 md:px-4 md:py-4 cursor-pointer hover:bg-gray-100 group flex flex-col items-center justify-center relative cell-student-${student.id}
                             ${isDraggable ? 'active:cursor-grabbing' : ''}
                             ${isDragged ? 'dragged-column' : ''}
                             ${showLeftIndicator ? 'drop-target-left' : ''}
@@ -1884,10 +1916,10 @@ export default function BirdViewPage() {
                       >
                         <th
                           scope="row"
-                          className={`w-16 min-w-[4rem] max-w-[4rem] md:w-[80px] md:min-w-[80px] md:max-w-[80px] p-0 font-medium text-gray-900 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-gray-200 bg-inherit whitespace-nowrap align-middle h-24 md:h-[120px] ${isGrid && subject ? `cell-subject-${subject.id}` : ''}`}
+                          className={`w-16 min-w-[4rem] max-w-[4rem] md:w-[80px] md:min-w-[80px] md:max-w-[80px] p-0 font-medium text-gray-900 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-gray-200 bg-inherit whitespace-nowrap align-middle h-24 md:h-[120px]`}
                         >
                           <div
-                            className={`flex items-center justify-center w-full h-full px-2
+                            className={`flex items-center justify-center w-full h-full px-2 relative ${isGrid && subject ? `cell-subject-${subject.id}` : ''}
                             ${isGrid ? 'cursor-pointer active:cursor-grabbing hover:bg-gray-100' : ''}
                             ${isDragged ? 'dragged-row' : ''}
                             ${showTopIndicator ? 'drop-target-top' : ''}
@@ -1915,8 +1947,8 @@ export default function BirdViewPage() {
                             if (!stackedTask) {
                               if (index === (studentData?.tasks?.length || 0)) {
                                 return (
-                                  <td key={`stacked-${student.id}-${index}`} className={`p-0 text-center border-none bg-transparent h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] cell-student-${student.id} cell-subject-${row.id} ${activeStudentIdRef.current === student.id || activeSubjectIdRef.current === row.id ? 'cell-subject-highlight' : ''}`}>
-                                    <div className="w-full h-full relative p-1.5 pb-5">
+                                  <td key={`stacked-${student.id}-${index}`} className={`p-0 text-center border-none bg-transparent h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px]`}>
+                                    <div className={`w-full h-full relative p-1.5 pb-5 cell-student-${student.id} cell-subject-${row.id} ${activeStudentIdRef.current === student.id || activeSubjectIdRef.current === row.id ? 'cell-subject-highlight' : ''}`}>
                                       <div
                                         className="w-full h-full flex flex-col items-center justify-center cursor-pointer bg-gray-50/50 hover:bg-gray-100 transition-colors border-2 border-dashed border-gray-300 rounded-[4px] group"
                                         onClick={() => {
@@ -1936,7 +1968,11 @@ export default function BirdViewPage() {
                                 );
                               }
                               // Otherwise completely empty cell without borders
-                              return <td key={`stacked-${student.id}-${index}`} className={`p-0 border-none bg-transparent h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] cell-student-${student.id} cell-subject-${row.id} ${activeStudentIdRef.current === student.id || activeSubjectIdRef.current === row.id ? 'cell-subject-highlight' : ''}`}></td>;
+                              return (
+                                <td key={`stacked-${student.id}-${index}`} className={`p-0 border-none bg-transparent h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px]`}>
+                                  <div className={`w-full h-full relative cell-student-${student.id} cell-subject-${row.id} ${activeStudentIdRef.current === student.id || activeSubjectIdRef.current === row.id ? 'cell-subject-highlight' : ''}`}></div>
+                                </td>
+                              );
                             }
                           }
 
@@ -1962,7 +1998,7 @@ export default function BirdViewPage() {
                             <td
                               key={cellId}
                               id={`cell-${cellId}`}
-                              className={`p-0 text-center border-b border-r border-gray-200 last:border-r-0 h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] scroll-ml-16 md:scroll-ml-[80px] scroll-mt-[100px] cell-student-${student.id} cell-subject-${isGrid && subject ? subject.id : row.id} ${(isGrid && subject && activeSubjectIdRef.current === subject.id) || activeStudentIdRef.current === student.id || (!isGrid && activeSubjectIdRef.current === row.id) ? 'cell-subject-highlight' : ''}`}
+                              className={`p-0 text-center border-b border-r border-gray-200 last:border-r-0 h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] scroll-ml-16 md:scroll-ml-[80px] scroll-mt-[100px]`}
                               onDragEnter={(e) => {
                                 if (!isAssigned || disableCol) return;
                                 if (draggedTaskId !== null && draggedTaskSource && (e.shiftKey || e.altKey || e.metaKey)) {
@@ -2001,7 +2037,7 @@ export default function BirdViewPage() {
                                 }
                               }}
                             >
-                              <div className="w-full h-full relative">
+                              <div className={`w-full h-full relative cell-student-${student.id} cell-subject-${isGrid && subject ? subject.id : row.id} ${(isGrid && subject && activeSubjectIdRef.current === subject.id) || activeStudentIdRef.current === student.id || (!isGrid && activeSubjectIdRef.current === row.id) ? 'cell-subject-highlight' : ''}`}>
                                 <div
                                   onClick={() => {
                                     if (isBatchMode) return;

@@ -29,13 +29,14 @@ When modifying the Bird View grid, strictly follow these layout and functionalit
 
 11. **Badge Dropdown Focus Highlighting**: Since badge dropdown options are navigated programmatically via Arrow keys and not via `Tab` (due to `tabIndex={-1}`), their highlight state cannot rely solely on `focus-visible`. Use standard `focus:` tailwind classes (e.g., `focus:scale-110 focus:ring-2 focus:ring-blue-500 z-10`) to ensure they visibly highlight when focused programmatically.
 
+   
 12. **Task View Pending Reschedule**: The "PENDING" status behavior from Bird View (prompting for a reschedule date) is also mirrored in the Task View table (`src/app/(dashboard)/view-tasks/page.tsx`). Do not blindly save a "PENDING" status change; intercept it, open the Reschedule Modal, and hit `/api/tasks/reschedule`.
 
 13. **Global Keyboard Listener & Buttons**: When using global keyboard listeners on a page (like `handleNumberShortcut` or grid navigation), always include `BUTTON` in the ignore list (e.g. `['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(tagName)`) so that pressing `Enter` on a focused button triggers the button's default action instead of being intercepted by the global shortcut.
 
 14. **Absent/Leave Cell Interaction**: Grid cells corresponding to absent or leave students MUST remain clickable. Do not block the `onClick` handler using `disableCol` because the user must still be able to open the Task Entry modal or inline task to view/override it.
 
-15. **Arrow Key Navigation**: Arrow key grid navigation (highlighting and cell focusing) must only be active when `isEditMode` is `true`. Outside of Edit Mode, arrow keys must not be intercepted so that natural browser page scrolling works.
+15. **Arrow Key Navigation**: Arrow key grid navigation (highlighting and cell focusing) must only be active when `isEditMode` is `true`. Outside of Edit Mode, arrow keys must be intercepted to move the crosshair highlight (`activeSubjectIdRef` and `activeStudentIdRef`) using `updateHighlight(..., ..., true)` so that the page scrolls to keep the crosshair in view naturally.
 <!-- END:bird-view-rules -->
 
 <!-- BEGIN:attendance-page-rules -->
