@@ -844,14 +844,15 @@ export default function BirdViewPage() {
 
   const visibleStudentIds = useMemo(() => {
     const searchLower = studentSearchQuery.toLowerCase().trim();
-    return selectedStudentIds.filter(id => {
-      const student = students.find(s => s.id === id);
-      if (!student) return false;
-      if (searchLower === '') return true;
-      const fullName = `${student.firstName} ${student.secondName}`.toLowerCase();
-      return fullName.includes(searchLower);
-    });
-  }, [students, selectedStudentIds, studentSearchQuery]);
+    return displayStudents
+      .filter(student => selectedStudentIds.includes(student.id))
+      .filter(student => {
+        if (searchLower === '') return true;
+        const fullName = `${student.firstName} ${student.secondName}`.toLowerCase();
+        return fullName.includes(searchLower);
+      })
+      .map(student => student.id);
+  }, [displayStudents, selectedStudentIds, studentSearchQuery]);
 
   useEffect(() => {
     if (studentSearchQuery.trim() !== '') {
@@ -906,7 +907,7 @@ export default function BirdViewPage() {
         setNewEntryModal(null);
       }
 
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes((event.target as HTMLElement).tagName)) return;
+      if (['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes((event.target as HTMLElement).tagName)) return;
 
       const digitMatch = event.code.match(/^Digit([0-9])$/);
       if (digitMatch) {
@@ -1840,7 +1841,7 @@ export default function BirdViewPage() {
                           key={student.id}
                           id={`student-col-${student.id}`}
                           scope="col"
-                          className={`p-0 text-center border-b border-r border-gray-200 whitespace-nowrap w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] relative scroll-ml-16 md:scroll-ml-[80px] cell-student-${student.id}`}
+                          className={`p-0 text-center border-b border-r border-gray-200 whitespace-nowrap w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] scroll-ml-16 md:scroll-ml-[80px] cell-student-${student.id}`}
                         >
                           <div
                             className={`w-full h-full px-1 py-2 md:px-4 md:py-4 cursor-pointer hover:bg-gray-100 group flex flex-col items-center justify-center relative
@@ -1919,7 +1920,7 @@ export default function BirdViewPage() {
                       >
                         <th
                           scope="row"
-                          className={`w-16 min-w-[4rem] max-w-[4rem] md:w-[80px] md:min-w-[80px] md:max-w-[80px] p-0 font-medium text-gray-900 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-gray-200 bg-inherit whitespace-nowrap align-middle h-24 md:h-[120px] relative ${isGrid && subject ? `cell-subject-${subject.id}` : ''}`}
+                          className={`w-16 min-w-[4rem] max-w-[4rem] md:w-[80px] md:min-w-[80px] md:max-w-[80px] p-0 font-medium text-gray-900 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-gray-200 bg-inherit whitespace-nowrap align-middle h-24 md:h-[120px] ${isGrid && subject ? `cell-subject-${subject.id}` : ''}`}
                         >
                           <div
                             className={`flex items-center justify-center w-full h-full px-2
@@ -1950,7 +1951,7 @@ export default function BirdViewPage() {
                             if (!stackedTask) {
                               if (index === (studentData?.tasks?.length || 0)) {
                                 return (
-                                  <td key={`stacked-${student.id}-${index}`} className={`p-0 text-center border-none bg-transparent h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] relative cell-student-${student.id} cell-subject-${row.id} ${activeStudentIdRef.current === student.id || activeSubjectIdRef.current === row.id ? 'cell-subject-highlight' : ''}`}>
+                                  <td key={`stacked-${student.id}-${index}`} className={`p-0 text-center border-none bg-transparent h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] cell-student-${student.id} cell-subject-${row.id} ${activeStudentIdRef.current === student.id || activeSubjectIdRef.current === row.id ? 'cell-subject-highlight' : ''}`}>
                                     <div className="w-full h-full relative p-1.5 pb-5">
                                       <div
                                         className="w-full h-full flex flex-col items-center justify-center cursor-pointer bg-gray-50/50 hover:bg-gray-100 transition-colors border-2 border-dashed border-gray-300 rounded-[4px] group"
@@ -1971,7 +1972,7 @@ export default function BirdViewPage() {
                                 );
                               }
                               // Otherwise completely empty cell without borders
-                              return <td key={`stacked-${student.id}-${index}`} className={`p-0 border-none bg-transparent h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] relative cell-student-${student.id} cell-subject-${row.id} ${activeStudentIdRef.current === student.id || activeSubjectIdRef.current === row.id ? 'cell-subject-highlight' : ''}`}></td>;
+                              return <td key={`stacked-${student.id}-${index}`} className={`p-0 border-none bg-transparent h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] cell-student-${student.id} cell-subject-${row.id} ${activeStudentIdRef.current === student.id || activeSubjectIdRef.current === row.id ? 'cell-subject-highlight' : ''}`}></td>;
                             }
                           }
 
@@ -1997,7 +1998,7 @@ export default function BirdViewPage() {
                             <td
                               key={cellId}
                               id={`cell-${cellId}`}
-                              className={`p-0 text-center border-b border-r border-gray-200 last:border-r-0 h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] relative scroll-ml-16 md:scroll-ml-[80px] scroll-mt-[100px] cell-student-${student.id} cell-subject-${isGrid && subject ? subject.id : row.id} ${(isGrid && subject && activeSubjectIdRef.current === subject.id) || activeStudentIdRef.current === student.id || (!isGrid && activeSubjectIdRef.current === row.id) ? 'cell-subject-highlight' : ''} ${isAbsent ? 'absent-cell' : isLeave ? 'leave-cell' : ''}`}
+                              className={`p-0 text-center border-b border-r border-gray-200 last:border-r-0 h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] scroll-ml-16 md:scroll-ml-[80px] scroll-mt-[100px] cell-student-${student.id} cell-subject-${isGrid && subject ? subject.id : row.id} ${(isGrid && subject && activeSubjectIdRef.current === subject.id) || activeStudentIdRef.current === student.id || (!isGrid && activeSubjectIdRef.current === row.id) ? 'cell-subject-highlight' : ''} ${isAbsent ? 'absent-cell' : isLeave ? 'leave-cell' : ''}`}
                               onDragEnter={(e) => {
                                 if (!isAssigned || disableCol) return;
                                 if (draggedTaskId !== null && draggedTaskSource && (e.shiftKey || e.altKey || e.metaKey)) {

@@ -114,7 +114,7 @@ export async function POST(request: Request) {
       });
 
       if (existing) {
-        if (!isOwner && existing.isLocked) {
+        if (!isOwner && !isCoordinator && existing.isLocked) {
           continue; // Skip locked records for non-owners
         }
 
@@ -123,8 +123,8 @@ export async function POST(request: Request) {
           data: {
             status,
             reason: status === 'ABSENT' || status === 'LEAVE' ? reason : null,
-            markedBy: isOwner ? existing.markedBy : session.username,
-            isLocked: isOwner ? existing.isLocked : true,
+            markedBy: (isOwner || isCoordinator) ? existing.markedBy : session.username,
+            isLocked: true,
           }
         });
       } else {
@@ -135,7 +135,7 @@ export async function POST(request: Request) {
             status,
             reason: status === 'ABSENT' || status === 'LEAVE' ? reason : null,
             markedBy: session.username,
-            isLocked: !isOwner,
+            isLocked: true,
             isConfirmed: false
           }
         });
