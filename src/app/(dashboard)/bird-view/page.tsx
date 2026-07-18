@@ -2382,7 +2382,8 @@ export default function BirdViewPage() {
                                                               min="0"
                                                               max={item.totalMarks ?? 10}
                                                               step="0.5"
-                                                              className={`w-8 h-5 text-[11px] font-bold text-center bg-white border border-gray-300 rounded shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none p-0 m-0 placeholder-gray-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${getMarksColor(item.obtainedMarks, item.totalMarks)}`}
+                                                              disabled={currentUser?.role === 'STUDENT'}
+                                                              className={`w-8 h-5 text-[11px] font-bold text-center bg-white border border-gray-300 rounded shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none p-0 m-0 placeholder-gray-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${getMarksColor(item.obtainedMarks, item.totalMarks)} disabled:opacity-50 disabled:bg-transparent disabled:border-transparent`}
                                                               placeholder="-"
                                                               defaultValue={item.obtainedMarks !== null && item.obtainedMarks !== undefined ? item.obtainedMarks : ''}
                                                               onBlur={(e) => {

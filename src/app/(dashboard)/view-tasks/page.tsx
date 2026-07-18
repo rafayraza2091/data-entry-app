@@ -23,6 +23,7 @@ export default function ViewTasksPage() {
   const [studentsList, setStudentsList] = useState<any[]>([]);
   const [classesList, setClassesList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   // Reschedule Modal State
   const [isRescheduleDatePickerOpen, setIsRescheduleDatePickerOpen] = useState(false);
@@ -49,15 +50,20 @@ export default function ViewTasksPage() {
   useEffect(() => {
     async function fetchMetadata() {
       try {
-        const [subjRes, booksRes, chapRes, topRes, usersRes, classesRes] = await Promise.all([
+        const [subjRes, booksRes, chapRes, topRes, usersRes, classesRes, meRes] = await Promise.all([
           fetch('/api/subjects'),
           fetch('/api/books'),
           fetch('/api/chapters'),
           fetch('/api/topics'),
           fetch(`/api/task-users?t=${Date.now()}`),
-          fetch('/api/classes')
+          fetch('/api/classes'),
+          fetch('/api/auth/me')
         ]);
         
+        if (meRes.ok) {
+          const data = await meRes.json();
+          setCurrentUser(data.user);
+        }
 
         if (subjRes.ok) setSubjectsList(await subjRes.json());
         if (booksRes.ok) setBooksList(await booksRes.json());
@@ -121,6 +127,7 @@ export default function ViewTasksPage() {
   };
 
   const handleEditClick = (task: any, field: string) => {
+    if (field === 'obtainedMarks' && currentUser?.role === 'STUDENT') return;
     setEditingTask(task.id);
     setEditingField(field);
     setEditValue(task[field] || '');

@@ -198,6 +198,10 @@ export async function PATCH(request: Request) {
       if (existingTask.assignee !== userName && existingTask.createdBy !== userName) {
         return NextResponse.json({ error: 'Not authorized to edit this task' }, { status: 403 });
       }
+
+      if (fieldName === 'obtainedMarks' || fieldName === 'totalMarks') {
+        return NextResponse.json({ error: 'Students cannot update marks' }, { status: 403 });
+      }
     }
 
     // Allowed fields
