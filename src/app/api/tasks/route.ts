@@ -80,12 +80,11 @@ export async function GET(request: Request) {
     if (createdBy) whereClause.createdBy = createdBy;
     if (className) whereClause.className = className;
 
-    // Date filtering (Default to 7 days if no dates provided at all)
-    if (startDate && endDate) {
-      whereClause.createdAt = {
-        gte: new Date(startDate),
-        lte: new Date(endDate),
-      };
+    // Date filtering (Default to today if no dates provided at all)
+    if (startDate || endDate) {
+      whereClause.createdAt = {};
+      if (startDate) whereClause.createdAt.gte = new Date(startDate);
+      if (endDate) whereClause.createdAt.lte = new Date(endDate);
     } else if (dateFilter) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -100,12 +99,11 @@ export async function GET(request: Request) {
         lastMonth.setMonth(lastMonth.getMonth() - 1);
         whereClause.createdAt = { gte: lastMonth };
       }
-    } else if (!startDate && !endDate && !dateFilter) {
-      // Default fallback: 7 days
-      const lastWeek = new Date();
-      lastWeek.setHours(0, 0, 0, 0);
-      lastWeek.setDate(lastWeek.getDate() - 7);
-      whereClause.createdAt = { gte: lastWeek };
+    } else if (!dateFilter) {
+      // Default fallback: today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      whereClause.createdAt = { gte: today };
     }
 
     // Execute query

@@ -42,10 +42,9 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
   const [isFiltersExpanded, setIsFiltersExpanded] = useState(false);
 
   useEffect(() => {
-    async function fetchData() {
+    async function fetchMetadata() {
       try {
-        const [qRes, sRes, bRes, tRes, usersRes, cRes] = await Promise.all([
-          fetch('/api/queries'),
+        const [sRes, bRes, tRes, usersRes, cRes] = await Promise.all([
           fetch('/api/subjects'),
           fetch('/api/books'),
           fetch('/api/topics'),
@@ -53,18 +52,7 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
           fetch('/api/classes')
         ]);
 
-        if (!qRes.ok) throw new Error('Failed to fetch queries');
-        const json = await qRes.json();
-        const data = json.data || json;
 
-        // Apply filtering based on role
-        if (currentUser.role === 'STUDENT') {
-          const studentFullName = `${currentUser.firstName} ${currentUser.lastName}`.trim();
-          const filtered = data.filter((q: any) => q.studentName === studentFullName);
-          setQueries(filtered);
-        } else {
-          setQueries(data);
-        }
 
         if (sRes.ok) setSubjectsList(await sRes.json());
         if (bRes.ok) setBooksList(await bRes.json());
@@ -77,6 +65,47 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
           setStudentsList(uData.students?.map(formatName) || []);
         }
       } catch (err: any) {
+        setError('Failed to fetch metadata: ' + err.message);
+      } finally {
+        // We do not set loading to false here because fetchQueries will handle it, 
+        // or we can set it to false if fetchQueries finishes first. 
+        // But fetchQueries handles its own loading state.
+      }
+    }
+
+    if (currentUser) {
+      fetchMetadata();
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    async function fetchQueries() {
+      setLoading(true);
+      try {
+        let url = '/api/queries';
+        const params = new URLSearchParams();
+        if (filterStartDate) params.append('startDate', filterStartDate);
+        if (filterEndDate) params.append('endDate', filterEndDate);
+        
+        const queryString = params.toString();
+        if (queryString) {
+          url += `?${queryString}`;
+        }
+
+        const qRes = await fetch(url);
+        if (!qRes.ok) throw new Error('Failed to fetch queries');
+        const json = await qRes.json();
+        const data = json.data || json;
+
+        // Apply filtering based on role
+        if (currentUser.role === 'STUDENT') {
+          const studentFullName = `${currentUser.firstName} ${currentUser.lastName}`.trim();
+          const filtered = data.filter((q: any) => q.studentName === studentFullName);
+          setQueries(filtered);
+        } else {
+          setQueries(data);
+        }
+      } catch (err: any) {
         setError(err.message);
       } finally {
         setLoading(false);
@@ -84,9 +113,12 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
     }
 
     if (currentUser) {
-      fetchData();
+      const timeoutId = setTimeout(() => {
+        fetchQueries();
+      }, 500);
+      return () => clearTimeout(timeoutId);
     }
-  }, [currentUser]);
+  }, [currentUser, filterStartDate, filterEndDate]);
 
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -35,11 +35,9 @@ export default function ViewTasksPage() {
   const [isFiltersExpanded, setIsFiltersExpanded] = useState(false);
 
   useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
+    async function fetchMetadata() {
       try {
-        const [tasksRes, subjRes, booksRes, chapRes, topRes, usersRes, classesRes] = await Promise.all([
-          fetch('/api/tasks'),
+        const [subjRes, booksRes, chapRes, topRes, usersRes, classesRes] = await Promise.all([
           fetch('/api/subjects'),
           fetch('/api/books'),
           fetch('/api/chapters'),
@@ -48,10 +46,7 @@ export default function ViewTasksPage() {
           fetch('/api/classes')
         ]);
         
-        if (tasksRes.ok) {
-          const json = await tasksRes.json();
-          setTasks(json.data || json);
-        }
+
         if (subjRes.ok) setSubjectsList(await subjRes.json());
         if (booksRes.ok) setBooksList(await booksRes.json());
         if (chapRes.ok) setChaptersList(await chapRes.json());
@@ -63,14 +58,46 @@ export default function ViewTasksPage() {
           setStudentsList(data.students?.map(formatName) || []);
         }
       } catch (error) {
-        console.error('Failed to fetch data', error);
+        console.error('Failed to fetch metadata', error);
+      }
+    }
+    
+    fetchMetadata();
+  }, []);
+
+  useEffect(() => {
+    async function fetchTasks() {
+      setLoading(true);
+      try {
+        let url = '/api/tasks';
+        const params = new URLSearchParams();
+        if (filterStartDate) params.append('startDate', filterStartDate);
+        if (filterEndDate) params.append('endDate', filterEndDate);
+        
+        const queryString = params.toString();
+        if (queryString) {
+          url += `?${queryString}`;
+        }
+
+        const tasksRes = await fetch(url);
+        if (tasksRes.ok) {
+          const json = await tasksRes.json();
+          setTasks(json.data || json);
+        }
+      } catch (error) {
+        console.error('Failed to fetch tasks', error);
       } finally {
         setLoading(false);
       }
     }
-    
-    fetchData();
-  }, []);
+
+    // Debounce the fetch to avoid spamming the backend while typing date/time
+    const timeoutId = setTimeout(() => {
+      fetchTasks();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [filterStartDate, filterEndDate]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
