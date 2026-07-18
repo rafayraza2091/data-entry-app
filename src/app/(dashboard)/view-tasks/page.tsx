@@ -2,6 +2,18 @@
 
 import { useState, useEffect } from 'react';
 
+const getMarksColor = (obtained: number | null | undefined, total: number | null | undefined = 10) => {
+  if (obtained === null || obtained === undefined) return 'inherit';
+  const t = total || 10;
+  if (t === 0) return 'inherit';
+  const pct = (obtained / t) * 100;
+  if (pct <= 50) return '#dc2626'; // text-red-600
+  if (pct <= 60) return '#ca8a04'; // text-yellow-600
+  if (pct <= 70) return '#f97316'; // text-orange-500
+  if (pct <= 80) return '#2563eb'; // text-blue-600
+  return '#16a34a'; // text-green-600
+};
+
 export default function ViewTasksPage() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [subjectsList, setSubjectsList] = useState<any[]>([]);
@@ -303,9 +315,22 @@ export default function ViewTasksPage() {
 
       return (
         <input 
-          type={isDate ? "date" : "text"} 
+          type={isDate ? "date" : (field === 'obtainedMarks' ? 'number' : 'text')} 
+          min={field === 'obtainedMarks' ? 0 : undefined}
+          max={field === 'obtainedMarks' ? (task.totalMarks || 10) : undefined}
+          step={field === 'obtainedMarks' ? 0.5 : undefined}
           value={inputValue} 
-          onChange={e => setEditValue(e.target.value)}
+          onChange={e => {
+            let val = e.target.value;
+            if (field === 'obtainedMarks' && val) {
+              const num = parseFloat(val);
+              if (!isNaN(num)) {
+                if (num < 0) val = '0';
+                if (num > (task.totalMarks || 10)) val = String(task.totalMarks || 10);
+              }
+            }
+            setEditValue(val);
+          }}
           onBlur={() => handleSaveEdit(task.id, field)}
           onKeyDown={e => { if (e.key === 'Enter') handleSaveEdit(task.id, field) }}
           autoFocus
@@ -317,7 +342,7 @@ export default function ViewTasksPage() {
     return (
       <span 
         onClick={() => handleEditClick(task, field)} 
-        style={{ cursor: 'pointer', display: 'inline-block', minWidth: '30px', minHeight: '20px' }}
+        style={{ cursor: 'pointer', display: 'inline-block', minWidth: '30px', minHeight: '20px', color: field === 'obtainedMarks' ? getMarksColor(task.obtainedMarks, task.totalMarks) : 'inherit', fontWeight: field === 'obtainedMarks' ? 'bold' : 'normal' }}
       >
         {field === 'dueDate' && task[field] ? new Date(task[field]).toLocaleDateString() : (task[field] || '-')}
       </span>
@@ -377,6 +402,7 @@ export default function ViewTasksPage() {
       'Exercise', 
       'Description', 
       'Status',
+      'Obt. Marks',
       'Due Date',
       'Created By',
       'Date Added'
@@ -407,6 +433,7 @@ export default function ViewTasksPage() {
                   {renderEditableCell(item, 'description')}
                 </td>
                 <td className="p-2 md:p-4 text-sm text-gray-600">{renderEditableCell(item, 'status')}</td>
+                <td className="p-2 md:p-4 text-sm text-gray-600">{item.status === 'DONE' ? renderEditableCell(item, 'obtainedMarks') : '-'}</td>
                 <td className="p-2 md:p-4 text-sm text-gray-600">{renderEditableCell(item, 'dueDate')}</td>
                 <td className="p-2 md:p-4 text-sm text-gray-600">{item.createdBy}</td>
                 <td className="p-2 md:p-4 text-sm text-gray-600">{new Date(item.createdAt).toLocaleDateString()}</td>

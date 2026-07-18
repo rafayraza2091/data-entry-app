@@ -74,6 +74,18 @@ const getStatusInitials = (statusStr: string) => {
   return 'O';
 };
 
+const getMarksColor = (obtained: number | null | undefined, total: number | null | undefined = 10) => {
+  if (obtained === null || obtained === undefined) return 'text-gray-800';
+  const t = total || 10;
+  if (t === 0) return 'text-gray-800';
+  const pct = (obtained / t) * 100;
+  if (pct <= 50) return 'text-red-600';
+  if (pct <= 60) return 'text-yellow-600';
+  if (pct <= 70) return 'text-orange-500';
+  if (pct <= 80) return 'text-blue-600';
+  return 'text-green-600';
+};
+
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import TaskEntryClient from '../task/TaskEntryClient';
 import QueryEntryClient from '../query/QueryEntryClient';
@@ -230,7 +242,7 @@ export default function BirdViewPage() {
       setRescheduleTaskId(null);
     }
   };
-  const handleUpdateTaskField = async (taskId: number, fieldName: string, newValue: string) => {
+  const handleUpdateTaskField = async (taskId: number, fieldName: string, newValue: any) => {
     // Optimistic UI update
     setCellData(prev => prev.map(d => d.id === taskId ? { ...d, [fieldName]: newValue } : d));
     setActiveDropdown(null);
@@ -250,7 +262,7 @@ export default function BirdViewPage() {
     }
   };
 
-  const handleBatchUpdate = async (fieldName: string, newValue: string) => {
+  const handleBatchUpdate = async (fieldName: string, newValue: any) => {
     setCellData(prev => prev.map(d => selectedTaskIds.includes(d.id) ? { ...d, [fieldName]: newValue } : d));
     const promises = selectedTaskIds.map(taskId =>
       fetch(activeView === 'task' ? '/api/tasks' : '/api/queries', {
@@ -482,7 +494,13 @@ export default function BirdViewPage() {
         } else if (activeDropdown !== null || newEntryModal !== null || clickedCellId !== null || isDatePickerOpen || isStudentPickerOpen || isFilterStatusOpen || isFilterTypeOpen || isRescheduleDatePickerOpen) {
           // If a modal, floating cell, or dropdown is open, close only them
           setNewEntryModal(null);
-          setClickedCellId(null);
+          
+          if (clickedCellId !== null && (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA')) {
+            setTimeout(() => setClickedCellId(null), 150);
+          } else {
+            setClickedCellId(null);
+          }
+
           setIsDatePickerOpen(false);
           setIsStudentPickerOpen(false);
           setIsFilterStatusOpen(false);
@@ -1263,9 +1281,15 @@ export default function BirdViewPage() {
       {clickedCellId && (
         <div
           className="fixed inset-0 z-[50] cursor-default"
-          onClick={(e) => {
+          onMouseDown={(e) => {
+            // Use onMouseDown so it fires before blur or at the same time.
             e.stopPropagation();
-            setClickedCellId(null);
+            if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
+              // Allow onBlur to fire and save data before unmounting
+              setTimeout(() => setClickedCellId(null), 150);
+            } else {
+              setClickedCellId(null);
+            }
           }}
         />
       )}
@@ -2350,12 +2374,48 @@ export default function BirdViewPage() {
                                                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
                                                           </div>
                                                         </div>
+                                                        {item.status === 'DONE' && (
+                                                          <div className="ml-auto flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                                            <span className="text-[10px] font-bold text-gray-600">Marks:</span>
+                                                            <input
+                                                              type="number"
+                                                              min="0"
+                                                              max={item.totalMarks ?? 10}
+                                                              step="0.5"
+                                                              className={`w-8 h-5 text-[11px] font-bold text-center bg-white border border-gray-300 rounded shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none p-0 m-0 placeholder-gray-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${getMarksColor(item.obtainedMarks, item.totalMarks)}`}
+                                                              placeholder="-"
+                                                              defaultValue={item.obtainedMarks !== null && item.obtainedMarks !== undefined ? item.obtainedMarks : ''}
+                                                              onBlur={(e) => {
+                                                                let val = e.target.value ? parseFloat(e.target.value) : null;
+                                                                const maxMarks = item.totalMarks ?? 10;
+                                                                if (val !== null) {
+                                                                  if (val < 0) val = 0;
+                                                                  if (val > maxMarks) val = maxMarks;
+                                                                  e.target.value = String(val);
+                                                                }
+                                                                if (val !== item.obtainedMarks) {
+                                                                  handleUpdateTaskField(item.id, 'obtainedMarks', val as any);
+                                                                  if (item.totalMarks === null || item.totalMarks === undefined) handleUpdateTaskField(item.id, 'totalMarks', 10 as any);
+                                                                }
+                                                              }}
+                                                              onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') e.currentTarget.blur();
+                                                                if (e.key === 'Escape' || e.key === 'Esc') { e.stopPropagation(); e.currentTarget.blur(); }
+                                                              }}
+                                                            />
+                                                          </div>
+                                                        )}
                                                       </div>
                                                     </div>
                                                   );
                                                 })()
                                               ) : (
                                                 <>
+                                                  {item.status === 'DONE' && item.obtainedMarks !== null && item.obtainedMarks !== undefined && (
+                                                    <div className={`absolute top-1 right-1 z-[60] px-1 py-[1px] text-[10px] font-black drop-shadow-sm flex items-center justify-center ${getMarksColor(item.obtainedMarks, item.totalMarks)}`}>
+                                                      {item.obtainedMarks}
+                                                    </div>
+                                                  )}
                                                   {/* Unclicked Card Overlay for Rescheduled */}
                                                   {item.rescheduledToId && (
                                                     <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden rounded-[4px]">

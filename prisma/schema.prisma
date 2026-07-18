@@ -203,6 +203,8 @@ model TaskEntry {
   rescheduleCount   Int?
   rescheduledFromId Int?
   rescheduledToId   Int?
+  totalMarks        Float?
+  obtainedMarks     Float?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }

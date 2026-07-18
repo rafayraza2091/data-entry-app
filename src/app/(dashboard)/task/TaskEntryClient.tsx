@@ -46,6 +46,8 @@ export default function TaskEntryClient({
   const [reporter, setReporter] = useState('');
   const [assignee, setAssignee] = useState(initialValues?.assignee || '');
   const [dueDate, setDueDate] = useState(() => initialValues?.dueDate || getLocalDateString(new Date()));
+  const [totalMarks, setTotalMarks] = useState('10');
+  const [obtainedMarks, setObtainedMarks] = useState('');
   const [assigneeStatus, setAssigneeStatus] = useState<'PRESENT' | 'ABSENT' | 'LEAVE' | null>(null);
   const [assigneeReason, setAssigneeReason] = useState<string>('');
   
@@ -161,7 +163,9 @@ export default function TaskEntryClient({
           assignee,
           status: taskStatus,
           taskType,
-          dueDate: dueDate ? new Date(dueDate).toISOString() : null
+          dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+          totalMarks: taskStatus === 'DONE' && totalMarks ? totalMarks : undefined,
+          obtainedMarks: taskStatus === 'DONE' && obtainedMarks ? obtainedMarks : undefined
         })
       });
 
@@ -180,6 +184,8 @@ export default function TaskEntryClient({
       setTaskStatus('OPEN');
       setTaskType('Home Work');
       setDueDate(getLocalDateString(new Date()));
+      setTotalMarks('');
+      setObtainedMarks('');
       
       const userName = `${user.firstName} ${user.lastName}`.trim();
       if (user.role === 'STUDENT') {
@@ -561,6 +567,23 @@ export default function TaskEntryClient({
             </div>
           </div>
         </div>
+
+        {taskStatus === 'DONE' && (
+          <div className="form-row mt-2 md:mt-4">
+            <div className="form-group w-1/2">
+              <label className="form-label">Obtained Marks</label>
+              <input 
+                type="number" 
+                step="0.5"
+                min="0"
+                className="form-control" 
+                value={obtainedMarks} 
+                onChange={e => setObtainedMarks(e.target.value)} 
+                placeholder="e.g. 8"
+              />
+            </div>
+          </div>
+        )}
 
         <div className="form-group mt-2 md:mt-4">
           <label className="form-label">Description <span className="text-red-500 ml-1">*</span></label>

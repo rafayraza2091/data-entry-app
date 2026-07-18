@@ -86,7 +86,9 @@ export async function GET(request: Request) {
             dueDate: true,
             rescheduleCount: true,
             rescheduledFromId: true,
-            rescheduledToId: true
+            rescheduledToId: true,
+            obtainedMarks: true,
+            totalMarks: true
           }
         });
       } else if (viewType === 'query') {

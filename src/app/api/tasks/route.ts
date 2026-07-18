@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     }
 
     const data = await request.json();
-    const { createdBy, className, subject, book, chapter, topic, exercise, description, reporter, assignee, status, taskType, dueDate } = data;
+    const { createdBy, className, subject, book, chapter, topic, exercise, description, reporter, assignee, status, taskType, dueDate, totalMarks, obtainedMarks } = data;
 
     if (!createdBy || !subject || !description || !reporter || !assignee) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -30,7 +30,9 @@ export async function POST(request: Request) {
         assignee,
         status: status || 'OPEN',
         taskType: taskType || 'Home Work',
-        dueDate: dueDate ? new Date(dueDate) : null
+        dueDate: dueDate ? new Date(dueDate) : null,
+        totalMarks: 10,
+        obtainedMarks: obtainedMarks !== undefined ? parseFloat(obtainedMarks) : null
       }
     });
 
@@ -82,34 +84,47 @@ export async function GET(request: Request) {
 
     // Date filtering (Default to today if no dates provided at all)
     if (startDate || endDate) {
-      whereClause.createdAt = {};
-      if (startDate) whereClause.createdAt.gte = new Date(startDate);
-      if (endDate) whereClause.createdAt.lte = new Date(endDate);
+      whereClause.dueDate = {};
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        whereClause.dueDate.gte = start;
+      }
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        whereClause.dueDate.lte = end;
+      }
     } else if (dateFilter) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      const endOfToday = new Date(today);
+      endOfToday.setHours(23, 59, 59, 999);
+
       if (dateFilter === 'today') {
-        whereClause.createdAt = { gte: today };
+        whereClause.dueDate = { gte: today, lte: endOfToday };
       } else if (dateFilter === 'this_week') {
         const lastWeek = new Date(today);
         lastWeek.setDate(lastWeek.getDate() - 7);
-        whereClause.createdAt = { gte: lastWeek };
+        whereClause.dueDate = { gte: lastWeek };
       } else if (dateFilter === 'this_month') {
         const lastMonth = new Date(today);
         lastMonth.setMonth(lastMonth.getMonth() - 1);
-        whereClause.createdAt = { gte: lastMonth };
+        whereClause.dueDate = { gte: lastMonth };
       }
     } else if (!dateFilter) {
       // Default fallback: today
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      whereClause.createdAt = { gte: today };
+      const endOfToday = new Date(today);
+      endOfToday.setHours(23, 59, 59, 999);
+      whereClause.dueDate = { gte: today, lte: endOfToday };
     }
 
     // Execute query
     const tasks = await prisma.taskEntry.findMany({
       where: whereClause,
-      orderBy: { createdAt: 'desc' }
+      orderBy: { dueDate: 'asc' }
     });
 
     // Generate Analytics
@@ -186,7 +201,7 @@ export async function PATCH(request: Request) {
     }
 
     // Allowed fields
-    const allowedFields = ['description', 'status', 'subject', 'book', 'chapter', 'topic', 'exercise', 'taskType', 'dueDate', 'assignee', 'reporter', 'rescheduledToId'];
+    const allowedFields = ['description', 'status', 'subject', 'book', 'chapter', 'topic', 'exercise', 'taskType', 'dueDate', 'assignee', 'reporter', 'rescheduledToId', 'totalMarks', 'obtainedMarks'];
     if (!allowedFields.includes(fieldName)) {
       return NextResponse.json({ error: 'Invalid field' }, { status: 400 });
     }
@@ -194,11 +209,22 @@ export async function PATCH(request: Request) {
     let parsedValue = newValue;
     if (fieldName === 'dueDate') {
       parsedValue = newValue ? new Date(newValue) : null;
+    } else if (fieldName === 'totalMarks' || fieldName === 'obtainedMarks') {
+      parsedValue = newValue !== null && newValue !== '' ? parseFloat(newValue) : null;
+    }
+
+    const updateData: any = { [fieldName]: parsedValue };
+    
+    // Auto-set totalMarks to 10 if we are updating obtainedMarks and totalMarks is empty
+    if (fieldName === 'obtainedMarks') {
+      if (!existingTask.totalMarks) {
+        updateData.totalMarks = 10;
+      }
     }
 
     const updatedTask = await prisma.taskEntry.update({
       where: { id: Number(id) },
-      data: { [fieldName]: parsedValue }
+      data: updateData
     });
 
     return NextResponse.json(updatedTask, { status: 200 });

@@ -1,22 +1,14 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-async function main() {
-  const dateStr = "2026-07-09"; 
-  const startOfDay = new Date(dateStr);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(dateStr);
-  endOfDay.setHours(23, 59, 59, 999);
-  console.log("Searching between:", startOfDay, "and", endOfDay);
-
-  const tasks = await prisma.taskEntry.findMany({
-    where: {
-      dueDate: {
-        gte: startOfDay,
-        lte: endOfDay
-      }
-    },
-    select: { id: true, dueDate: true }
-  });
-  console.log("Tasks found for 2026-07-09:", tasks.length);
+async function run() {
+  try {
+    const updated = await prisma.taskEntry.update({
+      where: { id: 320 },
+      data: { obtainedMarks: 8, totalMarks: 10 }
+    });
+    console.log("Updated:", updated.obtainedMarks, updated.totalMarks);
+  } catch (e) {
+    console.error("Error:", e);
+  }
 }
-main().finally(() => prisma.$disconnect());
+run();
