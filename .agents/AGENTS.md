@@ -4,8 +4,8 @@
 When modifying the Bird View grid, strictly follow these layout and functionality rules:
 
 1. **Table Cell Safari Bug (CRITICAL)**: 
-   - NEVER apply `transition`, `transform`, `scale`, or dynamic interactive background colors directly to `<td>` or `<th>` elements. This fundamentally breaks Safari's table rendering engine.
-   - ALWAYS wrap the cell content in an inner `<div>` that has `w-full h-full`. Apply all hover, transition, scaling, and z-index behaviors to this inner `<div>`.
+   - NEVER apply `position: relative` (the `relative` tailwind class), `transition`, `transform`, `scale`, or dynamic interactive background colors directly to `<td>` or `<th>` elements. This fundamentally breaks Safari's table rendering engine, often causing rows to stretch to fit absolutely positioned children.
+   - ALWAYS wrap the cell content in an inner `<div>` that has `w-full h-full`. Apply all hover, transition, scaling, z-index behaviors, and `relative` positioning to this inner `<div>`.
 
 2. **Column Width Consistency (Safari Override)**:
    - The left-most column (Subject codes) must be strictly clamped (e.g., `w-20 min-w-[5rem] max-w-[5rem]`).
@@ -30,7 +30,33 @@ When modifying the Bird View grid, strictly follow these layout and functionalit
 11. **Badge Dropdown Focus Highlighting**: Since badge dropdown options are navigated programmatically via Arrow keys and not via `Tab` (due to `tabIndex={-1}`), their highlight state cannot rely solely on `focus-visible`. Use standard `focus:` tailwind classes (e.g., `focus:scale-110 focus:ring-2 focus:ring-blue-500 z-10`) to ensure they visibly highlight when focused programmatically.
 
 12. **Task View Pending Reschedule**: The "PENDING" status behavior from Bird View (prompting for a reschedule date) is also mirrored in the Task View table (`src/app/(dashboard)/view-tasks/page.tsx`). Do not blindly save a "PENDING" status change; intercept it, open the Reschedule Modal, and hit `/api/tasks/reschedule`.
+
+13. **Global Keyboard Listener & Buttons**: When using global keyboard listeners on a page (like `handleNumberShortcut` or grid navigation), always include `BUTTON` in the ignore list (e.g. `['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON'].includes(tagName)`) so that pressing `Enter` on a focused button triggers the button's default action instead of being intercepted by the global shortcut.
+
+14. **Absent/Leave Cell Interaction**: Grid cells corresponding to absent or leave students MUST remain clickable. Do not block the `onClick` handler using `disableCol` because the user must still be able to open the Task Entry modal or inline task to view/override it.
+
+15. **Arrow Key Navigation**: Arrow key grid navigation (highlighting and cell focusing) must only be active when `isEditMode` is `true`. Outside of Edit Mode, arrow keys must not be intercepted so that natural browser page scrolling works.
 <!-- END:bird-view-rules -->
+
+<!-- BEGIN:attendance-page-rules -->
+# Attendance Page (src/app/(dashboard)/attendance/page.tsx) Guidelines
+
+1. **Role Access & View**: The `COORDINATOR` role functions similarly to `OWNER` in that they can view and mark their own attendance alongside other staff.
+2. **Edit Mode & Locking**: Once attendance is saved for a specific date, the grid should lock (disable inputs) by default to prevent accidental changes. An explicit "Edit" button must be provided to owners/coordinators to unlock the grid and amend the attendance.
+3. **Row Background Colors**: Row background colors should reflect the selected attendance status using faint tailwind colors for immediate visual feedback:
+   - Present: `bg-green-50/30`
+   - Absent: `bg-red-50/30`
+   - Leave: `bg-purple-50/30`
+   - Late: `bg-yellow-50/30`
+4. **Keyboard Navigation & Sorting**: If attendance rows are dynamically sorted based on status (e.g., absent/leave students pushed to the top/left), keyboard navigation (using arrow keys to move the highlight cursor) must calculate movement based on the *visually rendered order* of the array (after sorting), NOT the original data array order.
+<!-- END:attendance-page-rules -->
+
+<!-- BEGIN:task-entry-rules -->
+# Task Entry Modal (src/app/(dashboard)/task/TaskEntryClient.tsx) Guidelines
+
+1. **Attendance Warning**: When a task assignee is marked as ABSENT or LEAVE for the selected `dueDate`, a prominent visual warning banner MUST be displayed inside the modal (e.g. below the header), not just hidden behind a submit confirmation dialog.
+2. **Attendance API Fetching**: When querying `/api/attendance` to check a student's attendance status, always include `&role=STUDENT` in the URL query string, as the attendance API requires an explicit role to filter records correctly.
+<!-- END:task-entry-rules -->
 
 <!-- BEGIN:general-workflow-rules -->
 # General Agent Workflow Guidelines

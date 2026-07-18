@@ -1055,42 +1055,6 @@ export default function BirdViewPage() {
         return;
       }
 
-      if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
-        event.preventDefault();
-        const prev = activeStudentIdRef.current;
-        let newId = prev;
-        if (!prev) newId = visibleStudentIds.length > 0 ? visibleStudentIds[0] : null;
-        else {
-          const currentIndex = visibleStudentIds.indexOf(prev);
-          if (currentIndex === -1) newId = visibleStudentIds.length > 0 ? visibleStudentIds[0] : null;
-          else {
-            let newIndex = event.key === 'ArrowRight' ? currentIndex + 1 : currentIndex - 1;
-            if (newIndex < 0) newIndex = 0;
-            if (newIndex >= visibleStudentIds.length) newIndex = visibleStudentIds.length - 1;
-            newId = visibleStudentIds[newIndex];
-          }
-        }
-        updateHighlight(activeSubjectIdRef.current, newId, true);
-      }
-
-      if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-        event.preventDefault();
-        const prev = activeSubjectIdRef.current;
-        let newId = prev;
-        if (!prev) newId = subjects.length > 0 ? subjects[0].id : null;
-        else {
-          const currentIndex = subjects.findIndex(s => s.id === prev);
-          if (currentIndex === -1) newId = subjects.length > 0 ? subjects[0].id : null;
-          else {
-            let newIndex = event.key === 'ArrowDown' ? currentIndex + 1 : currentIndex - 1;
-            if (newIndex < 0) newIndex = 0;
-            if (newIndex >= subjects.length) newIndex = subjects.length - 1;
-            newId = subjects[newIndex].id;
-          }
-        }
-        updateHighlight(newId, activeStudentIdRef.current, true);
-      }
-
     }
 
     document.addEventListener('keydown', handleNumberShortcut);
@@ -1998,7 +1962,7 @@ export default function BirdViewPage() {
                             <td
                               key={cellId}
                               id={`cell-${cellId}`}
-                              className={`p-0 text-center border-b border-r border-gray-200 last:border-r-0 h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] scroll-ml-16 md:scroll-ml-[80px] scroll-mt-[100px] cell-student-${student.id} cell-subject-${isGrid && subject ? subject.id : row.id} ${(isGrid && subject && activeSubjectIdRef.current === subject.id) || activeStudentIdRef.current === student.id || (!isGrid && activeSubjectIdRef.current === row.id) ? 'cell-subject-highlight' : ''} ${isAbsent ? 'absent-cell' : isLeave ? 'leave-cell' : ''}`}
+                              className={`p-0 text-center border-b border-r border-gray-200 last:border-r-0 h-24 md:h-[120px] w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] scroll-ml-16 md:scroll-ml-[80px] scroll-mt-[100px] cell-student-${student.id} cell-subject-${isGrid && subject ? subject.id : row.id} ${(isGrid && subject && activeSubjectIdRef.current === subject.id) || activeStudentIdRef.current === student.id || (!isGrid && activeSubjectIdRef.current === row.id) ? 'cell-subject-highlight' : ''}`}
                               onDragEnter={(e) => {
                                 if (!isAssigned || disableCol) return;
                                 if (draggedTaskId !== null && draggedTaskSource && (e.shiftKey || e.altKey || e.metaKey)) {
@@ -2040,7 +2004,7 @@ export default function BirdViewPage() {
                               <div className="w-full h-full relative">
                                 <div
                                   onClick={() => {
-                                    if (isBatchMode || disableCol) return;
+                                    if (isBatchMode) return;
 
                                     // Always toggle highlight for this column when clicking any cell
                                     updateHighlight(activeSubjectIdRef.current, activeStudentIdRef.current === student.id ? null : student.id);

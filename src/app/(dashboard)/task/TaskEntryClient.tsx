@@ -59,7 +59,7 @@ export default function TaskEntryClient({
         return;
       }
       try {
-        const res = await fetch(`/api/attendance?date=${dueDate}`);
+        const res = await fetch(`/api/attendance?date=${dueDate}&role=STUDENT`);
         if (res.ok) {
           const data = await res.json();
           const record = data.find((u: any) => `${u.firstName} ${u.lastName}`.trim().toLowerCase() === assignee.trim().toLowerCase());
@@ -307,6 +307,16 @@ export default function TaskEntryClient({
 
 
       {(showBeautifulHeader || showBeautifulHeaderForOwner) && renderBeautifulHeader()}
+
+      {(assigneeStatus === 'ABSENT' || assigneeStatus === 'LEAVE') && (
+        <div className="mb-6 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2 shadow-sm animate-pulse">
+          <span className="text-lg leading-none mt-0.5">⚠️</span>
+          <div>
+            <strong className="block mb-0.5 text-red-800">Warning: Assignee is {assigneeStatus}</strong>
+            <span>{assigneeReason || `The selected assignee (${assignee}) is currently marked as ${assigneeStatus.toLowerCase()} for the selected date.`}</span>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
         <div className="form-row">
