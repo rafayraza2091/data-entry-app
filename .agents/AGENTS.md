@@ -59,6 +59,13 @@ When modifying the Bird View grid, strictly follow these layout and functionalit
 2. **Attendance API Fetching**: When querying `/api/attendance` to check a student's attendance status, always include `&role=STUDENT` in the URL query string, as the attendance API requires an explicit role to filter records correctly.
 <!-- END:task-entry-rules -->
 
+<!-- BEGIN:agent-assistant-rules -->
+# Agent Assistant Page (src/app/(dashboard)/agent/page.tsx) Guidelines
+
+1. **ReactMarkdown Hydration Error (CRITICAL)**: When rendering markdown with `ReactMarkdown`, do NOT use `<p>` for paragraph elements (e.g. `p: ({node, ...props}) => <p {...props} />`). This will cause a `ReactHydrationError` ("In HTML, `<pre>` cannot be a descendant of `<p>`") if the response contains code blocks or other block-level elements. ALWAYS override `p` to render as a `<div>` (e.g., `p: ({node, ...props}) => <div className="mb-3 last:mb-0" {...props} />`).
+2. **Local AI Agent Connection**: When the application is running via `npm run dev` natively on the host machine, the proxy endpoint must point to `127.0.0.1:8000` instead of `host.docker.internal`. `host.docker.internal` only works when the Next.js app is containerized.
+<!-- END:agent-assistant-rules -->
+
 <!-- BEGIN:general-workflow-rules -->
 # General Agent Workflow Guidelines
 
