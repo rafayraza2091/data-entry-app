@@ -460,6 +460,8 @@ export default function BirdViewPage() {
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
+      if (previewImages !== null) return;
+
       if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'f') {
         event.preventDefault();
         if (document.activeElement === studentSearchInputRef.current) {
@@ -2370,7 +2372,7 @@ export default function BirdViewPage() {
                                                           {item.images && item.images.map((img: string, idx: number) => (
                                                             <div 
                                                               key={idx} 
-                                                              className="relative w-8 h-8 border border-gray-200 rounded overflow-hidden cursor-pointer hover:border-blue-400 transition-colors group/img" 
+                                                              className="relative w-8 h-8 overflow-visible cursor-pointer group/img" 
                                                               onClick={(e) => { 
                                                                 e.stopPropagation(); 
                                                                 setPreviewImages(item.images); 
@@ -2378,7 +2380,9 @@ export default function BirdViewPage() {
                                                                 setPreviewTask(item); 
                                                               }}
                                                             >
-                                                              <img src={img} className="w-full h-full object-cover" alt="Attachment" />
+                                                              <div className="w-8 h-8 border border-gray-200 rounded overflow-hidden hover:border-blue-400 transition-colors">
+                                                                <img src={img} className="w-full h-full object-cover" alt="Attachment" />
+                                                              </div>
                                                               <button 
                                                                 type="button"
                                                                 onClick={(e) => {
@@ -2389,7 +2393,7 @@ export default function BirdViewPage() {
                                                                     handleUpdateTaskField(item.id, 'images', newImages);
                                                                   }
                                                                 }}
-                                                                className="absolute top-0 right-0 bg-red-600/90 hover:bg-red-600 text-white w-3.5 h-3.5 text-[9px] flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity rounded-bl"
+                                                                className="absolute -top-1.5 -right-1.5 z-10 bg-red-600 hover:bg-red-700 text-white w-4 h-4 rounded-full text-[10px] leading-none flex items-center justify-center shadow-sm opacity-100 transition-opacity"
                                                                 title="Delete image"
                                                               >
                                                                 &times;

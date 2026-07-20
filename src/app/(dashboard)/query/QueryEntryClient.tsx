@@ -526,7 +526,11 @@ export default function QueryEntryClient({
                     />
                     <button 
                       type="button"
-                      onClick={() => setCroppedImages(prev => prev.filter((_, i) => i !== idx))}
+                      onClick={() => {
+                        if (window.confirm("Are you sure you want to remove this image?")) {
+                          setCroppedImages(prev => prev.filter((_, i) => i !== idx));
+                        }
+                      }}
                       style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#e74c3c', color: 'white', borderRadius: '50%', width: '20px', height: '20px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', lineHeight: 1 }}
                       title="Remove image"
                     >

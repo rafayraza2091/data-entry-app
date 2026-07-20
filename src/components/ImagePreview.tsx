@@ -15,7 +15,13 @@ export default function ImagePreview({ images, initialIndex = 0, onClose, onDele
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (['Escape', 'Esc', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      }
+
+      if (e.key === 'Escape' || e.key === 'Esc') {
         onClose();
       } else if (e.key === 'ArrowRight') {
         setCurrentIndex((prev) => (prev + 1) % images.length);
@@ -24,12 +30,12 @@ export default function ImagePreview({ images, initialIndex = 0, onClose, onDele
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
     // Prevent background scrolling while preview is open
     document.body.style.overflow = 'hidden';
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handleKeyDown, { capture: true });
       document.body.style.overflow = '';
     };
   }, [images.length, onClose]);
