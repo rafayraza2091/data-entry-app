@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import ImagePreview from '@/components/ImagePreview';
+import ImageCropper from '@/components/ImageCropper';
+import { compressImage } from '@/lib/compressImage';
 
 const getMarksColor = (obtained: number | null | undefined, total: number | null | undefined = 10) => {
   if (obtained === null || obtained === undefined) return 'inherit';
@@ -35,6 +38,18 @@ export default function ViewTasksPage() {
   const [editingTask, setEditingTask] = useState<number | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<string>('');
+
+  // Image Upload and Preview State
+  const [previewImages, setPreviewImages] = useState<string[] | null>(null);
+  const [previewIndex, setPreviewIndex] = useState(0);
+  const [previewTask, setPreviewTask] = useState<any | null>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const [targetTaskForCrop, setTargetTaskForCrop] = useState<any | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  }, []);
 
   // Filtering State
   const [searchQuery, setSearchQuery] = useState('');
@@ -408,6 +423,7 @@ export default function ViewTasksPage() {
       'Topic', 
       'Exercise', 
       'Description', 
+      'Att.',
       'Status',
       'Obt. Marks',
       'Due Date',
@@ -438,6 +454,43 @@ export default function ViewTasksPage() {
                 <td className="p-2 md:p-4 text-sm text-gray-600">{renderEditableCell(item, 'exercise')}</td>
                 <td className="p-2 md:p-4 text-sm text-gray-600" style={{ maxWidth: '250px', whiteSpace: 'normal', wordWrap: 'break-word' }} title={item.description}>
                   {renderEditableCell(item, 'description')}
+                </td>
+                <td className="p-2 md:p-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-2">
+                    {item.images && item.images.length > 0 ? (
+                      <button onClick={() => { setPreviewImages(item.images); setPreviewIndex(0); setPreviewTask(item); }} className="text-teal-600 hover:text-teal-800 transition-colors flex items-center gap-1" title={`View ${item.images.length} attachments`}>
+                        <i className="fa-solid fa-paperclip"></i>
+                        <span className="text-xs font-semibold">{item.images.length}</span>
+                      </button>
+                    ) : (
+                      <span className="text-gray-300">-</span>
+                    )}
+                    {(!item.images || item.images.length < 5) && (
+                      <div className="relative inline-flex items-center justify-center w-6 h-6 rounded hover:bg-gray-100 cursor-pointer transition-colors" title="Add Image">
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          capture={isMobile ? "environment" : undefined}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                          onChange={async (e) => {
+                            if (e.target.files && e.target.files[0]) {
+                              const file = e.target.files[0];
+                              try {
+                                const compressedBlob = await compressImage(file);
+                                const compressedFile = new File([compressedBlob], file.name, { type: 'image/jpeg' });
+                                setTargetTaskForCrop(item);
+                                setCropFile(compressedFile);
+                              } catch (err) {
+                                console.error('Compress error', err);
+                              }
+                              e.target.value = '';
+                            }
+                          }}
+                        />
+                        <i className="fa-solid fa-plus text-gray-400 text-xs"></i>
+                      </div>
+                    )}
+                  </div>
                 </td>
                 <td className="p-2 md:p-4 text-sm text-gray-600">{renderEditableCell(item, 'status')}</td>
                 <td className="p-2 md:p-4 text-sm text-gray-600">{item.status === 'DONE' ? renderEditableCell(item, 'obtainedMarks') : '-'}</td>
@@ -756,6 +809,82 @@ export default function ViewTasksPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {previewImages && (
+        <ImagePreview
+          images={previewImages}
+          initialIndex={previewIndex}
+          onClose={() => {
+            setPreviewImages(null);
+            setPreviewIndex(0);
+            setPreviewTask(null);
+          }}
+          onDelete={async (idxToDelete) => {
+            if (previewTask) {
+              const newImages = previewTask.images.filter((_: any, i: number) => i !== idxToDelete);
+              setPreviewImages(newImages.length > 0 ? newImages : null);
+              setTasks(prev => prev.map(t => t.id === previewTask.id ? { ...t, images: newImages } : t));
+              try {
+                await fetch('/api/tasks', {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ id: previewTask.id, fieldName: 'images', newValue: newImages })
+                });
+              } catch (err) {
+                console.error('Failed to delete image:', err);
+              }
+            }
+          }}
+        />
+      )}
+
+      {cropFile && targetTaskForCrop && (
+        <ImageCropper
+          imageFile={cropFile}
+          onCropComplete={async (croppedBlob) => {
+            setCropFile(null);
+            const formData = new FormData();
+            formData.append('images', croppedBlob, 'cropped.jpg');
+            
+            // Try to match student
+            const matchedStudentObj = studentsList.find(s => s.toLowerCase() === targetTaskForCrop.assignee?.trim().toLowerCase());
+            
+            formData.append('schoolName', currentUser?.schoolName || 'UnknownSchool');
+            formData.append('className', targetTaskForCrop.className || 'UnknownClass');
+            formData.append('subject', targetTaskForCrop.subject);
+            formData.append('type', 'task');
+            formData.append('taskId', targetTaskForCrop.id.toString());
+
+            try {
+              const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+              });
+              if (res.ok) {
+                const data = await res.json();
+                if (data.urls && data.urls.length > 0) {
+                  const newImages = [...(targetTaskForCrop.images || []), ...data.urls];
+                  // Optimistically update
+                  setTasks(tasks.map(t => t.id === targetTaskForCrop.id ? { ...t, images: newImages } : t));
+                  // Save to DB
+                  fetch('/api/tasks', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: targetTaskForCrop.id, fieldName: 'images', newValue: newImages })
+                  }).catch(err => console.error('Failed to save image array', err));
+                }
+              }
+            } catch (err) {
+              console.error('Failed to upload cropped image', err);
+            }
+            setTargetTaskForCrop(null);
+          }}
+          onCancel={() => {
+            setCropFile(null);
+            setTargetTaskForCrop(null);
+          }}
+        />
       )}
     </main>
   );

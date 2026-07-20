@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     }
 
     const data = await request.json();
-    const { createdBy, className, subject, book, chapter, topic, exercise, description, reporter, assignee, status, taskType, dueDate, totalMarks, obtainedMarks } = data;
+    const { createdBy, className, subject, book, chapter, topic, exercise, description, reporter, assignee, status, taskType, dueDate, totalMarks, obtainedMarks, images } = data;
 
     if (!createdBy || !subject || !description || !reporter || !assignee) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -32,7 +32,8 @@ export async function POST(request: Request) {
         taskType: taskType || 'Home Work',
         dueDate: dueDate ? new Date(dueDate) : null,
         totalMarks: 10,
-        obtainedMarks: obtainedMarks !== undefined ? parseFloat(obtainedMarks) : null
+        obtainedMarks: obtainedMarks !== undefined ? parseFloat(obtainedMarks) : null,
+        images: Array.isArray(images) ? images : []
       }
     });
 
@@ -205,7 +206,7 @@ export async function PATCH(request: Request) {
     }
 
     // Allowed fields
-    const allowedFields = ['description', 'status', 'subject', 'book', 'chapter', 'topic', 'exercise', 'taskType', 'dueDate', 'assignee', 'reporter', 'rescheduledToId', 'totalMarks', 'obtainedMarks'];
+    const allowedFields = ['description', 'status', 'subject', 'book', 'chapter', 'topic', 'exercise', 'taskType', 'dueDate', 'assignee', 'reporter', 'rescheduledToId', 'totalMarks', 'obtainedMarks', 'images'];
     if (!allowedFields.includes(fieldName)) {
       return NextResponse.json({ error: 'Invalid field' }, { status: 400 });
     }
@@ -215,6 +216,8 @@ export async function PATCH(request: Request) {
       parsedValue = newValue ? new Date(newValue) : null;
     } else if (fieldName === 'totalMarks' || fieldName === 'obtainedMarks') {
       parsedValue = newValue !== null && newValue !== '' ? parseFloat(newValue) : null;
+    } else if (fieldName === 'images') {
+      parsedValue = Array.isArray(newValue) ? newValue : [];
     }
 
     const updateData: any = { [fieldName]: parsedValue };

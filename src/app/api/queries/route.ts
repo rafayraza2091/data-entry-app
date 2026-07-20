@@ -123,6 +123,47 @@ export async function GET(request: Request) {
   }
 }
 
+export async function PATCH(request: Request) {
+  try {
+    const data = await request.json();
+    const { id, fieldName, newValue } = data;
+
+    if (!id || !fieldName) {
+      return NextResponse.json({ error: 'Missing id or fieldName' }, { status: 400 });
+    }
+
+    const existingQuery = await prisma.queryEntry.findUnique({
+      where: { id: Number(id) }
+    });
+
+    if (!existingQuery) {
+      return NextResponse.json({ error: 'Query not found' }, { status: 404 });
+    }
+
+    const allowedFields = ['subject', 'book', 'chapter', 'topic', 'exercise', 'pageNumber', 'queryStatement', 'status', 'images'];
+    if (!allowedFields.includes(fieldName)) {
+      return NextResponse.json({ error: 'Invalid field' }, { status: 400 });
+    }
+
+    let parsedValue = newValue;
+    if (fieldName === 'images') {
+      parsedValue = Array.isArray(newValue) ? newValue : [];
+    }
+
+    const updateData: any = { [fieldName]: parsedValue };
+
+    const updatedQuery = await prisma.queryEntry.update({
+      where: { id: Number(id) },
+      data: updateData
+    });
+
+    return NextResponse.json(updatedQuery, { status: 200 });
+  } catch (error: any) {
+    console.error('Error updating query:', error);
+    return NextResponse.json({ error: 'Failed to update query', details: error.message }, { status: 500 });
+  }
+}
+
 export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);

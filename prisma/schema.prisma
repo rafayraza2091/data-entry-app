@@ -205,6 +205,7 @@ model TaskEntry {
   rescheduledToId   Int?
   totalMarks        Float?
   obtainedMarks     Float?
+  images            String[] @default([])
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }

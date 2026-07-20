@@ -697,6 +697,21 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
                         alt="Existing Attachment" 
                         className="w-24 h-24 object-cover rounded"
                       />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm("Are you sure you want to remove this image?")) {
+                            setEditingQuery({
+                              ...editingQuery,
+                              images: editingQuery.images.filter((_: any, i: number) => i !== index)
+                            });
+                          }
+                        }}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-sm text-sm"
+                        title="Remove"
+                      >
+                        &times;
+                      </button>
                     </div>
                   ))}
 
@@ -710,7 +725,11 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
                       />
                       <button
                         type="button"
-                        onClick={() => setCroppedImages(prev => prev.filter((_, i) => i !== index))}
+                        onClick={() => {
+                          if (window.confirm("Are you sure you want to remove this image?")) {
+                            setCroppedImages(prev => prev.filter((_, i) => i !== index));
+                          }
+                        }}
                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-sm text-sm"
                         title="Remove"
                       >

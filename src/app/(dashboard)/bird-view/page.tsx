@@ -89,6 +89,9 @@ const getMarksColor = (obtained: number | null | undefined, total: number | null
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import TaskEntryClient from '../task/TaskEntryClient';
 import QueryEntryClient from '../query/QueryEntryClient';
+import ImagePreview from '@/components/ImagePreview';
+import ImageCropper from '@/components/ImageCropper';
+import { compressImage } from '@/lib/compressImage';
 
 interface Subject {
   id: number;
@@ -180,6 +183,16 @@ export default function BirdViewPage() {
   const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
   const [draggedTaskSource, setDraggedTaskSource] = useState<any | null>(null);
   const [clonedCells, setClonedCells] = useState<Set<string>>(new Set());
+  const [previewImages, setPreviewImages] = useState<string[] | null>(null);
+  const [previewIndex, setPreviewIndex] = useState(0);
+  const [previewTask, setPreviewTask] = useState<any | null>(null);
+  const [cropFile, setCropFile] = useState<File | null>(null);
+  const [targetTaskForCrop, setTargetTaskForCrop] = useState<any | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  }, []);
 
   // Deletion States
   const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
@@ -2350,6 +2363,66 @@ export default function BirdViewPage() {
                                                           className="text-xs text-black font-semibold w-[calc(100%+8px)] leading-relaxed text-left bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors resize-none min-h-[40px] whitespace-normal custom-scrollbar rounded px-2 py-1 -ml-2"
                                                         />
                                                       </div>
+                                                      {/* Clicked State Images Section */}
+                                                      <div className="flex items-start w-[calc(100%+8px)] mt-2 -ml-2 px-2">
+                                                        <span className="text-xs font-semibold text-gray-700 mr-2 mt-1">Att:</span>
+                                                        <div className="flex gap-2 flex-wrap items-center">
+                                                          {item.images && item.images.map((img: string, idx: number) => (
+                                                            <div 
+                                                              key={idx} 
+                                                              className="relative w-8 h-8 border border-gray-200 rounded overflow-hidden cursor-pointer hover:border-blue-400 transition-colors group/img" 
+                                                              onClick={(e) => { 
+                                                                e.stopPropagation(); 
+                                                                setPreviewImages(item.images); 
+                                                                setPreviewIndex(idx); 
+                                                                setPreviewTask(item); 
+                                                              }}
+                                                            >
+                                                              <img src={img} className="w-full h-full object-cover" alt="Attachment" />
+                                                              <button 
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                  e.stopPropagation();
+                                                                  e.preventDefault();
+                                                                  if (window.confirm("Are you sure you want to delete this image?")) {
+                                                                    const newImages = item.images.filter((_: any, i: number) => i !== idx);
+                                                                    handleUpdateTaskField(item.id, 'images', newImages);
+                                                                  }
+                                                                }}
+                                                                className="absolute top-0 right-0 bg-red-600/90 hover:bg-red-600 text-white w-3.5 h-3.5 text-[9px] flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity rounded-bl"
+                                                                title="Delete image"
+                                                              >
+                                                                &times;
+                                                              </button>
+                                                            </div>
+                                                          ))}
+                                                          {(!item.images || item.images.length < 5) && (
+                                                            <div className="relative w-8 h-8 border border-dashed border-gray-300 rounded flex items-center justify-center hover:bg-gray-50 cursor-pointer transition-colors" onClick={(e) => e.stopPropagation()}>
+                                                              <input 
+                                                                type="file" 
+                                                                accept="image/*" 
+                                                                capture={isMobile ? "environment" : undefined}
+                                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                                onChange={async (e) => {
+                                                                  if (e.target.files && e.target.files[0]) {
+                                                                    const file = e.target.files[0];
+                                                                    try {
+                                                                      const compressedBlob = await compressImage(file);
+                                                                      const compressedFile = new File([compressedBlob], file.name, { type: 'image/jpeg' });
+                                                                      setTargetTaskForCrop(item);
+                                                                      setCropFile(compressedFile);
+                                                                    } catch (err) {
+                                                                      console.error('Compress error', err);
+                                                                    }
+                                                                    e.target.value = '';
+                                                                  }
+                                                                }}
+                                                              />
+                                                              <span className="text-gray-400 text-lg font-light leading-none mb-1">+</span>
+                                                            </div>
+                                                          )}
+                                                        </div>
+                                                      </div>
                                                       <div className="flex items-center w-[calc(100%+8px)] mt-auto pt-1 relative group mb-1 hover:bg-gray-100 focus-within:bg-gray-100 rounded px-2 py-1 -ml-2 transition-colors cursor-pointer">
                                                         {(() => {
                                                           const reporterInitials = (item.reporter || '?').charAt(0).toUpperCase();
@@ -2461,12 +2534,17 @@ export default function BirdViewPage() {
                                                 </div>
                                               )}
 
-                                              {/* Reporter Avatar (Bottom Left, only when NOT clicked) */}
-                                              {!isClicked && item.reporter && (
-                                                <div className="absolute bottom-[3px] left-[3px] z-[70]" title={`Reporter: ${item.reporter}`}>
-                                                  <div className="w-4 h-4 rounded-full text-white flex items-center justify-center text-[9px] font-black shadow-sm" style={{ backgroundColor: getReporterColor(item.reporter) }}>
-                                                    {(item.reporter || '?').charAt(0).toUpperCase()}
-                                                  </div>
+                                              {/* Bottom Left Icons (only when NOT clicked) */}
+                                              {!isClicked && (
+                                                <div className="absolute bottom-[3px] left-[3px] z-[70] flex items-center gap-1">
+                                                  {item.reporter && (
+                                                    <div className="w-4 h-4 rounded-full text-white flex items-center justify-center text-[9px] font-black shadow-sm" title={`Reporter: ${item.reporter}`} style={{ backgroundColor: getReporterColor(item.reporter) }}>
+                                                      {(item.reporter || '?').charAt(0).toUpperCase()}
+                                                    </div>
+                                                  )}
+                                                  {item.images && item.images.length > 0 && (
+                                                    <i className="fa-solid fa-paperclip text-[10px] text-gray-500" title={`${item.images.length} Attachments`}></i>
+                                                  )}
                                                 </div>
                                               )}
 
@@ -2969,6 +3047,66 @@ export default function BirdViewPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {previewImages && (
+        <ImagePreview
+          images={previewImages}
+          initialIndex={previewIndex}
+          onClose={() => {
+            setPreviewImages(null);
+            setPreviewIndex(0);
+            setPreviewTask(null);
+          }}
+          onDelete={(idxToDelete) => {
+            if (previewTask) {
+              const newImages = previewTask.images.filter((_: any, i: number) => i !== idxToDelete);
+              setPreviewImages(newImages.length > 0 ? newImages : null);
+              handleUpdateTaskField(previewTask.id, 'images', newImages);
+            }
+          }}
+        />
+      )}
+
+      {cropFile && targetTaskForCrop && (
+        <ImageCropper
+          imageFile={cropFile}
+          onCropComplete={async (croppedBlob) => {
+            setCropFile(null);
+            const formData = new FormData();
+            formData.append('images', croppedBlob, 'cropped.jpg');
+            
+            // Reconstruct derived data
+            const matchedStudent = students.find(s => `${s.firstName} ${s.secondName}`.trim().toLowerCase() === targetTaskForCrop.assignee?.trim().toLowerCase());
+            
+            formData.append('schoolName', currentUser?.schoolName || 'UnknownSchool');
+            formData.append('className', matchedStudent?.className || targetTaskForCrop.className || 'UnknownClass');
+            formData.append('subject', targetTaskForCrop.subject);
+            formData.append('type', 'task');
+            formData.append('taskId', targetTaskForCrop.id.toString());
+
+            try {
+              const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData,
+              });
+              if (res.ok) {
+                const data = await res.json();
+                if (data.urls && data.urls.length > 0) {
+                  const newImages = [...(targetTaskForCrop.images || []), ...data.urls];
+                  handleUpdateTaskField(targetTaskForCrop.id, 'images', newImages);
+                }
+              }
+            } catch (err) {
+              console.error('Failed to upload cropped image', err);
+            }
+            setTargetTaskForCrop(null);
+          }}
+          onCancel={() => {
+            setCropFile(null);
+            setTargetTaskForCrop(null);
+          }}
+        />
       )}
     </>
   );

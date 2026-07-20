@@ -88,7 +88,8 @@ export async function GET(request: Request) {
             rescheduledFromId: true,
             rescheduledToId: true,
             obtainedMarks: true,
-            totalMarks: true
+            totalMarks: true,
+            images: true
           }
         });
       } else if (viewType === 'query') {
@@ -103,7 +104,8 @@ export async function GET(request: Request) {
             id: true,
             studentName: true,
             subject: true,
-            status: true
+            status: true,
+            images: true
           }
         });
       }

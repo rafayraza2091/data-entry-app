@@ -8,6 +8,8 @@ const getLocalDateString = (d: Date) => {
 };
 
 import { useState, useEffect } from 'react';
+import ImageCropper from '@/components/ImageCropper';
+import { compressImage } from '@/lib/compressImage';
 
 export default function TaskEntryClient({ 
   currentUser, 
@@ -52,6 +54,16 @@ export default function TaskEntryClient({
   const [assigneeReason, setAssigneeReason] = useState<string>('');
   
   const [status, setStatus] = useState({ type: '', message: '' });
+
+  // Image Upload State
+  const [croppedImages, setCroppedImages] = useState<Blob[]>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isCropping, setIsCropping] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0);
+  }, []);
 
   useEffect(() => {
     async function checkAttendance() {
@@ -147,6 +159,30 @@ export default function TaskEntryClient({
     setIsSubmitting(true);
 
     try {
+      let imageUrls: string[] = [];
+      if (croppedImages.length > 0) {
+        const formData = new FormData();
+        croppedImages.forEach(blob => {
+          formData.append('images', blob, 'cropped.jpg');
+        });
+        formData.append('schoolName', user.schoolName || 'UnknownSchool');
+        formData.append('className', derivedClassName || 'UnknownClass');
+        formData.append('subject', subject);
+        formData.append('type', 'task');
+        formData.append('taskId', 'new');
+
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        if (!uploadRes.ok) {
+          const uploadData = await uploadRes.json();
+          throw new Error(uploadData.error || 'Failed to upload images');
+        }
+        const uploadData = await uploadRes.json();
+        imageUrls = uploadData.urls || [];
+      }
+
       const res = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -165,7 +201,8 @@ export default function TaskEntryClient({
           taskType,
           dueDate: dueDate ? new Date(dueDate).toISOString() : null,
           totalMarks: taskStatus === 'DONE' && totalMarks ? totalMarks : undefined,
-          obtainedMarks: taskStatus === 'DONE' && obtainedMarks ? obtainedMarks : undefined
+          obtainedMarks: taskStatus === 'DONE' && obtainedMarks ? obtainedMarks : undefined,
+          images: imageUrls
         })
       });
 
@@ -186,6 +223,7 @@ export default function TaskEntryClient({
       setDueDate(getLocalDateString(new Date()));
       setTotalMarks('');
       setObtainedMarks('');
+      setCroppedImages([]);
       
       const userName = `${user.firstName} ${user.lastName}`.trim();
       if (user.role === 'STUDENT') {
@@ -598,6 +636,59 @@ export default function TaskEntryClient({
           ></textarea>
         </div>
 
+        {/* Attachments Section */}
+        <div className="form-group mt-2 md:mt-4">
+          <label className="form-label">Attachments (Max 5)</label>
+          <input 
+            type="file" 
+            accept="image/*" 
+            capture={isMobile ? "environment" : undefined}
+            disabled={croppedImages.length >= 5}
+            onChange={async (e) => {
+              if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+                try {
+                  const compressedBlob = await compressImage(file);
+                  const compressedFile = new File([compressedBlob], file.name, { type: 'image/jpeg' });
+                  setSelectedFile(compressedFile);
+                  setIsCropping(true);
+                } catch (err) {
+                  console.error('Error compressing image', err);
+                  alert('Failed to process image');
+                }
+                e.target.value = ''; // Reset input so same file can be selected again
+              }
+            }} 
+            className="form-control" 
+            style={{ padding: '8px' }}
+          />
+          {croppedImages.length > 0 && (
+            <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
+              {croppedImages.map((blob, idx) => (
+                <div key={idx} style={{ position: 'relative', width: '80px', height: '80px' }}>
+                  <img 
+                    src={URL.createObjectURL(blob)} 
+                    alt="cropped preview" 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--border-color)' }} 
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm("Are you sure you want to remove this image?")) {
+                        setCroppedImages(prev => prev.filter((_, i) => i !== idx));
+                      }
+                    }}
+                    style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#e74c3c', color: 'white', borderRadius: '50%', width: '20px', height: '20px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', lineHeight: 1 }}
+                    title="Remove image"
+                  >
+                    &times;
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {status.message && (
           <div className={`status-message ${status.type === 'error' ? 'status-error' : 'status-success'}`} style={{ marginBottom: '1.5rem' }}>
             {status.message}
@@ -624,6 +715,21 @@ export default function TaskEntryClient({
           </button>
         </div>
       </form>
+
+      {isCropping && selectedFile && (
+        <ImageCropper
+          imageFile={selectedFile}
+          onCropComplete={(croppedBlob) => {
+            setCroppedImages(prev => [...prev, croppedBlob]);
+            setIsCropping(false);
+            setSelectedFile(null);
+          }}
+          onCancel={() => {
+            setIsCropping(false);
+            setSelectedFile(null);
+          }}
+        />
+      )}
     </div>
   );
 }
