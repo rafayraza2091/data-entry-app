@@ -2408,7 +2408,12 @@ export default function BirdViewPage() {
                                                               className="w-8 h-8 border border-dashed border-gray-300 rounded flex items-center justify-center hover:bg-gray-50 cursor-pointer transition-colors" 
                                                               onClick={(e) => {
                                                                 e.stopPropagation();
-                                                                setImageChoiceModalTask(item);
+                                                                if (isMobile) {
+                                                                  setImageChoiceModalTask(item);
+                                                                } else {
+                                                                  setTargetTaskForCrop(item);
+                                                                  fileInputRefBirdView.current?.click();
+                                                                }
                                                               }}
                                                               title="Add Image"
                                                             >
@@ -3110,12 +3115,13 @@ export default function BirdViewPage() {
         ref={fileInputRefBirdView}
         className="hidden"
         onChange={async (e) => {
-          if (e.target.files && e.target.files[0] && imageChoiceModalTask) {
+          const activeTask = imageChoiceModalTask || targetTaskForCrop;
+          if (e.target.files && e.target.files[0] && activeTask) {
             const file = e.target.files[0];
             try {
               const compressedBlob = await compressImage(file);
               const compressedFile = new File([compressedBlob], file.name, { type: 'image/jpeg' });
-              setTargetTaskForCrop(imageChoiceModalTask);
+              setTargetTaskForCrop(activeTask);
               setCropFile(compressedFile);
             } catch (err) {
               console.error('Compress error', err);

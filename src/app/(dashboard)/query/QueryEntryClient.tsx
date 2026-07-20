@@ -54,8 +54,13 @@ export default function QueryEntryClient({
   const [croppedImages, setCroppedImages] = useState<Blob[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isCropping, setIsCropping] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const fileInputRefQuery = useRef<HTMLInputElement>(null);
   const cameraInputRefQuery = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth < 768);
+  }, []);
 
   useEffect(() => {
     async function checkAttendance() {
@@ -544,14 +549,16 @@ export default function QueryEntryClient({
                 <span>Choose File / Photos</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => cameraInputRefQuery.current?.click()}
-                className="px-3.5 py-2 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-md text-xs font-semibold flex items-center gap-2 transition-colors border border-teal-200"
-              >
-                <i className="fa-solid fa-camera text-teal-600"></i>
-                <span>Take Photo (Camera)</span>
-              </button>
+              {isMobile && (
+                <button
+                  type="button"
+                  onClick={() => cameraInputRefQuery.current?.click()}
+                  className="px-3.5 py-2 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-md text-xs font-semibold flex items-center gap-2 transition-colors border border-teal-200"
+                >
+                  <i className="fa-solid fa-camera text-teal-600"></i>
+                  <span>Take Photo (Camera)</span>
+                </button>
+              )}
             </div>
             {croppedImages.length > 0 && (
               <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>

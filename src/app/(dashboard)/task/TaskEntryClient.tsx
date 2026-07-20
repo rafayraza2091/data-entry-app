@@ -64,7 +64,7 @@ export default function TaskEntryClient({
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0);
+    setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth < 768);
   }, []);
 
   useEffect(() => {
@@ -700,15 +700,17 @@ export default function TaskEntryClient({
               <span>Choose File / Photos</span>
             </button>
 
-            <button
-              type="button"
-              disabled={croppedImages.length >= 5}
-              onClick={() => cameraInputRef.current?.click()}
-              className="px-3.5 py-2 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-md text-xs font-semibold flex items-center gap-2 transition-colors border border-teal-200 disabled:opacity-50"
-            >
-              <i className="fa-solid fa-camera text-teal-600"></i>
-              <span>Take Photo (Camera)</span>
-            </button>
+            {isMobile && (
+              <button
+                type="button"
+                disabled={croppedImages.length >= 5}
+                onClick={() => cameraInputRef.current?.click()}
+                className="px-3.5 py-2 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-md text-xs font-semibold flex items-center gap-2 transition-colors border border-teal-200 disabled:opacity-50"
+              >
+                <i className="fa-solid fa-camera text-teal-600"></i>
+                <span>Take Photo (Camera)</span>
+              </button>
+            )}
           </div>
           {croppedImages.length > 0 && (
             <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
