@@ -470,7 +470,6 @@ export default function ViewTasksPage() {
                         <input 
                           type="file" 
                           accept="image/*" 
-                          capture={isMobile ? "environment" : undefined}
                           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                           onChange={async (e) => {
                             if (e.target.files && e.target.files[0]) {

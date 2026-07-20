@@ -7,7 +7,7 @@ const getLocalDateString = (d: Date) => {
   return `${year}-${month}-${day}`;
 };
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ImageCropper from '@/components/ImageCropper';
 
 export default function QueryEntryClient({ 
@@ -54,6 +54,8 @@ export default function QueryEntryClient({
   const [croppedImages, setCroppedImages] = useState<Blob[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isCropping, setIsCropping] = useState(false);
+  const fileInputRefQuery = useRef<HTMLInputElement>(null);
+  const cameraInputRefQuery = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function checkAttendance() {
@@ -502,19 +504,55 @@ export default function QueryEntryClient({
           {/* Attachments Section */}
           <div className="form-group col-span-2">
             <label className="form-label">Attachments (Optional)</label>
+            
             <input 
               type="file" 
               accept="image/*" 
+              ref={fileInputRefQuery}
               onChange={(e) => {
                 if (e.target.files && e.target.files[0]) {
                   setSelectedFile(e.target.files[0]);
                   setIsCropping(true);
-                  e.target.value = ''; // Reset input so same file can be selected again
+                  e.target.value = '';
                 }
               }} 
-              className="form-control" 
-              style={{ padding: '8px' }}
+              className="hidden" 
             />
+
+            <input 
+              type="file" 
+              accept="image/*" 
+              capture="environment"
+              ref={cameraInputRefQuery}
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  setSelectedFile(e.target.files[0]);
+                  setIsCropping(true);
+                  e.target.value = '';
+                }
+              }} 
+              className="hidden" 
+            />
+
+            <div className="flex gap-3 flex-wrap items-center mt-1">
+              <button
+                type="button"
+                onClick={() => fileInputRefQuery.current?.click()}
+                className="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-xs font-semibold flex items-center gap-2 transition-colors border border-gray-300"
+              >
+                <i className="fa-solid fa-folder-open text-gray-500"></i>
+                <span>Choose File / Photos</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => cameraInputRefQuery.current?.click()}
+                className="px-3.5 py-2 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-md text-xs font-semibold flex items-center gap-2 transition-colors border border-teal-200"
+              >
+                <i className="fa-solid fa-camera text-teal-600"></i>
+                <span>Take Photo (Camera)</span>
+              </button>
+            </div>
             {croppedImages.length > 0 && (
               <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
                 {croppedImages.map((blob, idx) => (

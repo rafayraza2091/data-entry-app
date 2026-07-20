@@ -188,6 +188,9 @@ export default function BirdViewPage() {
   const [previewTask, setPreviewTask] = useState<any | null>(null);
   const [cropFile, setCropFile] = useState<File | null>(null);
   const [targetTaskForCrop, setTargetTaskForCrop] = useState<any | null>(null);
+  const [imageChoiceModalTask, setImageChoiceModalTask] = useState<any | null>(null);
+  const fileInputRefBirdView = useRef<HTMLInputElement>(null);
+  const cameraInputRefBirdView = useRef<HTMLInputElement>(null);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -2401,27 +2404,14 @@ export default function BirdViewPage() {
                                                             </div>
                                                           ))}
                                                           {(!item.images || item.images.length < 5) && (
-                                                            <div className="relative w-8 h-8 border border-dashed border-gray-300 rounded flex items-center justify-center hover:bg-gray-50 cursor-pointer transition-colors" onClick={(e) => e.stopPropagation()}>
-                                                              <input 
-                                                                type="file" 
-                                                                accept="image/*" 
-                                                                capture={isMobile ? "environment" : undefined}
-                                                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                                                onChange={async (e) => {
-                                                                  if (e.target.files && e.target.files[0]) {
-                                                                    const file = e.target.files[0];
-                                                                    try {
-                                                                      const compressedBlob = await compressImage(file);
-                                                                      const compressedFile = new File([compressedBlob], file.name, { type: 'image/jpeg' });
-                                                                      setTargetTaskForCrop(item);
-                                                                      setCropFile(compressedFile);
-                                                                    } catch (err) {
-                                                                      console.error('Compress error', err);
-                                                                    }
-                                                                    e.target.value = '';
-                                                                  }
-                                                                }}
-                                                              />
+                                                            <div 
+                                                              className="w-8 h-8 border border-dashed border-gray-300 rounded flex items-center justify-center hover:bg-gray-50 cursor-pointer transition-colors" 
+                                                              onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setImageChoiceModalTask(item);
+                                                              }}
+                                                              title="Add Image"
+                                                            >
                                                               <span className="text-gray-400 text-lg font-light leading-none mb-1">+</span>
                                                             </div>
                                                           )}
@@ -3111,6 +3101,88 @@ export default function BirdViewPage() {
             setTargetTaskForCrop(null);
           }}
         />
+      )}
+
+      {/* Hidden File & Camera Inputs for Bird View */}
+      <input 
+        type="file" 
+        accept="image/*" 
+        ref={fileInputRefBirdView}
+        className="hidden"
+        onChange={async (e) => {
+          if (e.target.files && e.target.files[0] && imageChoiceModalTask) {
+            const file = e.target.files[0];
+            try {
+              const compressedBlob = await compressImage(file);
+              const compressedFile = new File([compressedBlob], file.name, { type: 'image/jpeg' });
+              setTargetTaskForCrop(imageChoiceModalTask);
+              setCropFile(compressedFile);
+            } catch (err) {
+              console.error('Compress error', err);
+            }
+            e.target.value = '';
+            setImageChoiceModalTask(null);
+          }
+        }}
+      />
+      <input 
+        type="file" 
+        accept="image/*" 
+        capture="environment"
+        ref={cameraInputRefBirdView}
+        className="hidden"
+        onChange={async (e) => {
+          if (e.target.files && e.target.files[0] && imageChoiceModalTask) {
+            const file = e.target.files[0];
+            try {
+              const compressedBlob = await compressImage(file);
+              const compressedFile = new File([compressedBlob], file.name, { type: 'image/jpeg' });
+              setTargetTaskForCrop(imageChoiceModalTask);
+              setCropFile(compressedFile);
+            } catch (err) {
+              console.error('Compress error', err);
+            }
+            e.target.value = '';
+            setImageChoiceModalTask(null);
+          }
+        }}
+      />
+
+      {/* Source Selection Modal */}
+      {imageChoiceModalTask && (
+        <div className="fixed inset-0 z-[250] bg-black/60 flex items-center justify-center p-4 animate-fade-in" onClick={() => setImageChoiceModalTask(null)}>
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full animate-scale-up" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-3 border-b pb-3">
+              <h3 className="font-bold text-gray-800 text-base">Add Attachment</h3>
+              <button onClick={() => setImageChoiceModalTask(null)} className="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+            </div>
+            <p className="text-xs text-gray-600 mb-4">Choose how you want to add an image:</p>
+            
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  fileInputRefBirdView.current?.click();
+                }}
+                className="w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold rounded-lg text-sm flex items-center justify-center gap-2.5 transition-colors border border-gray-200"
+              >
+                <i className="fa-solid fa-folder-open text-gray-600 text-lg"></i>
+                <span>Choose File / Gallery</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  cameraInputRefBirdView.current?.click();
+                }}
+                className="w-full py-3 px-4 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg text-sm flex items-center justify-center gap-2.5 transition-colors shadow-sm"
+              >
+                <i className="fa-solid fa-camera text-lg"></i>
+                <span>Take Photo (Camera)</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

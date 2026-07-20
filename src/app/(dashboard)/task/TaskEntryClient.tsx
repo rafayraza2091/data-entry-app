@@ -7,7 +7,7 @@ const getLocalDateString = (d: Date) => {
   return `${year}-${month}-${day}`;
 };
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ImageCropper from '@/components/ImageCropper';
 import { compressImage } from '@/lib/compressImage';
 
@@ -60,6 +60,8 @@ export default function TaskEntryClient({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isCropping, setIsCropping] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0);
@@ -639,10 +641,11 @@ export default function TaskEntryClient({
         {/* Attachments Section */}
         <div className="form-group mt-2 md:mt-4">
           <label className="form-label">Attachments (Max 5)</label>
+          
           <input 
             type="file" 
             accept="image/*" 
-            capture={isMobile ? "environment" : undefined}
+            ref={fileInputRef}
             disabled={croppedImages.length >= 5}
             onChange={async (e) => {
               if (e.target.files && e.target.files[0]) {
@@ -656,12 +659,57 @@ export default function TaskEntryClient({
                   console.error('Error compressing image', err);
                   alert('Failed to process image');
                 }
-                e.target.value = ''; // Reset input so same file can be selected again
+                e.target.value = '';
               }
             }} 
-            className="form-control" 
-            style={{ padding: '8px' }}
+            className="hidden" 
           />
+
+          <input 
+            type="file" 
+            accept="image/*" 
+            capture="environment"
+            ref={cameraInputRef}
+            disabled={croppedImages.length >= 5}
+            onChange={async (e) => {
+              if (e.target.files && e.target.files[0]) {
+                const file = e.target.files[0];
+                try {
+                  const compressedBlob = await compressImage(file);
+                  const compressedFile = new File([compressedBlob], file.name, { type: 'image/jpeg' });
+                  setSelectedFile(compressedFile);
+                  setIsCropping(true);
+                } catch (err) {
+                  console.error('Error compressing image', err);
+                  alert('Failed to process image');
+                }
+                e.target.value = '';
+              }
+            }} 
+            className="hidden" 
+          />
+
+          <div className="flex gap-3 flex-wrap items-center mt-1">
+            <button
+              type="button"
+              disabled={croppedImages.length >= 5}
+              onClick={() => fileInputRef.current?.click()}
+              className="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-xs font-semibold flex items-center gap-2 transition-colors border border-gray-300 disabled:opacity-50"
+            >
+              <i className="fa-solid fa-folder-open text-gray-500"></i>
+              <span>Choose File / Photos</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={croppedImages.length >= 5}
+              onClick={() => cameraInputRef.current?.click()}
+              className="px-3.5 py-2 bg-teal-50 hover:bg-teal-100 text-teal-700 rounded-md text-xs font-semibold flex items-center gap-2 transition-colors border border-teal-200 disabled:opacity-50"
+            >
+              <i className="fa-solid fa-camera text-teal-600"></i>
+              <span>Take Photo (Camera)</span>
+            </button>
+          </div>
           {croppedImages.length > 0 && (
             <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexWrap: 'wrap' }}>
               {croppedImages.map((blob, idx) => (
