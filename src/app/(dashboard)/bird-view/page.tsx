@@ -1377,7 +1377,7 @@ export default function BirdViewPage() {
       )}
 
       {/* 35px Div element between top nav and table */}
-      <div className="h-[35px] w-full mb-[4px] shadow-sm flex items-center px-8 space-x-3" style={{ backgroundColor: '#254245' }}>
+      <div className="min-h-[35px] h-auto w-full mb-[4px] shadow-sm flex items-center flex-wrap px-2 md:px-8 py-1 gap-2 space-x-0 md:space-x-3" style={{ backgroundColor: '#254245' }}>
         <button
           onClick={() => setActiveView('task')}
           tabIndex={0}
@@ -2144,8 +2144,8 @@ export default function BirdViewPage() {
 
                                     return (
                                       <div
-                                        className={`w-full flex flex-col relative ${isClicked ? 'absolute top-0 left-0 min-h-[100%] h-fit max-h-[60vh] overflow-y-auto overflow-x-visible z-[100] bg-white rounded-lg p-2 shadow-[0_0_30px_rgba(0,0,0,0.2)] border border-gray-200 custom-scrollbar gap-2' : 'h-full items-center justify-center'}`}
-                                        onClick={(e) => { if (isClicked) e.stopPropagation(); }}
+                                         className={`w-full flex flex-col relative ${isClicked ? `absolute top-0 ${currentCol !== null && visibleStudentIds && currentCol >= visibleStudentIds.length - 2 ? 'right-0 left-auto' : 'left-0'} w-[280px] sm:w-[320px] max-w-[85vw] min-h-[100%] h-fit max-h-[75vh] overflow-y-auto overflow-x-visible z-[100] bg-white rounded-lg p-3 shadow-[0_10px_40px_rgba(0,0,0,0.3)] border border-gray-200 custom-scrollbar gap-2` : 'h-full items-center justify-center'}`}
+                                         onClick={(e) => { if (isClicked) e.stopPropagation(); }}
                                         ref={(el) => {
                                           if (el) {
                                             if (isClicked && el.dataset.opened !== 'true') {
