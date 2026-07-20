@@ -73,6 +73,14 @@ When modifying the Bird View grid, strictly follow these layout and functionalit
 2. **Do Not Push**: NEVER push the code to a remote repository (`git push`) unless the user explicitly asks you to.
 3. **Do Not Build Docker Images**: NEVER run docker builds or create docker images unless explicitly requested by the user.
 
+# General Environment & Setup Guidelines
+
+1. **DNS Caching for Custom Local Domains**: When the user configures a custom domain (like `beaconbridge.com`) in their router to point to a local IP address (like `192.168.100.20`), macOS and Safari may completely ignore the router's DNS settings due to aggressive DNS caching or external DNS settings (like 8.8.8.8 or iCloud Private Relay). In this case, always advise the user to:
+   - Flush their Mac's DNS cache using: `sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder`
+   - Turn off iCloud Private Relay if enabled.
+   - Check their Mac's DNS Server Settings to ensure the router's IP is the only server listed.
+2. **Next.js App Router & External CSS (Font Awesome)**: When adding external stylesheets like Font Awesome in Next.js App Router, NEVER put a `<link rel="stylesheet">` tag directly inside the `<head>` of `layout.tsx`. Next.js may unmount or mishandle raw `<link>` tags during hot-reloads or client-side navigation, causing all icons to randomly disappear. ALWAYS use an `@import url('...');` statement at the very top of `src/app/globals.css` instead to ensure the CSS engine bundles and serves it permanently.
+
 # Project Architecture & API Details
 
 1. **App Structure**: The application is a Next.js (App Router) project centered around managing educational tasks and queries. The primary interface is the `Bird View` (`src/app/(dashboard)/bird-view/page.tsx`), which renders a highly complex matrix grid mapping Subjects to Students.
