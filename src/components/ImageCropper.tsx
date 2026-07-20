@@ -31,6 +31,27 @@ export default function ImageCropper({ imageFile, onCropComplete, onCancel }: Im
     };
   }, [imageFile]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === 'Escape' || e.key === 'Esc') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      }
+
+      if (e.key === 'Enter') {
+        handleSave();
+      } else if (e.key === 'Escape' || e.key === 'Esc') {
+        onCancel();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, { capture: true });
+    };
+  }, [completedCrop, imageFile, onCancel, onCropComplete]);
+
   const getCroppedImg = async () => {
     const image = imgRef.current;
     if (!image || !completedCrop) return;

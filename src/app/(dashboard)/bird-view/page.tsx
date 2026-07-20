@@ -460,7 +460,7 @@ export default function BirdViewPage() {
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (previewImages !== null) return;
+      if (previewImages !== null || cropFile !== null) return;
 
       if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'f') {
         event.preventDefault();
