@@ -2144,7 +2144,7 @@ export default function BirdViewPage() {
 
                                     return (
                                       <div
-                                         className={`w-full flex flex-col relative ${isClicked ? `absolute top-0 ${currentCol !== null && visibleStudentIds && currentCol >= visibleStudentIds.length - 2 ? 'right-0 left-auto' : 'left-0'} w-[280px] sm:w-[320px] max-w-[85vw] min-h-[100%] h-fit max-h-[75vh] overflow-y-auto overflow-x-visible z-[100] bg-white rounded-lg p-3 shadow-[0_10px_40px_rgba(0,0,0,0.3)] border border-gray-200 custom-scrollbar gap-2` : 'h-full items-center justify-center'}`}
+                                         className={`w-full flex flex-col relative ${isClicked ? `absolute top-0 ${currentCol !== null && visibleStudentIds && currentCol >= visibleStudentIds.length - 2 ? 'right-0 left-auto' : 'left-0'} w-[340px] sm:w-[420px] max-w-[92vw] min-h-[100%] h-fit max-h-[60vh] overflow-y-auto overflow-x-visible z-[100] bg-white rounded-lg p-3.5 shadow-[0_12px_48px_rgba(0,0,0,0.35)] border border-gray-200 custom-scrollbar gap-2` : 'h-full items-center justify-center'}`}
                                          onClick={(e) => { if (isClicked) e.stopPropagation(); }}
                                         ref={(el) => {
                                           if (el) {
