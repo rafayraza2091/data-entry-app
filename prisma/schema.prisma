@@ -206,8 +206,26 @@ model TaskEntry {
   totalMarks        Float?
   obtainedMarks     Float?
   images            String[] @default([])
+  comments          TaskComment[]
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+}
+
+model TaskComment {
+  id          Int           @id @default(autoincrement())
+  taskId      Int
+  task        TaskEntry     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author      String
+  authorRole  Role          @default(STUDENT)
+  content     String
+  parentId    Int?
+  parent      TaskComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies     TaskComment[] @relation("CommentReplies")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([taskId])
+  @@index([parentId])
 }
 
 model PendingUser {

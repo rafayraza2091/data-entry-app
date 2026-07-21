@@ -91,6 +91,7 @@ import TaskEntryClient from '../task/TaskEntryClient';
 import QueryEntryClient from '../query/QueryEntryClient';
 import ImagePreview from '@/components/ImagePreview';
 import ImageCropper from '@/components/ImageCropper';
+import TaskComments from '@/components/TaskComments';
 import { compressImage } from '@/lib/compressImage';
 
 interface Subject {
@@ -2500,6 +2501,15 @@ export default function BirdViewPage() {
                                                           </div>
                                                         )}
                                                       </div>
+                                                      {/* Task Comments & Threaded Discussion Section */}
+                                                      <TaskComments
+                                                        taskId={item.id}
+                                                        initialComments={item.comments || []}
+                                                        currentUser={currentUser}
+                                                        onCommentsChange={(updated) => {
+                                                          handleUpdateTaskField(item.id, 'comments', updated);
+                                                        }}
+                                                      />
                                                     </div>
                                                   );
                                                 })()
@@ -2564,6 +2574,11 @@ export default function BirdViewPage() {
                                                   )}
                                                   {item.images && item.images.length > 0 && (
                                                     <i className="fa-solid fa-paperclip text-[10px] text-gray-500" title={`${item.images.length} Attachments`}></i>
+                                                  )}
+                                                  {item.comments && item.comments.length > 0 && (
+                                                    <span className="text-[9px] font-bold text-amber-600 flex items-center gap-0.5" title={`${item.comments.length} Comments`}>
+                                                      💬 {item.comments.length}
+                                                    </span>
                                                   )}
                                                 </div>
                                               )}

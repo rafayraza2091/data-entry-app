@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import ImagePreview from '@/components/ImagePreview';
 import ImageCropper from '@/components/ImageCropper';
+import TaskComments from '@/components/TaskComments';
 import { compressImage } from '@/lib/compressImage';
 
 const getMarksColor = (obtained: number | null | undefined, total: number | null | undefined = 10) => {
@@ -43,6 +44,7 @@ export default function ViewTasksPage() {
   const [previewImages, setPreviewImages] = useState<string[] | null>(null);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [previewTask, setPreviewTask] = useState<any | null>(null);
+  const [activeCommentsTask, setActiveCommentsTask] = useState<any | null>(null);
   const [cropFile, setCropFile] = useState<File | null>(null);
   const [targetTaskForCrop, setTargetTaskForCrop] = useState<any | null>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -476,6 +478,7 @@ export default function ViewTasksPage() {
       'Exercise', 
       'Description', 
       'Att.',
+      'Comments',
       'Status',
       'Obt. Marks',
       'Due Date',
@@ -542,6 +545,16 @@ export default function ViewTasksPage() {
                       </div>
                     )}
                   </div>
+                </td>
+                <td className="p-2 md:p-4 text-sm text-gray-600">
+                  <button
+                    onClick={() => setActiveCommentsTask(item)}
+                    className="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded text-xs font-semibold flex items-center gap-1 transition-colors"
+                    title="View & Add Comments"
+                  >
+                    <i className="fa-solid fa-comments text-amber-600"></i>
+                    <span>{item.comments ? item.comments.length : 0}</span>
+                  </button>
                 </td>
                 <td className="p-2 md:p-4 text-sm text-gray-600">{renderEditableCell(item, 'status')}</td>
                 <td className="p-2 md:p-4 text-sm text-gray-600">{item.status === 'DONE' ? renderEditableCell(item, 'obtainedMarks') : '-'}</td>
@@ -936,6 +949,44 @@ export default function ViewTasksPage() {
             setTargetTaskForCrop(null);
           }}
         />
+      )}
+
+      {/* Task Comments Modal */}
+      {activeCommentsTask && (
+        <div 
+          className="fixed inset-0 z-[150] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setActiveCommentsTask(null)}
+        >
+          <div 
+            className="bg-white rounded-lg shadow-2xl border border-gray-200 w-full max-w-2xl max-h-[85vh] overflow-y-auto p-5 custom-scrollbar relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 mb-2 border-b border-gray-200">
+              <div>
+                <h3 className="text-sm font-black text-gray-900 uppercase tracking-wide">Task Discussion & Comments</h3>
+                <p className="text-xs text-gray-500 font-semibold mt-0.5">
+                  {activeCommentsTask.subject} - {activeCommentsTask.chapter || 'No Chapter'} ({activeCommentsTask.assignee})
+                </p>
+              </div>
+              <button
+                onClick={() => setActiveCommentsTask(null)}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded text-lg font-bold"
+              >
+                &times;
+              </button>
+            </div>
+
+            <TaskComments
+              taskId={activeCommentsTask.id}
+              initialComments={activeCommentsTask.comments || []}
+              currentUser={currentUser}
+              onCommentsChange={(updated) => {
+                setTasks((prev: any[]) => prev.map(t => t.id === activeCommentsTask.id ? { ...t, comments: updated } : t));
+                setActiveCommentsTask((prev: any) => prev ? { ...prev, comments: updated } : null);
+              }}
+            />
+          </div>
+        </div>
       )}
     </main>
   );

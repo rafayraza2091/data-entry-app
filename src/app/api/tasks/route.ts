@@ -125,6 +125,16 @@ export async function GET(request: Request) {
     // Execute query
     const tasks = await prisma.taskEntry.findMany({
       where: whereClause,
+      include: {
+        comments: {
+          include: {
+            replies: {
+              orderBy: { createdAt: 'asc' }
+            }
+          },
+          orderBy: { createdAt: 'asc' }
+        }
+      },
       orderBy: { dueDate: 'asc' }
     });
 

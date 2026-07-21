@@ -89,7 +89,15 @@ export async function GET(request: Request) {
             rescheduledToId: true,
             obtainedMarks: true,
             totalMarks: true,
-            images: true
+            images: true,
+            comments: {
+              include: {
+                replies: {
+                  orderBy: { createdAt: 'asc' }
+                }
+              },
+              orderBy: { createdAt: 'asc' }
+            }
           }
         });
       } else if (viewType === 'query') {
