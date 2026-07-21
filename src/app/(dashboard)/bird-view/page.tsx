@@ -2240,39 +2240,56 @@ export default function BirdViewPage() {
                                               {/* Main Content */}
                                               {isClicked ? (
                                                 (() => {
-                                                  const availableChapters = chaptersList.filter(c => c.subject === item.subject && (!item.book || c.book === item.book));
-                                                  const availableTopics = topicsList.filter(t => t.subject === item.subject && (!item.book || t.book === item.book) && (t.chapterTitle === item.chapter || t.chapterName === item.chapter));
-                                                  const uniqueTopicNames = Array.from(new Set(availableTopics.map(t => t.topicName)));
-                                                  const uniqueExercises = Array.from(new Set(availableTopics.filter(t => t.topicName === item.topic && t.exercise).map(t => t.exercise)));
-                                                  const uniqueReporters = Array.from(new Set([
-                                                    ...reportersList,
-                                                    ...cellData.map(d => d.reporter)
-                                                  ].filter(Boolean)));
+                                                   const availableChapters = chaptersList.filter(c => c.subject === item.subject && (!item.book || c.book === item.book));
+                                                   const chaptersByBook = availableChapters.reduce<Record<string, typeof availableChapters>>((acc, c) => {
+                                                     const bName = c.book || 'Other';
+                                                     if (!acc[bName]) acc[bName] = [];
+                                                     acc[bName].push(c);
+                                                     return acc;
+                                                   }, {});
 
-                                                  return (
-                                                    <div className="flex flex-col flex-1 w-full text-left mt-0 gap-[1px]" onClick={(e) => e.stopPropagation()}>
-                                                      <div className="flex items-center w-full relative group">
-                                                        <span className="text-sm font-black text-gray-900 mr-2">Ch:</span>
-                                                        <div className="relative flex items-center group flex-1 min-w-0">
-                                                          <select
-                                                            value={item.chapter || ''}
-                                                            onChange={(e) => {
-                                                              const val = e.target.value;
-                                                              const ch = availableChapters.find(c => (c.chapterTitle || c.chapterName) === val);
-                                                              handleUpdateTaskField(item.id, 'chapter', val);
-                                                              if (ch && ch.book && !item.book) {
-                                                                handleUpdateTaskField(item.id, 'book', ch.book);
-                                                              }
-                                                              handleUpdateTaskField(item.id, 'topic', '');
-                                                              handleUpdateTaskField(item.id, 'exercise', '');
-                                                            }}
-                                                            className="appearance-none peer text-sm font-black text-gray-900 w-full max-w-full bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors rounded px-1 -ml-1 pr-6 py-0.5 truncate"
-                                                          >
-                                                            <option value="" disabled>-</option>
-                                                            {availableChapters.map(c => (
-                                                              <option key={c.id} value={c.chapterTitle || c.chapterName}>{c.chapterTitle || c.chapterName}</option>
-                                                            ))}
-                                                          </select>
+                                                   const availableTopics = topicsList.filter(t => t.subject === item.subject && (!item.book || t.book === item.book) && (t.chapterTitle === item.chapter || t.chapterName === item.chapter));
+                                                   const uniqueTopicNames = Array.from(new Set(availableTopics.map(t => t.topicName)));
+                                                   const uniqueExercises = Array.from(new Set(availableTopics.filter(t => t.topicName === item.topic && t.exercise).map(t => t.exercise)));
+                                                   const uniqueReporters = Array.from(new Set([
+                                                     ...reportersList,
+                                                     ...cellData.map(d => d.reporter)
+                                                   ].filter(Boolean)));
+
+                                                   return (
+                                                     <div className="flex flex-col flex-1 w-full text-left mt-0 gap-[1px]" onClick={(e) => e.stopPropagation()}>
+                                                       <div className="flex items-center w-full relative group">
+                                                         <span className="text-sm font-black text-gray-900 mr-2">Ch:</span>
+                                                         <div className="relative flex items-center group flex-1 min-w-0">
+                                                           <select
+                                                             value={item.chapter || ''}
+                                                             onChange={(e) => {
+                                                               const val = e.target.value;
+                                                               const ch = availableChapters.find(c => (c.chapterTitle || c.chapterName) === val);
+                                                               handleUpdateTaskField(item.id, 'chapter', val);
+                                                               if (ch && ch.book && item.book !== ch.book) {
+                                                                 handleUpdateTaskField(item.id, 'book', ch.book);
+                                                               }
+                                                               handleUpdateTaskField(item.id, 'topic', '');
+                                                               handleUpdateTaskField(item.id, 'exercise', '');
+                                                             }}
+                                                             className="appearance-none peer text-sm font-black text-gray-900 w-full max-w-full bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors rounded px-1 -ml-1 pr-6 py-0.5 truncate"
+                                                           >
+                                                             <option value="" disabled>-</option>
+                                                             {Object.keys(chaptersByBook).length <= 1 ? (
+                                                               availableChapters.map(c => (
+                                                                 <option key={c.id} value={c.chapterTitle || c.chapterName}>{c.chapterTitle || c.chapterName}</option>
+                                                               ))
+                                                             ) : (
+                                                               Object.entries(chaptersByBook).map(([bName, chList]) => (
+                                                                 <optgroup key={bName} label={`Book: ${bName}`}>
+                                                                   {chList.map(c => (
+                                                                     <option key={c.id} value={c.chapterTitle || c.chapterName}>{c.chapterTitle || c.chapterName}</option>
+                                                                   ))}
+                                                                 </optgroup>
+                                                               ))
+                                                             )}
+                                                           </select>
                                                           <div className="absolute right-1 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
                                                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
                                                           </div>

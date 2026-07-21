@@ -298,6 +298,58 @@ export default function ViewTasksPage() {
         );
       }
       
+      if (field === 'chapter') {
+        const availChs = chaptersList.filter(c => c.subject === task.subject && (!task.book || c.book === task.book));
+        const chsByBook = availChs.reduce<Record<string, typeof availChs>>((acc, c) => {
+          const bName = c.book || 'Other';
+          if (!acc[bName]) acc[bName] = [];
+          acc[bName].push(c);
+          return acc;
+        }, {});
+
+        return (
+          <select 
+            value={task[field] || ''} 
+            onChange={e => {
+              const val = e.target.value;
+              const ch = availChs.find(c => (c.chapterTitle || c.chapterName) === val);
+              handleSaveEditDirect(task.id, 'chapter', val);
+              if (ch && ch.book && task.book !== ch.book) {
+                handleSaveEditDirect(task.id, 'book', ch.book);
+              }
+            }}
+            style={{ 
+              background: 'transparent', 
+              color: 'inherit', 
+              border: 'none', 
+              cursor: 'pointer',
+              appearance: 'none',
+              WebkitAppearance: 'none',
+              MozAppearance: 'none',
+              display: 'inline-block',
+              width: '100%',
+              maxWidth: '150px',
+              textOverflow: 'ellipsis'
+            }}
+          >
+            <option value="" disabled>-</option>
+            {Object.keys(chsByBook).length <= 1 ? (
+              availChs.map(c => (
+                <option key={c.id} value={c.chapterTitle || c.chapterName}>{c.chapterTitle || c.chapterName}</option>
+              ))
+            ) : (
+              Object.entries(chsByBook).map(([bName, cList]) => (
+                <optgroup key={bName} label={`Book: ${bName}`}>
+                  {cList.map(c => (
+                    <option key={c.id} value={c.chapterTitle || c.chapterName}>{c.chapterTitle || c.chapterName}</option>
+                  ))}
+                </optgroup>
+              ))
+            )}
+          </select>
+        );
+      }
+
       // For Subject, Book, Chapter, taskType etc
       return (
         <select 

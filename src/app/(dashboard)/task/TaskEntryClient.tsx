@@ -278,6 +278,12 @@ export default function TaskEntryClient({
     (b.className || '').includes(derivedClassName)
   );
   const availableChapters = chaptersList.filter(c => c.subject === subject && (!book || c.book === book));
+  const chaptersByBook = availableChapters.reduce<Record<string, typeof availableChapters>>((acc, c) => {
+    const bName = c.book || 'Other';
+    if (!acc[bName]) acc[bName] = [];
+    acc[bName].push(c);
+    return acc;
+  }, {});
   const availableTopics = topicsList.filter(t => t.subject === subject && (!book || t.book === book) && (t.chapterTitle === chapter || t.chapterName === chapter));
   
   const uniqueTopicNames = Array.from(new Set(availableTopics.map(t => t.topicName).filter(Boolean)));
@@ -512,18 +518,31 @@ export default function TaskEntryClient({
               className="form-control" 
               value={chapter} 
               onChange={e => {
-                setChapter(e.target.value);
+                const selectedChTitle = e.target.value;
+                setChapter(selectedChTitle);
+                const matchedCh = availableChapters.find(c => (c.chapterTitle || c.chapterName) === selectedChTitle);
+                if (matchedCh && matchedCh.book && (!book || book !== matchedCh.book)) {
+                  setBook(matchedCh.book);
+                }
                 setTopic('');
                 setExercise('');
               }} 
-              disabled={!book}
             >
               <option value="" disabled>Select Chapter</option>
-              {availableChapters.map(c => (
-                <option key={c.id} value={c.chapterTitle || c.chapterName}>{c.chapterTitle || c.chapterName}</option>
-              ))}
+              {Object.keys(chaptersByBook).length <= 1 ? (
+                availableChapters.map(c => (
+                  <option key={c.id} value={c.chapterTitle || c.chapterName}>{c.chapterTitle || c.chapterName}</option>
+                ))
+              ) : (
+                Object.entries(chaptersByBook).map(([bName, chList]) => (
+                  <optgroup key={bName} label={`Book: ${bName}`}>
+                    {chList.map(c => (
+                      <option key={c.id} value={c.chapterTitle || c.chapterName}>{c.chapterTitle || c.chapterName}</option>
+                    ))}
+                  </optgroup>
+                ))
+              )}
             </select>
-            {!book && <p className="text-[10px] text-gray-400 mt-1 italic">Please select a book first.</p>}
           </div>
 
           <div className="form-group">
