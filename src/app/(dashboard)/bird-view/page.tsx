@@ -2240,8 +2240,8 @@ export default function BirdViewPage() {
                                               {/* Main Content */}
                                               {isClicked ? (
                                                 (() => {
-                                                  const availableChapters = chaptersList.filter(c => c.subject === item.subject && c.book === item.book);
-                                                  const availableTopics = topicsList.filter(t => t.subject === item.subject && t.book === item.book && t.chapterName === item.chapter);
+                                                  const availableChapters = chaptersList.filter(c => c.subject === item.subject && (!item.book || c.book === item.book));
+                                                  const availableTopics = topicsList.filter(t => t.subject === item.subject && (!item.book || t.book === item.book) && (t.chapterTitle === item.chapter || t.chapterName === item.chapter));
                                                   const uniqueTopicNames = Array.from(new Set(availableTopics.map(t => t.topicName)));
                                                   const uniqueExercises = Array.from(new Set(availableTopics.filter(t => t.topicName === item.topic && t.exercise).map(t => t.exercise)));
                                                   const uniqueReporters = Array.from(new Set([
@@ -2258,7 +2258,11 @@ export default function BirdViewPage() {
                                                             value={item.chapter || ''}
                                                             onChange={(e) => {
                                                               const val = e.target.value;
+                                                              const ch = availableChapters.find(c => (c.chapterTitle || c.chapterName) === val);
                                                               handleUpdateTaskField(item.id, 'chapter', val);
+                                                              if (ch && ch.book && !item.book) {
+                                                                handleUpdateTaskField(item.id, 'book', ch.book);
+                                                              }
                                                               handleUpdateTaskField(item.id, 'topic', '');
                                                               handleUpdateTaskField(item.id, 'exercise', '');
                                                             }}

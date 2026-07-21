@@ -257,14 +257,14 @@ export default function ViewTasksPage() {
       options = booksList.filter(b => b.subject === task.subject).map(b => b.title);
     } else if (field === 'chapter') {
       isSelect = true;
-      options = chaptersList.filter(c => c.subject === task.subject && c.book === task.book).map(c => c.chapterTitle || c.chapterName);
+      options = chaptersList.filter(c => c.subject === task.subject && (!task.book || c.book === task.book)).map(c => c.chapterTitle || c.chapterName);
     } else if (field === 'topic') {
       isSelect = true;
-      const availableTopics = topicsList.filter(t => t.subject === task.subject && t.book === task.book && (t.chapterTitle === task.chapter || t.chapterName === task.chapter));
+      const availableTopics = topicsList.filter(t => t.subject === task.subject && (!task.book || t.book === task.book) && (t.chapterTitle === task.chapter || t.chapterName === task.chapter));
       options = Array.from(new Set(availableTopics.map(t => t.topicName).filter(Boolean)));
     } else if (field === 'exercise') {
       isSelect = true;
-      const availableTopics = topicsList.filter(t => t.subject === task.subject && t.book === task.book && (t.chapterTitle === task.chapter || t.chapterName === task.chapter));
+      const availableTopics = topicsList.filter(t => t.subject === task.subject && (!task.book || t.book === task.book) && (t.chapterTitle === task.chapter || t.chapterName === task.chapter));
       options = Array.from(new Set(availableTopics.map(t => t.exercise).filter(Boolean)));
     } else if (field === 'dueDate') {
       isDate = true;

@@ -277,8 +277,8 @@ export default function TaskEntryClient({
     b.subject === subject && 
     (b.className || '').includes(derivedClassName)
   );
-  const availableChapters = chaptersList.filter(c => c.subject === subject && c.book === book);
-  const availableTopics = topicsList.filter(t => t.subject === subject && t.book === book && (t.chapterTitle === chapter || t.chapterName === chapter));
+  const availableChapters = chaptersList.filter(c => c.subject === subject && (!book || c.book === book));
+  const availableTopics = topicsList.filter(t => t.subject === subject && (!book || t.book === book) && (t.chapterTitle === chapter || t.chapterName === chapter));
   
   const uniqueTopicNames = Array.from(new Set(availableTopics.map(t => t.topicName).filter(Boolean)));
   const uniqueExercises = Array.from(new Set(availableTopics.map(t => t.exercise).filter(Boolean)));
