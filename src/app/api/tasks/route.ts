@@ -127,6 +127,7 @@ export async function GET(request: Request) {
       where: whereClause,
       include: {
         comments: {
+          where: { parentId: null },
           include: {
             replies: {
               orderBy: { createdAt: 'asc' }

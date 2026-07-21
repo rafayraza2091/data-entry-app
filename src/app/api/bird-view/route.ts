@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
-
-const prisma = new PrismaClient();
 
 export async function GET(request: Request) {
   try {
@@ -91,6 +89,7 @@ export async function GET(request: Request) {
             totalMarks: true,
             images: true,
             comments: {
+              where: { parentId: null },
               include: {
                 replies: {
                   orderBy: { createdAt: 'asc' }
@@ -120,16 +119,14 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({ subjects, students, cellData, attendanceData });
-    } catch (error: any) {
-      console.error('Error fetching bird view data:', error);
-      try {
-        require('fs').writeFileSync('/tmp/bird-view-error.log', error.message || String(error));
-      } catch(e) {}
-      return NextResponse.json(
-        { error: 'Failed to fetch bird view data' },
-        { status: 500 }
-      );
-  } finally {
-    await prisma.$disconnect();
+  } catch (error: any) {
+    console.error('Error fetching bird view data:', error);
+    try {
+      require('fs').writeFileSync('/tmp/bird-view-error.log', error.message || String(error));
+    } catch(e) {}
+    return NextResponse.json(
+      { error: 'Failed to fetch bird view data', details: error.message },
+      { status: 500 }
+    );
   }
 }
