@@ -2152,15 +2152,12 @@ export default function BirdViewPage() {
                                             if (isClicked && el.dataset.opened !== 'true') {
                                               el.dataset.opened = 'true';
                                               setTimeout(() => {
-                                                const textareas = el.querySelectorAll('textarea');
-                                                if (textareas.length > 0) {
-                                                  const lastTa = textareas[textareas.length - 1] as HTMLTextAreaElement;
-                                                  lastTa.focus();
-                                                  lastTa.setSelectionRange(lastTa.value.length, lastTa.value.length);
-                                                } else {
-                                                  // Fallback: focus the first focusable element
-                                                  const firstFocusable = el.querySelector('button:not([tabindex="-1"]), [href]:not([tabindex="-1"]), input:not([tabindex="-1"]), select:not([tabindex="-1"]), textarea:not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])') as HTMLElement;
-                                                  if (firstFocusable) firstFocusable.focus();
+                                                const firstFocusable = el.querySelector('select:not([tabindex="-1"]), input:not([tabindex="-1"]), textarea:not([tabindex="-1"]), button:not([tabindex="-1"])') as HTMLElement;
+                                                if (firstFocusable) {
+                                                  firstFocusable.focus();
+                                                  if (firstFocusable instanceof HTMLTextAreaElement || firstFocusable instanceof HTMLInputElement) {
+                                                    firstFocusable.setSelectionRange(firstFocusable.value.length, firstFocusable.value.length);
+                                                  }
                                                 }
                                               }, 50);
                                             } else if (!isClicked && el.dataset.opened === 'true') {
@@ -2170,7 +2167,9 @@ export default function BirdViewPage() {
                                         }}
                                         onKeyDown={(e) => {
                                           if (e.key === 'Tab' && isClicked) {
-                                            const focusableElements = Array.from(e.currentTarget.querySelectorAll('button:not([tabindex="-1"]), [href]:not([tabindex="-1"]), input:not([tabindex="-1"]), select:not([tabindex="-1"]), textarea:not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])')) as HTMLElement[];
+                                            const focusableElements = Array.from(e.currentTarget.querySelectorAll('button:not([tabindex="-1"]):not([disabled]), [href]:not([tabindex="-1"]):not([disabled]), input:not([tabindex="-1"]):not([disabled]), select:not([tabindex="-1"]):not([disabled]), textarea:not([tabindex="-1"]):not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])'))
+                                              .filter(elem => (elem as HTMLElement).offsetParent !== null) as HTMLElement[];
+
                                             if (focusableElements.length > 0) {
                                               e.preventDefault();
                                               const currentIndex = focusableElements.indexOf(document.activeElement as HTMLElement);
@@ -2758,10 +2757,6 @@ export default function BirdViewPage() {
                                                     {item.description && <span className="text-[8px] text-black font-semibold mt-0.5 w-full leading-tight text-left line-clamp-2">Ds: {item.description}</span>}
                                                   </div>
                                                 </>
-                                              )}
-                                              {/* Footer area line separator */}
-                                              {isClicked && (
-                                                <div className="absolute bottom-0 left-0 right-0 h-8 border-t border-gray-200 pointer-events-none z-[60]"></div>
                                               )}
 
                                               {/* Bottom Left Icons (only when NOT clicked) */}

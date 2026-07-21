@@ -344,9 +344,8 @@ export default function TaskComments({
         <div className="flex items-center justify-end">
           <button
             type="button"
-            disabled={isSubmitting || !newCommentText.trim()}
             onClick={() => handleAddComment(null)}
-            className="px-4 py-1.5 bg-[#254245] hover:bg-[#1a2e31] text-white text-xs font-bold rounded-md shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50 focus:ring-2 focus:ring-[#edab30] focus:outline-none"
+            className={`px-4 py-1.5 bg-[#254245] hover:bg-[#1a2e31] text-white text-xs font-bold rounded-md shadow-sm transition-colors flex items-center gap-1.5 focus:ring-2 focus:ring-[#edab30] focus:outline-none ${isSubmitting || !newCommentText.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <i className="fa-solid fa-paper-plane text-[10px]"></i>
             <span>{isSubmitting ? 'Posting...' : 'Comment'}</span>
