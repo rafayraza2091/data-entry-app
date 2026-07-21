@@ -1138,18 +1138,15 @@ export default function BirdViewPage() {
       const timeoutId = setTimeout(() => {
         const cellEl = document.getElementById(`cell-${clickedCellId}`);
         if (cellEl) {
-          let targetElement = cellEl.querySelector('textarea');
-          if (!targetElement) {
-            targetElement = cellEl.querySelector('select, input, textarea');
+          cellEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+          const cardContainer = cellEl.querySelector('.overflow-y-auto') as HTMLElement;
+          if (cardContainer) cardContainer.scrollTop = 0;
+
+          const firstInput = cellEl.querySelector('select:not([tabindex="-1"]), input:not([tabindex="-1"]), textarea:not([tabindex="-1"])') as HTMLElement;
+          if (firstInput) {
+            firstInput.focus({ preventScroll: true });
           }
-          if (targetElement) {
-            (targetElement as HTMLElement).focus();
-          } else {
-            const focusableElements = cellEl.querySelectorAll('button, [href], [tabindex]:not([tabindex="-1"])');
-            if (focusableElements.length > 0) {
-              (focusableElements[0] as HTMLElement).focus();
-            }
-          }
+          if (cardContainer) cardContainer.scrollTop = 0;
         }
       }, 50);
       return () => clearTimeout(timeoutId);
@@ -2152,13 +2149,15 @@ export default function BirdViewPage() {
                                             if (isClicked && el.dataset.opened !== 'true') {
                                               el.dataset.opened = 'true';
                                               setTimeout(() => {
+                                                el.scrollTop = 0;
                                                 const firstFocusable = el.querySelector('select:not([tabindex="-1"]), input:not([tabindex="-1"]), textarea:not([tabindex="-1"]), button:not([tabindex="-1"])') as HTMLElement;
                                                 if (firstFocusable) {
-                                                  firstFocusable.focus();
+                                                  firstFocusable.focus({ preventScroll: true });
                                                   if (firstFocusable instanceof HTMLTextAreaElement || firstFocusable instanceof HTMLInputElement) {
                                                     firstFocusable.setSelectionRange(firstFocusable.value.length, firstFocusable.value.length);
                                                   }
                                                 }
+                                                el.scrollTop = 0;
                                               }, 50);
                                             } else if (!isClicked && el.dataset.opened === 'true') {
                                               el.dataset.opened = 'false';
