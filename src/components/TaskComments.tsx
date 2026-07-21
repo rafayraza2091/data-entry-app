@@ -175,10 +175,10 @@ export default function TaskComments({
   const totalCount = comments.reduce((sum, c) => sum + 1 + (c.replies ? c.replies.length : 0), 0);
 
   return (
-    <div className="w-full mt-3 pt-3 border-t border-gray-200/80 text-left">
-      <div className="flex items-center justify-between mb-3">
+    <div className="w-full text-left pt-1">
+      <div className="flex items-center justify-between mb-2">
         <h4 className="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
-          <i className="fa-solid fa-[#254245] fa-comments text-amber-500"></i>
+          <i className="fa-solid fa-comments text-amber-500"></i>
           <span>Activity & Comments</span>
           <span className="bg-amber-100 text-amber-800 text-[10px] font-black px-1.5 py-0.5 rounded-full ml-1">
             {totalCount}
@@ -187,16 +187,14 @@ export default function TaskComments({
       </div>
 
       {loading && comments.length === 0 ? (
-        <div className="py-4 text-center text-xs text-gray-400">Loading discussion...</div>
+        <div className="py-2 text-center text-xs text-gray-400">Loading discussion...</div>
       ) : (
-        <div className="space-y-3 mb-4">
-          {comments.length === 0 ? (
-            <p className="text-xs text-gray-400 italic py-2">No comments yet. Start the conversation below!</p>
-          ) : (
-            comments.map((comment) => (
+        comments.length > 0 && (
+          <div className="space-y-2.5 mb-3">
+            {comments.map((comment) => (
               <div key={comment.id} className="group/comment flex flex-col space-y-2">
                 {/* Main Comment */}
-                <div className="flex items-start gap-2.5 bg-gray-50/80 p-2.5 rounded-md border border-gray-100 transition-colors hover:bg-gray-100/50">
+                <div className="flex items-start gap-2.5 bg-gray-50/80 p-2 rounded-md border border-gray-100 transition-colors hover:bg-gray-100/50">
                   <div
                     className="w-6 h-6 rounded-full text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5 shadow-sm"
                     style={{ backgroundColor: getAvatarColor(comment.author) }}
@@ -323,13 +321,13 @@ export default function TaskComments({
                   </div>
                 )}
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )
       )}
 
       {/* Main Comment Input Form */}
-      <div className="mt-3 flex flex-col gap-2">
+      <div className="mt-2 flex flex-col gap-2">
         <textarea
           value={newCommentText}
           onChange={(e) => setNewCommentText(e.target.value)}
@@ -343,13 +341,12 @@ export default function TaskComments({
           }}
           className="w-full text-xs p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#edab30] focus:border-transparent focus:outline-none resize-none bg-white custom-scrollbar"
         />
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] text-gray-400 italic">Press Ctrl+Enter or Cmd+Enter to post</span>
+        <div className="flex items-center justify-end">
           <button
             type="button"
             disabled={isSubmitting || !newCommentText.trim()}
             onClick={() => handleAddComment(null)}
-            className="px-3.5 py-1.5 bg-[#254245] hover:bg-[#1a2e31] text-white text-xs font-bold rounded-md shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50"
+            className="px-4 py-1.5 bg-[#254245] hover:bg-[#1a2e31] text-white text-xs font-bold rounded-md shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50 focus:ring-2 focus:ring-[#edab30] focus:outline-none"
           >
             <i className="fa-solid fa-paper-plane text-[10px]"></i>
             <span>{isSubmitting ? 'Posting...' : 'Comment'}</span>
