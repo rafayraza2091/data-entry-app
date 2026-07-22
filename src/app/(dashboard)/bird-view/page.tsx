@@ -1569,6 +1569,7 @@ export default function BirdViewPage() {
                             <img src={img} className="w-8 h-8 object-cover rounded border border-gray-200" alt="attachment" />
                             <button
                               type="button"
+                              tabIndex={-1}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (window.confirm("Are you sure you want to delete this image?")) {
@@ -1590,6 +1591,13 @@ export default function BirdViewPage() {
                             onClick={(e) => {
                               e.stopPropagation();
                               setImageChoiceModalTask(item);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setImageChoiceModalTask(item);
+                              }
                             }}
                             title="Add Image"
                           >
