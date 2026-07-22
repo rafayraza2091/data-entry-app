@@ -2124,7 +2124,7 @@ export default function BirdViewPage() {
                                   ${isClicked ? 'overflow-visible cell-clicked' : 'overflow-hidden'}
                                 ${disableCol ? (isAbsent ? 'absent-cell' : 'leave-cell') : (!isAssigned && !isDragged && !isStudentDragged) ? 'unassigned-cell' : 'bg-white grid-cell-assigned'}
                                 ${isAssigned && !disableCol ? 'hover:bg-gray-50' : ''}
-                                  ${isClicked ? `z-[100] absolute top-0 ${visibleStudentIds && studentIndex >= visibleStudentIds.length - 2 ? 'right-0 left-auto' : 'left-0'} w-0 h-0 bg-transparent p-0 overflow-visible` : 'z-0 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full rounded-none p-0'}
+                                  ${isClicked ? `z-[999] absolute top-0 ${visibleStudentIds && studentIndex >= visibleStudentIds.length - 2 ? 'right-0 left-auto' : 'left-0'} w-0 h-0 bg-transparent p-0 overflow-visible` : 'z-0 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full rounded-none p-0'}
                                 ${isDragged || isStudentDragged ? 'dragged-column dragged-row' : ''}
                                 ${showLeftIndicator ? 'drop-target-left' : ''}
                                 ${showRightIndicator ? 'drop-target-right' : ''}
@@ -2149,7 +2149,7 @@ export default function BirdViewPage() {
 
                                     return (
                                       <div
-                                         className={`w-full flex flex-col ${isClicked ? `absolute top-0 ${visibleStudentIds && studentIndex >= visibleStudentIds.length - 2 ? 'right-0 left-auto' : 'left-0'} w-[480px] sm:w-[560px] md:w-[620px] max-w-[95vw] max-h-[70vh] overflow-y-auto overflow-x-visible z-[100] bg-white rounded-lg p-3.5 shadow-[0_12px_48px_rgba(0,0,0,0.35)] border border-gray-200 custom-scrollbar gap-2` : 'relative h-full items-center justify-center'}`}
+                                         className={`w-full flex flex-col ${isClicked ? `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] max-w-[420px] max-h-[82vh] sm:absolute sm:top-0 sm:translate-x-0 sm:translate-y-0 ${visibleStudentIds && studentIndex >= visibleStudentIds.length - 2 ? 'sm:right-0 sm:left-auto' : 'sm:left-0'} sm:w-[500px] md:w-[600px] sm:max-w-[92vw] sm:max-h-[75vh] overflow-y-auto overflow-x-visible z-[999] bg-white rounded-xl sm:rounded-lg p-3 sm:p-3.5 shadow-[0_12px_48px_rgba(0,0,0,0.35)] border border-gray-200 custom-scrollbar gap-2` : 'relative h-full items-center justify-center'}`}
                                          onClick={(e) => { if (isClicked) e.stopPropagation(); }}
                                         ref={(el) => {
                                           if (el) {
@@ -2522,7 +2522,7 @@ export default function BirdViewPage() {
                                                       </div>
                                                       {/* Action Bar (Delete button on left & Badges container on right ABOVE Comments) */}
                                                       {isClicked && (
-                                                        <div className="flex items-center justify-between w-full pt-2 pb-2 border-t border-b border-gray-200 mt-2 mb-1 relative z-[70]">
+                                                        <div className="flex items-center justify-between w-full pt-2 pb-2 border-t border-b border-gray-200 mt-2 mb-1 relative z-[70] flex-wrap gap-2">
                                                           {/* Delete Button */}
                                                           <button
                                                             onClick={(e) => { e.stopPropagation(); handleDeleteInitiate(item.id); }}
