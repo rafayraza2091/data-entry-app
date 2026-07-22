@@ -2424,8 +2424,10 @@ export default function BirdViewPage() {
                                                             </div>
                                                           ))}
                                                           {(!item.images || item.images.length < 5) && (
-                                                            <div 
-                                                              className="w-8 h-8 border border-dashed border-gray-300 rounded flex items-center justify-center hover:bg-gray-50 cursor-pointer transition-colors" 
+                                                            <button 
+                                                              type="button"
+                                                              tabIndex={0}
+                                                              className="w-8 h-8 border border-dashed border-gray-300 rounded flex items-center justify-center hover:bg-gray-50 cursor-pointer transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#254245]" 
                                                               onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 if (isMobile) {
@@ -2435,10 +2437,22 @@ export default function BirdViewPage() {
                                                                   fileInputRefBirdView.current?.click();
                                                                 }
                                                               }}
+                                                              onKeyDown={(e) => {
+                                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                                  e.stopPropagation();
+                                                                  e.preventDefault();
+                                                                  if (isMobile) {
+                                                                    setImageChoiceModalTask(item);
+                                                                  } else {
+                                                                    setTargetTaskForCrop(item);
+                                                                    fileInputRefBirdView.current?.click();
+                                                                  }
+                                                                }
+                                                              }}
                                                               title="Add Image"
                                                             >
                                                               <span className="text-gray-400 text-lg font-light leading-none mb-1">+</span>
-                                                            </div>
+                                                            </button>
                                                           )}
                                                         </div>
                                                       </div>
