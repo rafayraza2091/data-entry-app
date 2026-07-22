@@ -1416,17 +1416,6 @@ export default function BirdViewPage() {
                     {subjectNameStr} {studentFullNameStr ? `• ${studentFullNameStr}` : ''}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setClickedCellId(null)}
-                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors outline-none focus:ring-2 focus:ring-[#254245]"
-                  title="Close modal"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                </button>
               </div>
 
               {/* Modal Items */}
@@ -1665,7 +1654,14 @@ export default function BirdViewPage() {
                         type="button"
                         tabIndex={0}
                         onClick={(e) => { e.stopPropagation(); handleDeleteInitiate(item.id); }}
-                        className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all outline-none focus-visible:ring-1 focus-visible:ring-red-500 p-1 flex items-center gap-1.5 text-xs font-semibold"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleDeleteInitiate(item.id);
+                          }
+                        }}
+                        className="text-gray-500 hover:text-red-600 hover:bg-red-50 focus:text-red-600 focus:bg-red-50 focus:ring-2 focus:ring-red-500 focus:outline-none rounded px-2 py-1 transition-all flex items-center gap-1.5 text-xs font-semibold"
                         title="Delete Task"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1674,26 +1670,155 @@ export default function BirdViewPage() {
                         <span>Delete</span>
                       </button>
 
-                      {/* Badges */}
+                      {/* Badges Container */}
                       <div className="flex items-center gap-1.5">
                         {/* Type Badge */}
-                        <div
-                          tabIndex={0}
-                          className="w-8 h-6 flex items-center justify-center text-white font-bold text-[10px] cursor-pointer hover:opacity-90 rounded outline-none focus-visible:ring-1 focus-visible:ring-[#254245]"
-                          style={{ backgroundColor: typeBadge.color }}
-                          title={item.taskType}
-                        >
-                          {typeBadge.initials}
+                        <div className="relative">
+                          <div
+                            id={`badge-type-${item.id}`}
+                            tabIndex={0}
+                            className="w-8 h-6 flex items-center justify-center text-white font-bold text-[10px] cursor-pointer hover:opacity-90 rounded outline-none focus:ring-2 focus:ring-blue-500"
+                            style={{ backgroundColor: typeBadge.color }}
+                            title={item.taskType}
+                            onFocus={() => setActiveDropdown(`${item.id}-type`)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveDropdown(activeDropdown === `${item.id}-type` ? null : `${item.id}-type`);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setActiveDropdown(activeDropdown === `${item.id}-type` ? null : `${item.id}-type`);
+                              }
+                            }}
+                          >
+                            {typeBadge.initials}
+                          </div>
+
+                          {activeDropdown === `${item.id}-type` && (
+                            <div className="absolute top-[100%] right-0 mt-1 flex flex-col gap-1 z-[80]" onClick={(e) => e.stopPropagation()}>
+                              {['Tuition Work', 'Class Work', 'Home Work', 'Test', 'Project']
+                                .filter(t => t !== item.taskType)
+                                .map(t => {
+                                  const b = getTaskTypeBadge(t);
+                                  return (
+                                    <button
+                                      key={t}
+                                      type="button"
+                                      tabIndex={-1}
+                                      className="w-8 h-6 flex items-center justify-center text-white text-[10px] font-bold shadow-md hover:scale-110 focus:scale-110 transition-transform outline-none focus:ring-2 focus:ring-blue-500 z-10 rounded"
+                                      style={{ backgroundColor: b.color }}
+                                      onClick={() => {
+                                        handleUpdateTaskField(item.id, 'taskType', t);
+                                        setActiveDropdown(null);
+                                        document.getElementById(`badge-type-${item.id}`)?.focus();
+                                      }}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          handleUpdateTaskField(item.id, 'taskType', t);
+                                          setActiveDropdown(null);
+                                          document.getElementById(`badge-type-${item.id}`)?.focus();
+                                        }
+                                      }}
+                                      title={t}
+                                    >
+                                      {b.initials}
+                                    </button>
+                                  );
+                                })}
+                            </div>
+                          )}
                         </div>
 
                         {/* Status Badge */}
-                        <div
-                          tabIndex={0}
-                          className="w-8 h-6 flex items-center justify-center text-white font-bold text-[10px] cursor-pointer hover:opacity-90 rounded outline-none focus-visible:ring-1 focus-visible:ring-[#254245]"
-                          style={{ backgroundColor: statusColor }}
-                          title={item.status}
-                        >
-                          {getStatusInitials(item.status)}
+                        <div className="relative">
+                          <div
+                            id={`badge-status-${item.id}`}
+                            tabIndex={0}
+                            className="w-8 h-6 flex items-center justify-center text-white font-bold text-[10px] cursor-pointer hover:opacity-90 rounded outline-none focus:ring-2 focus:ring-blue-500"
+                            style={{ backgroundColor: statusColor }}
+                            title={item.status}
+                            onFocus={() => setActiveDropdown(`${item.id}-status`)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveDropdown(activeDropdown === `${item.id}-status` ? null : `${item.id}-status`);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setActiveDropdown(activeDropdown === `${item.id}-status` ? null : `${item.id}-status`);
+                              }
+                            }}
+                          >
+                            {getStatusInitials(item.status)}
+                          </div>
+
+                          {activeDropdown === `${item.id}-status` && (
+                            <div className="absolute top-[100%] right-0 mt-1 flex flex-col gap-1 z-[80]" onClick={(e) => e.stopPropagation()}>
+                              {['OPEN', 'IN_PROGRESS', 'DONE', 'PENDING']
+                                .filter(s => s !== item.status)
+                                .map(s => (
+                                  <button
+                                    key={s}
+                                    type="button"
+                                    tabIndex={-1}
+                                    className="w-8 h-6 flex items-center justify-center text-white text-[10px] font-bold shadow-md hover:scale-110 focus:scale-110 transition-transform outline-none focus:ring-2 focus:ring-blue-500 z-10 rounded"
+                                    style={{ backgroundColor: getStatusColor(s) }}
+                                    onClick={() => {
+                                      if (s === 'PENDING') {
+                                        if (item.rescheduledToId) {
+                                          setRescheduleToast('This task has already been rescheduled!');
+                                          setTimeout(() => setRescheduleToast(null), 3000);
+                                          setActiveDropdown(null);
+                                        } else {
+                                          setRescheduleTaskId(item.id);
+                                          const dt = item.dueDate ? new Date(item.dueDate) : (selectedDate || new Date());
+                                          setRescheduleDate(dt);
+                                          setRescheduleCalendarMonth(new Date(dt.getFullYear(), dt.getMonth(), 1));
+                                          setIsRescheduleDatePickerOpen(true);
+                                          setActiveDropdown(null);
+                                        }
+                                      } else {
+                                        handleUpdateTaskField(item.id, 'status', s);
+                                        setActiveDropdown(null);
+                                        document.getElementById(`badge-status-${item.id}`)?.focus();
+                                      }
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        if (s === 'PENDING') {
+                                          if (item.rescheduledToId) {
+                                            setRescheduleToast('This task has already been rescheduled!');
+                                            setTimeout(() => setRescheduleToast(null), 3000);
+                                            setActiveDropdown(null);
+                                          } else {
+                                            setRescheduleTaskId(item.id);
+                                            const dt = item.dueDate ? new Date(item.dueDate) : (selectedDate || new Date());
+                                            setRescheduleDate(dt);
+                                            setRescheduleCalendarMonth(new Date(dt.getFullYear(), dt.getMonth(), 1));
+                                            setIsRescheduleDatePickerOpen(true);
+                                            setActiveDropdown(null);
+                                          }
+                                        } else {
+                                          handleUpdateTaskField(item.id, 'status', s);
+                                          setActiveDropdown(null);
+                                          document.getElementById(`badge-status-${item.id}`)?.focus();
+                                        }
+                                      }
+                                    }}
+                                    title={s}
+                                  >
+                                    {getStatusInitials(s)}
+                                  </button>
+                                ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
