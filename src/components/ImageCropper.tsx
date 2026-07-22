@@ -106,7 +106,7 @@ export default function ImageCropper({ imageFile, onCropComplete, onCancel }: Im
   };
 
   return (
-    <div className="fixed inset-0 z-[10005] flex items-center justify-center bg-black/80 p-4">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/80 p-4" style={{ zIndex: 10005 }}>
       <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[90vh] flex flex-col">
         <h3 className="text-xl font-bold mb-4 text-headingGray">Crop Image</h3>
         

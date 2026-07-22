@@ -69,11 +69,12 @@ export default function ImagePreview({ images, initialIndex = 0, onClose, onDele
 
   return (
     <div 
-      className="fixed inset-0 z-[10005] flex items-center justify-center bg-black/90 p-4"
+      className="fixed inset-0 flex items-center justify-center bg-black/90 p-4"
+      style={{ zIndex: 10005 }}
       onClick={onClose}
     >
       {/* Action Buttons */}
-      <div className="absolute top-4 right-4 flex items-center gap-3 z-[10006]">
+      <div className="absolute top-4 right-4 flex items-center gap-3" style={{ zIndex: 10006 }}>
         {onDelete && (
           <button 
             type="button"

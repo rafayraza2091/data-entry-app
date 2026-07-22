@@ -1343,7 +1343,8 @@ export default function BirdViewPage() {
 
         return (
           <div
-            className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-[2px] flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+            className="fixed inset-0 bg-black/50 backdrop-blur-[2px] flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+            style={{ zIndex: 9000 }}
             onMouseDown={(e) => {
               e.stopPropagation();
               if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
@@ -3571,7 +3572,7 @@ export default function BirdViewPage() {
 
       {/* Source Selection Modal */}
       {imageChoiceModalTask && (
-        <div className="fixed inset-0 z-[10000] bg-black/60 flex items-center justify-center p-4 animate-fade-in" onClick={() => setImageChoiceModalTask(null)}>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 animate-fade-in" style={{ zIndex: 10000 }} onClick={() => setImageChoiceModalTask(null)}>
           <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full animate-scale-up" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-3 border-b pb-3">
               <h3 className="font-bold text-gray-800 text-base">Add Attachment</h3>
