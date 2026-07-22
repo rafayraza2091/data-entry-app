@@ -1307,8 +1307,9 @@ export default function BirdViewPage() {
         let targetStudent: Student | null = null;
         let items: any[] = [];
 
+        const cleanCellId = clickedCellId.replace(/^cell-/, '');
         if (isGrid) {
-          const parts = clickedCellId.split('-');
+          const parts = cleanCellId.split('-');
           if (parts.length >= 2) {
             const subjectId = Number(parts[0]);
             const studentId = Number(parts[1]);
@@ -1323,7 +1324,7 @@ export default function BirdViewPage() {
             }
           }
         } else {
-          const parts = clickedCellId.split('-');
+          const parts = cleanCellId.split('-');
           if (parts.length >= 3) {
             const studentId = Number(parts[1]);
             const itemIndex = Number(parts[2]);
@@ -1333,6 +1334,16 @@ export default function BirdViewPage() {
               const task = studentData?.tasks[itemIndex];
               if (task) items = [task];
             }
+          }
+        }
+
+        // Fallback search if items array is empty
+        if (items.length === 0) {
+          const directTask = filteredCellData.find(d => String(d.id) === clickedCellId || String(d.id) === cleanCellId);
+          if (directTask) {
+            items = [directTask];
+            targetStudent = students.find(s => `${s.firstName} ${s.secondName}`.trim() === (directTask.assignee || directTask.studentName)) || null;
+            targetSubject = subjects.find(s => s.name === directTask.subject) || null;
           }
         }
 
@@ -2575,524 +2586,16 @@ export default function BirdViewPage() {
                                                   setSelectedTaskIds(prev => prev.includes(item.id) ? prev.filter(id => id !== item.id) : [...prev, item.id]);
                                                 }
                                               }}
-                                              className={`w-full flex flex-col justify-start items-start shadow-sm transition-all duration-300 ease-in-out ${isClicked ? 'relative min-h-[100px] h-fit overflow-visible rounded p-3 pb-8 mb-2' : 'h-full relative overflow-hidden rounded-[4px] p-1.5 pb-5'} ${selectedTaskIds.includes(item.id) ? 'ring-4 ring-[#edab30] border-transparent' : ''}`}
+                                              className={`w-full flex flex-col justify-start items-start shadow-sm transition-all duration-300 ease-in-out h-full relative overflow-hidden rounded-[4px] p-1.5 pb-5 ${selectedTaskIds.includes(item.id) ? 'ring-4 ring-[#edab30] border-transparent' : ''}`}
                                               style={
-                                                isClicked
-                                                  ? { backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderLeft: `6px solid ${statusColor}` }
-                                                  : (selectedTaskIds.includes(item.id) ? { backgroundColor: `${statusColor}15` } : { backgroundColor: `${statusColor}15`, border: `1px solid ${statusColor}40` })
+                                                selectedTaskIds.includes(item.id)
+                                                  ? { backgroundColor: `${statusColor}15` }
+                                                  : { backgroundColor: `${statusColor}15`, border: `1px solid ${statusColor}40` }
                                               }
                                             >
                                               {/* Main Content */}
-                                              {isClicked ? (
-                                                (() => {
-                                                   const availableChapters = chaptersList.filter(c => c.subject === item.subject && (!item.book || c.book === item.book));
-                                                   const chaptersByBook = availableChapters.reduce<Record<string, typeof availableChapters>>((acc, c) => {
-                                                     const bName = c.book || 'Other';
-                                                     if (!acc[bName]) acc[bName] = [];
-                                                     acc[bName].push(c);
-                                                     return acc;
-                                                   }, {});
-
-                                                   const availableTopics = topicsList.filter(t => t.subject === item.subject && (!item.book || t.book === item.book) && (t.chapterTitle === item.chapter || t.chapterName === item.chapter));
-                                                   const uniqueTopicNames = Array.from(new Set(availableTopics.map(t => t.topicName)));
-                                                   const uniqueExercises = Array.from(new Set(availableTopics.filter(t => t.topicName === item.topic && t.exercise).map(t => t.exercise)));
-                                                   const uniqueReporters = Array.from(new Set([
-                                                     ...reportersList,
-                                                     ...cellData.map(d => d.reporter)
-                                                   ].filter(Boolean)));
-
-                                                   return (
-                                                     <div className="flex flex-col flex-1 w-full text-left mt-0 gap-[1px]" onClick={(e) => e.stopPropagation()}>
-                                                       <div className="flex items-center w-full relative group">
-                                                         <span className="text-sm font-black text-gray-900 mr-2">Ch:</span>
-                                                         <div className="relative flex items-center group flex-1 min-w-0">
-                                                           <select
-                                                             value={item.chapter || ''}
-                                                             onChange={(e) => {
-                                                               const val = e.target.value;
-                                                               const ch = availableChapters.find(c => (c.chapterTitle || c.chapterName) === val);
-                                                               handleUpdateTaskField(item.id, 'chapter', val);
-                                                               if (ch && ch.book && item.book !== ch.book) {
-                                                                 handleUpdateTaskField(item.id, 'book', ch.book);
-                                                               }
-                                                               handleUpdateTaskField(item.id, 'topic', '');
-                                                               handleUpdateTaskField(item.id, 'exercise', '');
-                                                             }}
-                                                             className="appearance-none peer text-sm font-black text-gray-900 w-full max-w-full bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors rounded px-1 -ml-1 pr-6 py-0.5 truncate"
-                                                           >
-                                                             <option value="" disabled>-</option>
-                                                             {Object.keys(chaptersByBook).length <= 1 ? (
-                                                               availableChapters.map(c => (
-                                                                 <option key={c.id} value={c.chapterTitle || c.chapterName}>{c.chapterTitle || c.chapterName}</option>
-                                                               ))
-                                                             ) : (
-                                                               Object.entries(chaptersByBook).map(([bName, chList]) => (
-                                                                 <optgroup key={bName} label={`Book: ${bName}`}>
-                                                                   {chList.map(c => (
-                                                                     <option key={c.id} value={c.chapterTitle || c.chapterName}>{c.chapterTitle || c.chapterName}</option>
-                                                                   ))}
-                                                                 </optgroup>
-                                                               ))
-                                                             )}
-                                                           </select>
-                                                          <div className="absolute right-1 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                                                          </div>
-                                                        </div>
-                                                      </div>
-                                                      <div className="flex items-center w-full mt-1 relative group">
-                                                        <span className="text-sm font-bold text-gray-800 mr-2">Tp:</span>
-                                                        <div className="relative flex items-center group flex-1 min-w-0">
-                                                          <select
-                                                            value={item.topic || ''}
-                                                            onChange={(e) => {
-                                                              const val = e.target.value;
-                                                              handleUpdateTaskField(item.id, 'topic', val);
-                                                              handleUpdateTaskField(item.id, 'exercise', '');
-                                                            }}
-                                                            className="appearance-none peer text-sm font-bold text-gray-800 w-full max-w-full bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors rounded px-1 -ml-1 pr-6 py-0.5 truncate"
-                                                          >
-                                                            <option value="" disabled>Topic...</option>
-                                                            {uniqueTopicNames.map((tName, i) => (
-                                                              <option key={i} value={tName as string}>{tName as string}</option>
-                                                            ))}
-                                                          </select>
-                                                          <div className="absolute right-1 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                                                          </div>
-                                                        </div>
-                                                      </div>
-                                                      <div className="flex items-center w-full mt-1 relative group">
-                                                        <span className="text-xs font-semibold text-gray-700 mr-2">Ex:</span>
-                                                        <div className="relative flex items-center group flex-1 min-w-0">
-                                                          <select
-                                                            value={item.exercise || ''}
-                                                            onChange={(e) => handleUpdateTaskField(item.id, 'exercise', e.target.value)}
-                                                            className="appearance-none peer text-xs font-semibold text-gray-700 w-full max-w-full italic bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors rounded px-1 -ml-1 pr-6 py-0.5 truncate"
-                                                          >
-                                                            <option value="" disabled>Exercise...</option>
-                                                            {uniqueExercises.map((ex, i) => (
-                                                              <option key={i} value={ex as string}>{ex as string}</option>
-                                                            ))}
-                                                          </select>
-                                                          <div className="absolute right-1 opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                                                          </div>
-                                                        </div>
-                                                      </div>
-                                                      <div className="flex items-start w-full mt-1.5">
-                                                        <span className="text-xs font-semibold text-gray-700 mr-2 mt-1.5">Ds:</span>
-                                                        <textarea
-                                                          defaultValue={item.description || ''}
-                                                          placeholder="Description..."
-                                                          ref={(el) => {
-                                                            if (el && !el.dataset.resized) {
-                                                              el.dataset.resized = 'true';
-                                                              setTimeout(() => {
-                                                                if (el) {
-                                                                  el.style.height = 'auto';
-                                                                  el.style.height = `${el.scrollHeight}px`;
-                                                                  if (isLastNewItem) {
-                                                                    el.focus();
-                                                                    el.setSelectionRange(el.value.length, el.value.length);
-                                                                  }
-                                                                }
-                                                              }, 10);
-                                                            }
-                                                          }}
-                                                          onFocus={(e) => {
-                                                            const target = e.currentTarget;
-                                                            setTimeout(() => {
-                                                              const val = target.value;
-                                                              target.setSelectionRange(val.length, val.length);
-                                                            }, 0);
-                                                          }}
-                                                          onBlur={(e) => { if (e.target.value !== (item.description || '')) handleUpdateTaskField(item.id, 'description', e.target.value) }}
-                                                          onInput={(e) => {
-                                                            const target = e.currentTarget;
-                                                            target.style.height = 'auto';
-                                                            target.style.height = `${target.scrollHeight}px`;
-                                                          }}
-                                                          onKeyDown={(e) => {
-                                                            if (e.key === 'Escape' || e.key === 'Esc') {
-                                                              if (e.currentTarget.value !== (item.description || '')) {
-                                                                handleUpdateTaskField(item.id, 'description', e.currentTarget.value);
-                                                              }
-                                                            } else if (e.key === 'Enter') {
-                                                              if (!e.shiftKey) {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                const nextElement = e.currentTarget.parentElement?.nextElementSibling?.querySelector('select');
-                                                                if (nextElement) {
-                                                                  nextElement.focus();
-                                                                } else {
-                                                                  e.currentTarget.blur();
-                                                                }
-                                                              }
-                                                            }
-                                                          }}
-                                                          className="text-xs text-black font-semibold w-[calc(100%+8px)] leading-relaxed text-left bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors resize-none min-h-[40px] whitespace-normal custom-scrollbar rounded px-2 py-1 -ml-2"
-                                                        />
-                                                      </div>
-                                                      {/* Clicked State Images Section */}
-                                                      <div className="flex items-start w-[calc(100%+8px)] mt-2 -ml-2 px-2">
-                                                        <span className="text-xs font-semibold text-gray-700 mr-2 mt-1">Att:</span>
-                                                        <div className="flex gap-2 flex-wrap items-center">
-                                                          {item.images && item.images.map((img: string, idx: number) => (
-                                                            <div 
-                                                              key={idx} 
-                                                              className="relative w-8 h-8 overflow-visible cursor-pointer group/img" 
-                                                              onClick={(e) => { 
-                                                                e.stopPropagation(); 
-                                                                setPreviewImages(item.images); 
-                                                                setPreviewIndex(idx); 
-                                                                setPreviewTask(item); 
-                                                              }}
-                                                            >
-                                                              <div className="w-8 h-8 border border-gray-200 rounded overflow-hidden hover:border-blue-400 transition-colors">
-                                                                <img src={img} className="w-full h-full object-cover" alt="Attachment" />
-                                                              </div>
-                                                              <button 
-                                                                type="button"
-                                                                onClick={(e) => {
-                                                                  e.stopPropagation();
-                                                                  e.preventDefault();
-                                                                  if (window.confirm("Are you sure you want to delete this image?")) {
-                                                                    const newImages = item.images.filter((_: any, i: number) => i !== idx);
-                                                                    handleUpdateTaskField(item.id, 'images', newImages);
-                                                                  }
-                                                                }}
-                                                                className="absolute -top-1.5 -right-1.5 z-10 bg-red-600 hover:bg-red-700 text-white w-4 h-4 rounded-full text-[10px] leading-none flex items-center justify-center shadow-sm opacity-100 transition-opacity"
-                                                                title="Delete image"
-                                                              >
-                                                                &times;
-                                                              </button>
-                                                            </div>
-                                                          ))}
-                                                          {(!item.images || item.images.length < 5) && (
-                                                            <button 
-                                                              type="button"
-                                                              tabIndex={0}
-                                                              className="w-8 h-8 border border-dashed border-gray-300 rounded flex items-center justify-center hover:bg-gray-50 cursor-pointer transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#254245]" 
-                                                              onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                if (isMobile) {
-                                                                  setImageChoiceModalTask(item);
-                                                                } else {
-                                                                  setTargetTaskForCrop(item);
-                                                                  fileInputRefBirdView.current?.click();
-                                                                }
-                                                              }}
-                                                              onKeyDown={(e) => {
-                                                                if (e.key === 'Enter' || e.key === ' ') {
-                                                                  e.stopPropagation();
-                                                                  e.preventDefault();
-                                                                  if (isMobile) {
-                                                                    setImageChoiceModalTask(item);
-                                                                  } else {
-                                                                    setTargetTaskForCrop(item);
-                                                                    fileInputRefBirdView.current?.click();
-                                                                  }
-                                                                }
-                                                              }}
-                                                              title="Add Image"
-                                                            >
-                                                              <span className="text-gray-400 text-lg font-light leading-none mb-1">+</span>
-                                                            </button>
-                                                          )}
-                                                        </div>
-                                                      </div>
-                                                      <div className="flex items-center w-[calc(100%+8px)] mt-auto pt-1 relative group mb-1 hover:bg-gray-100 focus-within:bg-gray-100 rounded px-2 py-1 -ml-2 transition-colors cursor-pointer">
-                                                        {(() => {
-                                                          const reporterInitials = (item.reporter || '?').charAt(0).toUpperCase();
-                                                          return (
-                                                            <div className="w-6 h-6 rounded-full text-white flex items-center justify-center text-[11px] font-bold mr-2 flex-shrink-0 shadow-sm pointer-events-none" style={{ backgroundColor: getReporterColor(item.reporter) }}>
-                                                              {reporterInitials}
-                                                            </div>
-                                                          );
-                                                        })()}
-                                                        <div className="relative flex items-center group flex-1 min-w-0">
-                                                          <select
-                                                            value={item.reporter || ''}
-                                                            onChange={(e) => handleUpdateTaskField(item.id, 'reporter', e.target.value)}
-                                                            className="appearance-none peer text-[12px] font-semibold text-gray-800 w-full max-w-full bg-transparent focus:outline-none transition-colors cursor-pointer truncate pr-6 py-0.5"
-                                                          >
-                                                            <option value="" disabled>Reporter...</option>
-                                                            {uniqueReporters.map((rp, i) => (
-                                                              <option key={i} value={rp as string}>{rp as string}</option>
-                                                            ))}
-                                                          </select>
-                                                          <div className="absolute right-[-4px] opacity-0 group-hover:opacity-100 peer-focus:opacity-100 pointer-events-none transition-opacity text-gray-400">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
-                                                          </div>
-                                                        </div>
-                                                        {item.status === 'DONE' && (
-                                                          <div className="ml-auto flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                                                            <span className="text-[10px] font-bold text-gray-600">Marks:</span>
-                                                            <input
-                                                              type="number"
-                                                              min="0"
-                                                              max={item.totalMarks ?? 10}
-                                                              step="0.5"
-                                                              disabled={currentUser?.role === 'STUDENT'}
-                                                              className={`w-8 h-5 text-[11px] font-bold text-center bg-white border border-gray-300 rounded shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none p-0 m-0 placeholder-gray-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${getMarksColor(item.obtainedMarks, item.totalMarks)} disabled:opacity-50 disabled:bg-transparent disabled:border-transparent`}
-                                                              placeholder="-"
-                                                              defaultValue={item.obtainedMarks !== null && item.obtainedMarks !== undefined ? item.obtainedMarks : ''}
-                                                              onBlur={(e) => {
-                                                                let val = e.target.value ? parseFloat(e.target.value) : null;
-                                                                const maxMarks = item.totalMarks ?? 10;
-                                                                if (val !== null) {
-                                                                  if (val < 0) val = 0;
-                                                                  if (val > maxMarks) val = maxMarks;
-                                                                  e.target.value = String(val);
-                                                                }
-                                                                if (val !== item.obtainedMarks) {
-                                                                  handleUpdateTaskField(item.id, 'obtainedMarks', val as any);
-                                                                  if (item.totalMarks === null || item.totalMarks === undefined) handleUpdateTaskField(item.id, 'totalMarks', 10 as any);
-                                                                }
-                                                              }}
-                                                              onKeyDown={(e) => {
-                                                                if (e.key === 'Enter') e.currentTarget.blur();
-                                                                if (e.key === 'Escape' || e.key === 'Esc') { e.stopPropagation(); e.currentTarget.blur(); }
-                                                              }}
-                                                            />
-                                                          </div>
-                                                        )}
-                                                      </div>
-                                                      {/* Action Bar (Delete button on left & Badges container on right ABOVE Comments) */}
-                                                      {isClicked && (
-                                                        <div className="flex items-center justify-between w-full pt-2 pb-2 border-t border-b border-gray-200 mt-2 mb-1 relative z-[70] flex-wrap gap-2">
-                                                          {/* Delete Button */}
-                                                          <button
-                                                            onClick={(e) => { e.stopPropagation(); handleDeleteInitiate(item.id); }}
-                                                            className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all outline-none focus-visible:ring-1 focus-visible:ring-red-500 p-1 flex items-center gap-1.5"
-                                                            title="Delete Task"
-                                                          >
-                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                              <path d="M3 6h18" />
-                                                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                                                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                                                              <line x1="10" y1="11" x2="10" y2="17" />
-                                                              <line x1="14" y1="11" x2="14" y2="17" />
-                                                            </svg>
-                                                            <span className="text-xs font-semibold text-gray-500 hover:text-red-500">Delete</span>
-                                                          </button>
-
-                                                          {/* Badges Container */}
-                                                          <div
-                                                            className="flex items-center gap-1 overflow-visible relative"
-                                                            onBlur={(e) => {
-                                                              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                                                                setActiveDropdown(null);
-                                                              }
-                                                            }}
-                                                            onKeyDown={(e) => {
-                                                              if (activeDropdown && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                e.nativeEvent.stopImmediatePropagation();
-
-                                                                const buttons = Array.from(e.currentTarget.querySelectorAll('button'));
-                                                                if (buttons.length === 0) return;
-
-                                                                const currentIndex = buttons.indexOf(document.activeElement as HTMLButtonElement);
-                                                                let nextIndex = 0;
-
-                                                                if (e.key === 'ArrowUp') {
-                                                                  nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % buttons.length;
-                                                                } else {
-                                                                  nextIndex = currentIndex === -1 ? buttons.length - 1 : (currentIndex <= 0 ? buttons.length - 1 : currentIndex - 1);
-                                                                }
-
-                                                                buttons[nextIndex].focus();
-                                                              }
-                                                            }}
-                                                          >
-                                                            {/* Subject Badge (Only in Stacked View) */}
-                                                            {!isGrid && (
-                                                              <div
-                                                                className="w-auto px-1.5 h-6 flex items-center justify-center text-white text-[10px] font-bold bg-[#254245] rounded"
-                                                                title={item.subject}
-                                                              >
-                                                                {subjects.find(s => s.name === item.subject)?.code || item.subject}
-                                                              </div>
-                                                            )}
-                                                            {/* Rescheduled Badge */}
-                                                            {item.rescheduledFromId && item.rescheduleCount && item.rescheduleCount > 0 && (
-                                                              <div
-                                                                className="w-auto px-1.5 h-6 flex items-center justify-center text-white font-bold text-[10px] bg-gray-500 rounded"
-                                                                title={`Rescheduled ${item.rescheduleCount} time(s)`}
-                                                              >
-                                                                Rs {item.rescheduleCount}
-                                                              </div>
-                                                            )}
-                                                            {/* Task Type Badge */}
-                                                            <div className="relative">
-                                                              <div
-                                                                id={`badge-type-${item.id}`}
-                                                                tabIndex={0}
-                                                                className="w-8 h-6 flex items-center justify-center text-white font-bold text-[10px] cursor-pointer hover:opacity-90 rounded outline-none focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:ring-[#254245]"
-                                                                style={{ backgroundColor: typeBadge.color }}
-                                                                title={item.taskType}
-                                                                onFocus={() => setActiveDropdown(`${item.id}-type`)}
-                                                                onClick={(e) => {
-                                                                  e.stopPropagation();
-                                                                  setActiveDropdown(activeDropdown === `${item.id}-type` ? null : `${item.id}-type`);
-                                                                }}
-                                                                onKeyDown={(e) => {
-                                                                  if (e.key === 'Enter' || e.key === ' ') {
-                                                                    e.preventDefault();
-                                                                    e.stopPropagation();
-                                                                    setActiveDropdown(activeDropdown === `${item.id}-type` ? null : `${item.id}-type`);
-                                                                  }
-                                                                }}
-                                                              >
-                                                                {typeBadge.initials}
-                                                              </div>
-
-                                                              {activeDropdown === `${item.id}-type` && (
-                                                                <div className="absolute top-[100%] right-0 mt-1 flex flex-col gap-1 z-[80]" onClick={(e) => e.stopPropagation()}>
-                                                                  {['Tuition Work', 'Class Work', 'Home Work', 'Test', 'Project']
-                                                                    .filter(t => t !== item.taskType)
-                                                                    .map(t => {
-                                                                      const b = getTaskTypeBadge(t);
-                                                                      return (
-                                                                        <button
-                                                                          key={t}
-                                                                          tabIndex={-1}
-                                                                          className="w-8 h-6 flex items-center justify-center text-white text-[10px] font-bold shadow-md hover:scale-110 focus:scale-110 transition-transform outline-none focus:ring-2 focus:ring-blue-500 z-10 rounded"
-                                                                          style={{ backgroundColor: b.color }}
-                                                                          onClick={() => {
-                                                                            handleUpdateTaskField(item.id, 'taskType', t);
-                                                                            setActiveDropdown(null);
-                                                                            document.getElementById(`badge-type-${item.id}`)?.focus();
-                                                                          }}
-                                                                          onKeyDown={(e) => {
-                                                                            if (e.key === 'Enter' || e.key === ' ') {
-                                                                              e.preventDefault();
-                                                                              e.stopPropagation();
-                                                                              handleUpdateTaskField(item.id, 'taskType', t);
-                                                                              setActiveDropdown(null);
-                                                                              document.getElementById(`badge-type-${item.id}`)?.focus();
-                                                                            }
-                                                                          }}
-                                                                          title={t}
-                                                                        >
-                                                                          {b.initials}
-                                                                        </button>
-                                                                      )
-                                                                    })}
-                                                                </div>
-                                                              )}
-                                                            </div>
-
-                                                            {/* Status Badge */}
-                                                            <div className="relative">
-                                                              <div
-                                                                id={`badge-status-${item.id}`}
-                                                                tabIndex={0}
-                                                                className="w-8 h-6 flex items-center justify-center text-white font-bold text-[10px] cursor-pointer hover:opacity-90 rounded outline-none focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:ring-[#254245]"
-                                                                style={{ backgroundColor: statusColor }}
-                                                                title={item.status}
-                                                                onFocus={() => setActiveDropdown(`${item.id}-status`)}
-                                                                onClick={(e) => {
-                                                                  e.stopPropagation();
-                                                                  setActiveDropdown(activeDropdown === `${item.id}-status` ? null : `${item.id}-status`);
-                                                                }}
-                                                                onKeyDown={(e) => {
-                                                                  if (e.key === 'Enter' || e.key === ' ') {
-                                                                    e.preventDefault();
-                                                                    e.stopPropagation();
-                                                                    setActiveDropdown(activeDropdown === `${item.id}-status` ? null : `${item.id}-status`);
-                                                                  }
-                                                                }}
-                                                              >
-                                                                {getStatusInitials(item.status)}
-                                                              </div>
-
-                                                              {activeDropdown === `${item.id}-status` && (
-                                                                <div className="absolute top-[100%] right-0 mt-1 flex flex-col gap-1 z-[80]" onClick={(e) => e.stopPropagation()}>
-                                                                  {['OPEN', 'IN_PROGRESS', 'DONE', 'PENDING']
-                                                                    .filter(s => s !== item.status)
-                                                                    .map(s => (
-                                                                      <button
-                                                                        key={s}
-                                                                        tabIndex={-1}
-                                                                        className="w-8 h-6 flex items-center justify-center text-white text-[10px] font-bold shadow-md hover:scale-110 focus:scale-110 transition-transform outline-none focus:ring-2 focus:ring-blue-500 z-10 rounded"
-                                                                        style={{ backgroundColor: getStatusColor(s) }}
-                                                                        onClick={() => {
-                                                                          if (s === 'PENDING') {
-                                                                            if (item.rescheduledToId) {
-                                                                              setRescheduleToast('This task has already been rescheduled!');
-                                                                              setTimeout(() => setRescheduleToast(null), 3000);
-                                                                              setActiveDropdown(null);
-                                                                            } else {
-                                                                              setRescheduleTaskId(item.id);
-                                                                              const dt = item.dueDate ? new Date(item.dueDate) : (selectedDate || new Date());
-                                                                              setRescheduleDate(dt);
-                                                                              setRescheduleCalendarMonth(new Date(dt.getFullYear(), dt.getMonth(), 1));
-                                                                              setIsRescheduleDatePickerOpen(true);
-                                                                              setActiveDropdown(null);
-                                                                            }
-                                                                          } else {
-                                                                            handleUpdateTaskField(item.id, 'status', s);
-                                                                            setActiveDropdown(null);
-                                                                            document.getElementById(`badge-status-${item.id}`)?.focus();
-                                                                          }
-                                                                        }}
-                                                                        onKeyDown={(e) => {
-                                                                          if (e.key === 'Enter' || e.key === ' ') {
-                                                                            e.preventDefault();
-                                                                            e.stopPropagation();
-                                                                            if (s === 'PENDING') {
-                                                                              if (item.rescheduledToId) {
-                                                                                setRescheduleToast('This task has already been rescheduled!');
-                                                                                setTimeout(() => setRescheduleToast(null), 3000);
-                                                                                setActiveDropdown(null);
-                                                                              } else {
-                                                                                setRescheduleTaskId(item.id);
-                                                                                const dt = item.dueDate ? new Date(item.dueDate) : (selectedDate || new Date());
-                                                                                setRescheduleDate(dt);
-                                                                                setRescheduleCalendarMonth(new Date(dt.getFullYear(), dt.getMonth(), 1));
-                                                                                setIsRescheduleDatePickerOpen(true);
-                                                                                setActiveDropdown(null);
-                                                                              }
-                                                                            } else {
-                                                                              handleUpdateTaskField(item.id, 'status', s);
-                                                                              setActiveDropdown(null);
-                                                                              document.getElementById(`badge-status-${item.id}`)?.focus();
-                                                                            }
-                                                                          }
-                                                                        }}
-                                                                        title={s}
-                                                                      >
-                                                                        {getStatusInitials(s)}
-                                                                      </button>
-                                                                    ))}
-                                                                </div>
-                                                              )}
-                                                            </div>
-                                                          </div>
-                                                        </div>
-                                                      )}
-
-                                                      {/* Task Comments & Threaded Discussion Section BELOW Action Bar */}
-                                                      {isClicked && (
-                                                        <TaskComments
-                                                          taskId={item.id}
-                                                          initialComments={item.comments || []}
-                                                          currentUser={currentUser}
-                                                          onCommentsChange={(updated) => {
-                                                            handleUpdateTaskField(item.id, 'comments', updated);
-                                                          }}
-                                                        />
-                                                      )}
-                                                    </div>
-                                                  );
-                                                })()
-                                              ) : (
-                                                <>
-                                                  {item.status === 'DONE' && item.obtainedMarks !== null && item.obtainedMarks !== undefined && (
+                                              <>
+                                                {item.status === 'DONE' && item.obtainedMarks !== null && item.obtainedMarks !== undefined && (
                                                     <div className={`absolute top-1 right-1 z-[60] px-1 py-[1px] text-[10px] font-black drop-shadow-sm flex items-center justify-center ${getMarksColor(item.obtainedMarks, item.totalMarks)}`}>
                                                       {item.obtainedMarks}
                                                     </div>
@@ -3116,7 +2619,6 @@ export default function BirdViewPage() {
                                                     {item.description && <span className="text-[8px] text-black font-semibold mt-0.5 w-full leading-tight text-left line-clamp-2">Ds: {item.description}</span>}
                                                   </div>
                                                 </>
-                                              )}
 
                                               {/* Bottom Left Icons (only when NOT clicked) */}
                                               {!isClicked && (
