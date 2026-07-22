@@ -2112,12 +2112,12 @@ export default function BirdViewPage() {
                                     }
                                   }}
 
-className={`
+                                  className={`
                                   w-full h-full flex items-center justify-center cursor-pointer transition-all duration-300 ease-in-out
                                   ${isClicked ? 'overflow-visible cell-clicked' : 'overflow-hidden'}
                                 ${disableCol ? (isAbsent ? 'absent-cell' : 'leave-cell') : (!isAssigned && !isDragged && !isStudentDragged) ? 'unassigned-cell' : 'bg-white grid-cell-assigned'}
                                 ${isAssigned && !disableCol ? 'hover:bg-gray-50' : ''}
-                                  ${isClicked ? `z-[100] absolute top-1/2 -translate-y-1/2 ${studentIndex === 0 ? 'left-0' : studentIndex === visibleStudentIds.length - 1 ? 'right-0' : 'left-1/2 -translate-x-1/2'} w-auto h-auto bg-transparent p-0 overflow-visible` : 'z-0 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full rounded-none p-0'}
+                                  ${isClicked ? `z-[100] absolute top-0 ${visibleStudentIds && studentIndex >= visibleStudentIds.length - 2 ? 'right-0 left-auto' : 'left-0'} w-0 h-0 bg-transparent p-0 overflow-visible` : 'z-0 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full rounded-none p-0'}
                                 ${isDragged || isStudentDragged ? 'dragged-column dragged-row' : ''}
                                 ${showLeftIndicator ? 'drop-target-left' : ''}
                                 ${showRightIndicator ? 'drop-target-right' : ''}
@@ -2142,7 +2142,7 @@ className={`
 
                                     return (
                                       <div
-                                         className={`w-full flex flex-col relative ${isClicked ? `w-[480px] sm:w-[560px] md:w-[620px] max-w-[95vw] max-h-[75vh] overflow-y-auto overflow-x-visible z-[100] bg-white rounded-lg p-3.5 shadow-[0_12px_48px_rgba(0,0,0,0.35)] border border-gray-200 custom-scrollbar gap-2` : 'h-full items-center justify-center'}`}
+                                         className={`w-full flex flex-col ${isClicked ? `absolute top-0 ${visibleStudentIds && studentIndex >= visibleStudentIds.length - 2 ? 'right-0 left-auto' : 'left-0'} w-[480px] sm:w-[560px] md:w-[620px] max-w-[95vw] max-h-[70vh] overflow-y-auto overflow-x-visible z-[100] bg-white rounded-lg p-3.5 shadow-[0_12px_48px_rgba(0,0,0,0.35)] border border-gray-200 custom-scrollbar gap-2` : 'relative h-full items-center justify-center'}`}
                                          onClick={(e) => { if (isClicked) e.stopPropagation(); }}
                                         ref={(el) => {
                                           if (el) {
