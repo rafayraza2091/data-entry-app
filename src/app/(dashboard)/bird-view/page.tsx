@@ -1483,7 +1483,7 @@ export default function BirdViewPage() {
                             handleUpdateTaskField(item.id, 'topic', '');
                             handleUpdateTaskField(item.id, 'exercise', '');
                           }}
-                          className="text-xs text-black font-semibold bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors cursor-pointer rounded px-1 py-0.5 -ml-1 border-none focus:ring-1 focus:ring-[#254245] flex-1 truncate"
+                          className="text-xs text-black font-semibold bg-transparent hover:bg-gray-100 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors cursor-pointer rounded px-1.5 py-0.5 -ml-1 border border-transparent flex-1 truncate outline-none"
                         >
                           <option value="">-</option>
                           {Object.entries(chaptersByBook).map(([bName, chs]) => (
@@ -1507,7 +1507,7 @@ export default function BirdViewPage() {
                             handleUpdateTaskField(item.id, 'topic', val);
                             handleUpdateTaskField(item.id, 'exercise', '');
                           }}
-                          className="text-xs text-black font-semibold bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors cursor-pointer rounded px-1 py-0.5 -ml-1 border-none focus:ring-1 focus:ring-[#254245] flex-1 truncate"
+                          className="text-xs text-black font-semibold bg-transparent hover:bg-gray-100 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors cursor-pointer rounded px-1.5 py-0.5 -ml-1 border border-transparent flex-1 truncate outline-none"
                         >
                           <option value="">Topic...</option>
                           {uniqueTopicNames.map(tn => (
@@ -1523,7 +1523,7 @@ export default function BirdViewPage() {
                             tabIndex={0}
                             value={item.exercise || ''}
                             onChange={(e) => handleUpdateTaskField(item.id, 'exercise', e.target.value)}
-                            className="text-xs text-black italic bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors cursor-pointer rounded px-1 py-0.5 -ml-1 border-none focus:ring-1 focus:ring-[#254245] flex-1 truncate"
+                            className="text-xs text-black italic bg-transparent hover:bg-gray-100 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors cursor-pointer rounded px-1.5 py-0.5 -ml-1 border border-transparent flex-1 truncate outline-none"
                           >
                             <option value="">Exercise...</option>
                             {uniqueExercises.map(ex => (
@@ -1537,7 +1537,7 @@ export default function BirdViewPage() {
                             value={item.exercise || ''}
                             onChange={(e) => handleUpdateTaskField(item.id, 'exercise', e.target.value)}
                             placeholder="Exercise..."
-                            className="text-xs text-black italic bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors rounded px-1 py-0.5 -ml-1 border-none focus:ring-1 focus:ring-[#254245] flex-1 truncate"
+                            className="text-xs text-black italic bg-transparent hover:bg-gray-100 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors rounded px-1.5 py-0.5 -ml-1 border border-transparent flex-1 truncate outline-none"
                           />
                         )}
                       </div>
@@ -1555,7 +1555,7 @@ export default function BirdViewPage() {
                             e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px';
                           }}
                           onBlur={(e) => { if (e.target.value !== (item.description || '')) handleUpdateTaskField(item.id, 'description', e.target.value) }}
-                          className="text-xs text-black font-semibold w-full leading-relaxed text-left bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors resize-none min-h-[40px] whitespace-normal custom-scrollbar rounded px-2 py-1 border border-gray-200 focus:border-[#254245]"
+                          className="text-xs text-black font-semibold w-full leading-relaxed text-left bg-transparent hover:bg-gray-100 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none min-h-[40px] whitespace-normal custom-scrollbar rounded px-2 py-1 border border-gray-200 outline-none"
                         />
                       </div>
                     </div>
@@ -1565,7 +1565,22 @@ export default function BirdViewPage() {
                       <span className="text-xs font-semibold text-gray-700 mr-2 mt-1">Att:</span>
                       <div className="flex gap-2 flex-wrap items-center">
                         {item.images && item.images.map((img: string, iIdx: number) => (
-                          <div key={iIdx} className="relative w-8 h-8 group/img cursor-pointer" onClick={() => { setPreviewImages(item.images); setPreviewIndex(iIdx); setPreviewTask(item); }}>
+                          <div
+                            key={iIdx}
+                            tabIndex={0}
+                            className="relative w-8 h-8 group/img cursor-pointer outline-none rounded focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                            onClick={() => { setPreviewImages(item.images); setPreviewIndex(iIdx); setPreviewTask(item); }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setPreviewImages(item.images);
+                                setPreviewIndex(iIdx);
+                                setPreviewTask(item);
+                              }
+                            }}
+                            title="View Attachment"
+                          >
                             <img src={img} className="w-8 h-8 object-cover rounded border border-gray-200" alt="attachment" />
                             <button
                               type="button"
@@ -1587,7 +1602,7 @@ export default function BirdViewPage() {
                           <button
                             type="button"
                             tabIndex={0}
-                            className="w-8 h-8 border border-dashed border-gray-300 rounded flex items-center justify-center hover:bg-gray-50 cursor-pointer transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#254245]"
+                            className="w-8 h-8 border border-dashed border-gray-300 rounded flex items-center justify-center hover:bg-gray-50 cursor-pointer transition-colors outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             onClick={(e) => {
                               e.stopPropagation();
                               setImageChoiceModalTask(item);
@@ -1617,7 +1632,7 @@ export default function BirdViewPage() {
                           tabIndex={0}
                           value={item.reporter || ''}
                           onChange={(e) => handleUpdateTaskField(item.id, 'reporter', e.target.value)}
-                          className="text-xs font-semibold text-gray-700 bg-transparent hover:bg-gray-100 focus:outline-none transition-colors rounded px-1 py-0.5 border-none focus:ring-1 focus:ring-[#254245]"
+                          className="text-xs font-semibold text-gray-800 bg-gray-50 border border-gray-200 hover:bg-gray-100 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors rounded px-2 py-1 shadow-xs"
                         >
                           {uniqueReporters.map(r => (
                             <option key={r} value={r}>{r}</option>
@@ -1639,7 +1654,7 @@ export default function BirdViewPage() {
                             handleUpdateTaskField(item.id, 'obtainedMarks', val as any);
                           }}
                           placeholder="-"
-                          className="w-10 h-6 text-center text-xs font-bold text-gray-800 bg-gray-50 border border-gray-300 rounded focus:bg-white focus:ring-1 focus:ring-[#254245] outline-none"
+                          className="w-10 h-6 text-center text-xs font-bold text-gray-800 bg-gray-50 border border-gray-300 rounded focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
                         />
                       </div>
                     </div>
