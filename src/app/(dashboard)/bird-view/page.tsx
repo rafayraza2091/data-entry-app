@@ -1577,12 +1577,7 @@ export default function BirdViewPage() {
                             className="w-8 h-8 border border-dashed border-gray-300 rounded flex items-center justify-center hover:bg-gray-50 cursor-pointer transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#254245]"
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (isMobile) {
-                                setImageChoiceModalTask(item);
-                              } else {
-                                setTargetTaskForCrop(item);
-                                fileInputRefBirdView.current?.click();
-                              }
+                              setImageChoiceModalTask(item);
                             }}
                             title="Add Image"
                           >
@@ -3576,7 +3571,7 @@ export default function BirdViewPage() {
 
       {/* Source Selection Modal */}
       {imageChoiceModalTask && (
-        <div className="fixed inset-0 z-[250] bg-black/60 flex items-center justify-center p-4 animate-fade-in" onClick={() => setImageChoiceModalTask(null)}>
+        <div className="fixed inset-0 z-[10000] bg-black/60 flex items-center justify-center p-4 animate-fade-in" onClick={() => setImageChoiceModalTask(null)}>
           <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full animate-scale-up" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-3 border-b pb-3">
               <h3 className="font-bold text-gray-800 text-base">Add Attachment</h3>
