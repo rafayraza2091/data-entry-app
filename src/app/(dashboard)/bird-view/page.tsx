@@ -1300,22 +1300,413 @@ export default function BirdViewPage() {
         }
       `}</style>
 
-      {/* Invisible overlay to close expanded cell when clicking anywhere else */}
-      {clickedCellId && (
-        <div
-          className="fixed inset-0 z-[50] cursor-default"
-          onMouseDown={(e) => {
-            // Use onMouseDown so it fires before blur or at the same time.
-            e.stopPropagation();
-            if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
-              // Allow onBlur to fire and save data before unmounting
-              setTimeout(() => setClickedCellId(null), 150);
-            } else {
-              setClickedCellId(null);
+      {/* High Z-Index Responsive Ticket Modal Overlay */}
+      {clickedCellId && (() => {
+        const isGrid = viewMode === 'grid';
+        let targetSubject: Subject | null = null;
+        let targetStudent: Student | null = null;
+        let items: any[] = [];
+
+        if (isGrid) {
+          const parts = clickedCellId.split('-');
+          if (parts.length >= 2) {
+            const subjectId = Number(parts[0]);
+            const studentId = Number(parts[1]);
+            targetSubject = subjects.find(s => s.id === subjectId) || null;
+            targetStudent = students.find(s => s.id === studentId) || null;
+            if (targetStudent && targetSubject) {
+              const studentFullName = `${targetStudent.firstName} ${targetStudent.secondName}`.trim();
+              items = filteredCellData.filter(d =>
+                (d.assignee === studentFullName || d.studentName === studentFullName) &&
+                d.subject === targetSubject!.name
+              );
             }
-          }}
-        />
-      )}
+          }
+        } else {
+          const parts = clickedCellId.split('-');
+          if (parts.length >= 3) {
+            const studentId = Number(parts[1]);
+            const itemIndex = Number(parts[2]);
+            targetStudent = students.find(s => s.id === studentId) || null;
+            if (targetStudent) {
+              const studentData = tasksPerStudent.find(s => s.studentId === targetStudent!.id);
+              const task = studentData?.tasks[itemIndex];
+              if (task) items = [task];
+            }
+          }
+        }
+
+        if (items.length === 0) return null;
+
+        const studentFullNameStr = targetStudent ? `${targetStudent.firstName} ${targetStudent.secondName}`.trim() : '';
+        const subjectNameStr = targetSubject ? targetSubject.name : (items[0]?.subject || '');
+
+        return (
+          <div
+            className="fixed inset-0 z-[9999] bg-black/50 backdrop-blur-[2px] flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') {
+                setTimeout(() => setClickedCellId(null), 150);
+              } else {
+                setClickedCellId(null);
+              }
+            }}
+          >
+            <div
+              className="w-[95vw] sm:w-[560px] md:w-[640px] max-w-[640px] max-h-[88vh] bg-white rounded-2xl p-3.5 sm:p-5 shadow-2xl border border-gray-200 overflow-y-auto custom-scrollbar flex flex-col gap-3 relative animate-in fade-in zoom-in-95 duration-150"
+              onMouseDown={(e) => e.stopPropagation()}
+              ref={(el) => {
+                if (el && el.dataset.opened !== 'true') {
+                  el.dataset.opened = 'true';
+                  setTimeout(() => {
+                    el.scrollTop = 0;
+                    const firstFocusable = el.querySelector('select:not([tabindex="-1"]), input:not([tabindex="-1"]), textarea:not([tabindex="-1"]), button:not([tabindex="-1"])') as HTMLElement;
+                    if (firstFocusable) {
+                      firstFocusable.focus({ preventScroll: true });
+                      if (firstFocusable instanceof HTMLTextAreaElement || firstFocusable instanceof HTMLInputElement) {
+                        firstFocusable.setSelectionRange(firstFocusable.value.length, firstFocusable.value.length);
+                      }
+                    }
+                    el.scrollTop = 0;
+                  }, 50);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Tab') {
+                  const focusableElements = Array.from(e.currentTarget.querySelectorAll('button:not([tabindex="-1"]):not([disabled]), [href]:not([tabindex="-1"]):not([disabled]), input:not([tabindex="-1"]):not([disabled]), select:not([tabindex="-1"]):not([disabled]), textarea:not([tabindex="-1"]):not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])'))
+                    .filter(elem => (elem as HTMLElement).offsetParent !== null) as HTMLElement[];
+
+                  if (focusableElements.length > 0) {
+                    e.preventDefault();
+                    const currentIndex = focusableElements.indexOf(document.activeElement as HTMLElement);
+                    if (e.shiftKey) {
+                      if (currentIndex <= 0) {
+                        focusableElements[focusableElements.length - 1].focus();
+                      } else {
+                        focusableElements[currentIndex - 1].focus();
+                      }
+                    } else {
+                      if (currentIndex === -1 || currentIndex === focusableElements.length - 1) {
+                        focusableElements[0].focus();
+                      } else {
+                        focusableElements[currentIndex + 1].focus();
+                      }
+                    }
+                  }
+                }
+              }}
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+                <div className="flex items-center gap-2 truncate">
+                  <span className="text-xs sm:text-sm font-bold text-[#254245] uppercase truncate">
+                    {subjectNameStr} {studentFullNameStr ? `• ${studentFullNameStr}` : ''}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setClickedCellId(null)}
+                  className="text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full p-1 transition-colors outline-none focus:ring-2 focus:ring-[#254245]"
+                  title="Close modal"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
+              </div>
+
+              {/* Modal Items */}
+              {items.map((item, idx, arr) => {
+                if (activeView === 'query') {
+                  return (
+                    <div key={idx} className="w-full min-h-[80px] bg-[#edab30]/10 border border-[#edab30]/30 p-2 rounded flex flex-col items-center justify-center relative">
+                      <span className="text-xs font-bold text-[#254245] truncate w-full text-center uppercase">Query</span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase mt-1 ${item.status === 'OPEN' || item.status === 'open' ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-gray-100 text-gray-600 border border-gray-200'}`}>
+                        {item.status}
+                      </span>
+                    </div>
+                  );
+                }
+
+                const typeBadge = getTaskTypeBadge(item.taskType || 'Task');
+                const statusColor = getStatusColor(item.status);
+                const isLastNewItem = idx === arr.length - 1;
+
+                const availableChapters = chaptersList.filter(c => c.subject === item.subject && (!item.book || c.book === item.book));
+                const chaptersByBook = availableChapters.reduce<Record<string, typeof availableChapters>>((acc, c) => {
+                  const bName = c.book || 'Other';
+                  if (!acc[bName]) acc[bName] = [];
+                  acc[bName].push(c);
+                  return acc;
+                }, {});
+
+                const availableTopics = topicsList.filter(t => t.subject === item.subject && (!item.book || t.book === item.book) && (t.chapterTitle === item.chapter || t.chapterName === item.chapter));
+                const uniqueTopicNames = Array.from(new Set(availableTopics.map(t => t.topicName)));
+                const uniqueExercises = Array.from(new Set(availableTopics.filter(t => t.topicName === item.topic && t.exercise).map(t => t.exercise)));
+                const uniqueReporters = Array.from(new Set([
+                  ...reportersList,
+                  ...cellData.map(d => d.reporter)
+                ])).filter(Boolean);
+
+                return (
+                  <div
+                    key={idx}
+                    className="w-full flex flex-col justify-start items-start relative min-h-[100px] h-fit overflow-visible rounded-lg p-3 sm:p-4 pb-6 mb-2 bg-white border border-gray-200 shadow-sm"
+                    style={{ borderLeft: `6px solid ${statusColor}` }}
+                  >
+                    {/* Chapter, Topic, Exercise */}
+                    <div className="flex flex-col gap-1 w-full mb-2">
+                      <div className="flex items-center gap-1 text-xs">
+                        <span className="font-bold text-gray-700 w-7 flex-shrink-0">Ch:</span>
+                        <select
+                          tabIndex={0}
+                          value={item.chapter || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const ch = chaptersList.find(c => (c.chapterTitle === val || c.chapterName === val) && c.subject === item.subject);
+                            handleUpdateTaskField(item.id, 'chapter', val);
+                            if (ch && ch.book) handleUpdateTaskField(item.id, 'book', ch.book);
+                            handleUpdateTaskField(item.id, 'topic', '');
+                            handleUpdateTaskField(item.id, 'exercise', '');
+                          }}
+                          className="text-xs text-black font-semibold bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors cursor-pointer rounded px-1 py-0.5 -ml-1 border-none focus:ring-1 focus:ring-[#254245] flex-1 truncate"
+                        >
+                          <option value="">-</option>
+                          {Object.entries(chaptersByBook).map(([bName, chs]) => (
+                            <optgroup key={bName} label={bName}>
+                              {chs.map(c => {
+                                const title = c.chapterTitle || c.chapterName;
+                                return <option key={c.id} value={title}>{title}</option>;
+                              })}
+                            </optgroup>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-1 text-xs">
+                        <span className="font-bold text-gray-700 w-7 flex-shrink-0">Tp:</span>
+                        <select
+                          tabIndex={0}
+                          value={item.topic || ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            handleUpdateTaskField(item.id, 'topic', val);
+                            handleUpdateTaskField(item.id, 'exercise', '');
+                          }}
+                          className="text-xs text-black font-semibold bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors cursor-pointer rounded px-1 py-0.5 -ml-1 border-none focus:ring-1 focus:ring-[#254245] flex-1 truncate"
+                        >
+                          <option value="">Topic...</option>
+                          {uniqueTopicNames.map(tn => (
+                            <option key={tn} value={tn}>{tn}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-1 text-xs">
+                        <span className="font-bold text-gray-700 w-7 flex-shrink-0">Ex:</span>
+                        {uniqueExercises.length > 0 ? (
+                          <select
+                            tabIndex={0}
+                            value={item.exercise || ''}
+                            onChange={(e) => handleUpdateTaskField(item.id, 'exercise', e.target.value)}
+                            className="text-xs text-black italic bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors cursor-pointer rounded px-1 py-0.5 -ml-1 border-none focus:ring-1 focus:ring-[#254245] flex-1 truncate"
+                          >
+                            <option value="">Exercise...</option>
+                            {uniqueExercises.map(ex => (
+                              <option key={ex} value={ex}>{ex}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="text"
+                            tabIndex={0}
+                            value={item.exercise || ''}
+                            onChange={(e) => handleUpdateTaskField(item.id, 'exercise', e.target.value)}
+                            placeholder="Exercise..."
+                            className="text-xs text-black italic bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors rounded px-1 py-0.5 -ml-1 border-none focus:ring-1 focus:ring-[#254245] flex-1 truncate"
+                          />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    <div className="w-full mb-2">
+                      <div className="flex items-start gap-1 text-xs">
+                        <span className="font-bold text-gray-700 w-7 flex-shrink-0 mt-1">Ds:</span>
+                        <textarea
+                          tabIndex={0}
+                          value={item.description || ''}
+                          onChange={(e) => {
+                            e.currentTarget.style.height = 'auto';
+                            e.currentTarget.style.height = e.currentTarget.scrollHeight + 'px';
+                          }}
+                          onBlur={(e) => { if (e.target.value !== (item.description || '')) handleUpdateTaskField(item.id, 'description', e.target.value) }}
+                          className="text-xs text-black font-semibold w-full leading-relaxed text-left bg-transparent hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors resize-none min-h-[40px] whitespace-normal custom-scrollbar rounded px-2 py-1 border border-gray-200 focus:border-[#254245]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Images / Attachments */}
+                    <div className="flex items-start w-full mb-2 px-1">
+                      <span className="text-xs font-semibold text-gray-700 mr-2 mt-1">Att:</span>
+                      <div className="flex gap-2 flex-wrap items-center">
+                        {item.images && item.images.map((img: string, iIdx: number) => (
+                          <div key={iIdx} className="relative w-8 h-8 group/img cursor-pointer" onClick={() => { setPreviewImages(item.images); setPreviewIndex(iIdx); setPreviewTask(item); }}>
+                            <img src={img} className="w-8 h-8 object-cover rounded border border-gray-200" alt="attachment" />
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm("Are you sure you want to delete this image?")) {
+                                  const newImages = item.images.filter((_: any, i: number) => i !== iIdx);
+                                  handleUpdateTaskField(item.id, 'images', newImages);
+                                }
+                              }}
+                              className="absolute -top-1 -right-1 bg-red-600 text-white w-4 h-4 rounded-full text-[10px] flex items-center justify-center"
+                            >
+                              &times;
+                            </button>
+                          </div>
+                        ))}
+                        {(!item.images || item.images.length < 5) && (
+                          <button
+                            type="button"
+                            tabIndex={0}
+                            className="w-8 h-8 border border-dashed border-gray-300 rounded flex items-center justify-center hover:bg-gray-50 cursor-pointer transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#254245]"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (isMobile) {
+                                setImageChoiceModalTask(item);
+                              } else {
+                                setTargetTaskForCrop(item);
+                                fileInputRefBirdView.current?.click();
+                              }
+                            }}
+                            title="Add Image"
+                          >
+                            <span className="text-gray-400 text-lg font-light leading-none mb-1">+</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Reporter & Marks */}
+                    <div className="flex items-center justify-between w-full mb-2 pt-1 border-t border-gray-100">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-6 h-6 rounded-full text-white flex items-center justify-center text-[11px] font-bold shadow-sm" style={{ backgroundColor: getReporterColor(item.reporter) }}>
+                          {(item.reporter || '?').charAt(0).toUpperCase()}
+                        </div>
+                        <select
+                          tabIndex={0}
+                          value={item.reporter || ''}
+                          onChange={(e) => handleUpdateTaskField(item.id, 'reporter', e.target.value)}
+                          className="text-xs font-semibold text-gray-700 bg-transparent hover:bg-gray-100 focus:outline-none transition-colors rounded px-1 py-0.5 border-none focus:ring-1 focus:ring-[#254245]"
+                        >
+                          {uniqueReporters.map(r => (
+                            <option key={r} value={r}>{r}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Marks Input */}
+                      <div className="flex items-center gap-1">
+                        <span className="text-[11px] font-medium text-gray-500">Marks:</span>
+                        <input
+                          type="number"
+                          tabIndex={0}
+                          min={0}
+                          max={item.totalMarks ?? 10}
+                          value={item.obtainedMarks !== null && item.obtainedMarks !== undefined ? item.obtainedMarks : ''}
+                          onChange={(e) => {
+                            let val = e.target.value === '' ? null : parseFloat(e.target.value);
+                            handleUpdateTaskField(item.id, 'obtainedMarks', val as any);
+                          }}
+                          placeholder="-"
+                          className="w-10 h-6 text-center text-xs font-bold text-gray-800 bg-gray-50 border border-gray-300 rounded focus:bg-white focus:ring-1 focus:ring-[#254245] outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Action Bar (Delete & Badges) */}
+                    <div className="flex items-center justify-between w-full pt-2 pb-2 border-t border-b border-gray-200 mb-2 flex-wrap gap-2">
+                      <button
+                        type="button"
+                        tabIndex={0}
+                        onClick={(e) => { e.stopPropagation(); handleDeleteInitiate(item.id); }}
+                        className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-all outline-none focus-visible:ring-1 focus-visible:ring-red-500 p-1 flex items-center gap-1.5 text-xs font-semibold"
+                        title="Delete Task"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                        </svg>
+                        <span>Delete</span>
+                      </button>
+
+                      {/* Badges */}
+                      <div className="flex items-center gap-1.5">
+                        {/* Type Badge */}
+                        <div
+                          tabIndex={0}
+                          className="w-8 h-6 flex items-center justify-center text-white font-bold text-[10px] cursor-pointer hover:opacity-90 rounded outline-none focus-visible:ring-1 focus-visible:ring-[#254245]"
+                          style={{ backgroundColor: typeBadge.color }}
+                          title={item.taskType}
+                        >
+                          {typeBadge.initials}
+                        </div>
+
+                        {/* Status Badge */}
+                        <div
+                          tabIndex={0}
+                          className="w-8 h-6 flex items-center justify-center text-white font-bold text-[10px] cursor-pointer hover:opacity-90 rounded outline-none focus-visible:ring-1 focus-visible:ring-[#254245]"
+                          style={{ backgroundColor: statusColor }}
+                          title={item.status}
+                        >
+                          {getStatusInitials(item.status)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Task Comments */}
+                    <TaskComments
+                      taskId={item.id}
+                      initialComments={item.comments || []}
+                      currentUser={currentUser}
+                      onCommentsChange={(updated) => {
+                        handleUpdateTaskField(item.id, 'comments', updated);
+                      }}
+                    />
+
+                    {/* Plus Button to Add Another Task */}
+                    {isLastNewItem && (
+                      <button
+                        type="button"
+                        tabIndex={0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (targetStudent && targetSubject) {
+                            setNewEntryModal({
+                              type: activeView,
+                              subject: targetSubject.name,
+                              studentName: `${targetStudent.firstName} ${targetStudent.secondName}`.trim(),
+                              date: selectedDate ? getLocalDateString(selectedDate) : getLocalDateString(new Date())
+                            });
+                          }
+                        }}
+                        className="w-full mt-3 h-8 border border-dashed border-gray-300 rounded flex items-center justify-center hover:bg-gray-50 text-gray-400 hover:text-gray-600 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-[#254245]"
+                        title="Add Task"
+                      >
+                        <span className="text-lg font-bold">+</span>
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Custom Floating Column Overlay */}
       {draggedStudentIdx !== null && students[draggedStudentIdx] && (
@@ -2120,11 +2511,10 @@ export default function BirdViewPage() {
                                   }}
 
                                   className={`
-                                  w-full h-full flex items-center justify-center cursor-pointer transition-all duration-300 ease-in-out
-                                  ${isClicked ? 'overflow-visible cell-clicked' : 'overflow-hidden'}
+                                  w-full h-full flex items-center justify-center cursor-pointer transition-all duration-300 ease-in-out overflow-hidden
                                 ${disableCol ? (isAbsent ? 'absent-cell' : 'leave-cell') : (!isAssigned && !isDragged && !isStudentDragged) ? 'unassigned-cell' : 'bg-white grid-cell-assigned'}
                                 ${isAssigned && !disableCol ? 'hover:bg-gray-50' : ''}
-                                  ${isClicked ? `z-[999] absolute top-0 ${visibleStudentIds && studentIndex >= visibleStudentIds.length - 2 ? 'right-0 left-auto' : 'left-0'} w-0 h-0 bg-transparent p-0 overflow-visible` : 'z-0 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full rounded-none p-0'}
+                                  z-0 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full rounded-none p-0
                                 ${isDragged || isStudentDragged ? 'dragged-column dragged-row' : ''}
                                 ${showLeftIndicator ? 'drop-target-left' : ''}
                                 ${showRightIndicator ? 'drop-target-right' : ''}
@@ -2148,55 +2538,8 @@ export default function BirdViewPage() {
                                     if (items.length === 0) return null;
 
                                     return (
-                                      <div
-                                         className={`w-full flex flex-col ${isClicked ? `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] max-w-[420px] max-h-[82vh] sm:absolute sm:top-0 sm:translate-x-0 sm:translate-y-0 ${visibleStudentIds && studentIndex >= visibleStudentIds.length - 2 ? 'sm:right-0 sm:left-auto' : 'sm:left-0'} sm:w-[500px] md:w-[600px] sm:max-w-[92vw] sm:max-h-[75vh] overflow-y-auto overflow-x-visible z-[999] bg-white rounded-xl sm:rounded-lg p-3 sm:p-3.5 shadow-[0_12px_48px_rgba(0,0,0,0.35)] border border-gray-200 custom-scrollbar gap-2` : 'relative h-full items-center justify-center'}`}
-                                         onClick={(e) => { if (isClicked) e.stopPropagation(); }}
-                                        ref={(el) => {
-                                          if (el) {
-                                            if (isClicked && el.dataset.opened !== 'true') {
-                                              el.dataset.opened = 'true';
-                                              setTimeout(() => {
-                                                el.scrollTop = 0;
-                                                const firstFocusable = el.querySelector('select:not([tabindex="-1"]), input:not([tabindex="-1"]), textarea:not([tabindex="-1"]), button:not([tabindex="-1"])') as HTMLElement;
-                                                if (firstFocusable) {
-                                                  firstFocusable.focus({ preventScroll: true });
-                                                  if (firstFocusable instanceof HTMLTextAreaElement || firstFocusable instanceof HTMLInputElement) {
-                                                    firstFocusable.setSelectionRange(firstFocusable.value.length, firstFocusable.value.length);
-                                                  }
-                                                }
-                                                el.scrollTop = 0;
-                                              }, 50);
-                                            } else if (!isClicked && el.dataset.opened === 'true') {
-                                              el.dataset.opened = 'false';
-                                            }
-                                          }
-                                        }}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Tab' && isClicked) {
-                                            const focusableElements = Array.from(e.currentTarget.querySelectorAll('button:not([tabindex="-1"]):not([disabled]), [href]:not([tabindex="-1"]):not([disabled]), input:not([tabindex="-1"]):not([disabled]), select:not([tabindex="-1"]):not([disabled]), textarea:not([tabindex="-1"]):not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled])'))
-                                              .filter(elem => (elem as HTMLElement).offsetParent !== null) as HTMLElement[];
-
-                                            if (focusableElements.length > 0) {
-                                              e.preventDefault();
-                                              const currentIndex = focusableElements.indexOf(document.activeElement as HTMLElement);
-                                              if (e.shiftKey) {
-                                                if (currentIndex <= 0) {
-                                                  focusableElements[focusableElements.length - 1].focus();
-                                                } else {
-                                                  focusableElements[currentIndex - 1].focus();
-                                                }
-                                              } else {
-                                                if (currentIndex === -1 || currentIndex === focusableElements.length - 1) {
-                                                  focusableElements[0].focus();
-                                                } else {
-                                                  focusableElements[currentIndex + 1].focus();
-                                                }
-                                              }
-                                            }
-                                          }
-                                        }}
-                                      >
-                                        {(isClicked ? items : items.slice(0, 1)).map((item, idx, arr) => {
+                                       <div className="w-full h-full flex flex-col relative items-center justify-center">
+                                         {items.slice(0, 1).map((item, idx, arr) => {
                                           if (activeView === 'query') {
                                             return (
                                               <div key={idx} className={`w-full ${isClicked ? 'min-h-[80px]' : 'h-full'} bg-[#edab30]/10 border border-[#edab30]/30 p-1 flex flex-col items-center justify-center relative`}>
