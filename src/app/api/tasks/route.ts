@@ -216,6 +216,11 @@ export async function PATCH(request: Request) {
       }
     }
 
+    // If comments field, comments are managed by dedicated comments endpoint
+    if (fieldName === 'comments') {
+      return NextResponse.json({ success: true }, { status: 200 });
+    }
+
     // Allowed fields
     const allowedFields = ['description', 'status', 'subject', 'book', 'chapter', 'topic', 'exercise', 'taskType', 'dueDate', 'assignee', 'reporter', 'rescheduledToId', 'totalMarks', 'obtainedMarks', 'images'];
     if (!allowedFields.includes(fieldName)) {

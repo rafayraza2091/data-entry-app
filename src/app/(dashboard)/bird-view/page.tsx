@@ -264,6 +264,12 @@ export default function BirdViewPage() {
     setCellData(prev => prev.map(d => d.id === taskId ? { ...d, [fieldName]: newValue } : d));
     setActiveDropdown(null);
 
+    // Comments are saved directly via /api/tasks/[id]/comments
+    if (fieldName === 'comments') return;
+
+    // Temporary IDs (timestamps) cannot be patched until created in DB
+    if (typeof taskId === 'number' && taskId > 2147483647) return;
+
     try {
       const endpoint = activeView === 'task' ? '/api/tasks' : '/api/queries';
       const res = await fetch(endpoint, {
@@ -272,10 +278,11 @@ export default function BirdViewPage() {
         body: JSON.stringify({ id: taskId, fieldName, newValue })
       });
       if (!res.ok) {
-        console.error('Failed to update task');
+        const err = await res.json().catch(() => ({}));
+        console.error('Failed to update task:', err);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error updating task field:', err);
     }
   };
 
