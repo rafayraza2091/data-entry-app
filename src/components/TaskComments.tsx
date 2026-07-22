@@ -221,11 +221,12 @@ export default function TaskComments({
                     <div className="flex items-center gap-3 mt-1.5 pt-1 text-[10px] text-gray-500 font-semibold">
                       <button
                         type="button"
+                        tabIndex={0}
                         onClick={() => {
                           setReplyingToId(replyingToId === comment.id ? null : comment.id);
                           setReplyText('');
                         }}
-                        className="hover:text-blue-600 transition-colors flex items-center gap-1"
+                        className="text-gray-500 hover:text-blue-600 focus:text-blue-600 focus:ring-2 focus:ring-blue-500 focus:outline-none rounded px-1.5 py-0.5 transition-colors flex items-center gap-1 font-semibold"
                       >
                         <i className="fa-solid fa-reply text-[9px]"></i>
                         <span>Reply</span>
@@ -234,10 +235,12 @@ export default function TaskComments({
                       {(comment.author === userFullName || ['OWNER', 'COORDINATOR', 'ADMIN'].includes(currentUser?.role || '')) && (
                         <button
                           type="button"
+                          tabIndex={0}
                           onClick={() => handleDeleteComment(comment.id)}
-                          className="hover:text-red-600 transition-colors flex items-center gap-1 ml-auto opacity-0 group-hover/comment:opacity-100"
+                          className="text-gray-500 hover:text-red-600 focus:text-red-600 focus:ring-2 focus:ring-red-500 focus:outline-none rounded px-1.5 py-0.5 transition-colors flex items-center gap-1 ml-auto font-semibold"
+                          title="Delete Comment"
                         >
-                          <i className="fa-solid fa-trash-can text-[9px]"></i>
+                          <i className="fa-solid fa-trash-can text-[10px]"></i>
                           <span>Delete</span>
                         </button>
                       )}
@@ -249,26 +252,29 @@ export default function TaskComments({
                 {replyingToId === comment.id && (
                   <div className="ml-7 pl-2.5 border-l-2 border-blue-400 mt-1 flex flex-col gap-2">
                     <textarea
+                      tabIndex={0}
                       value={replyText}
                       onChange={(e) => setReplyText(e.target.value)}
                       placeholder={`Reply to ${comment.author}...`}
                       rows={2}
-                      className="w-full text-xs p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none bg-white"
+                      className="w-full text-xs p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none resize-none bg-white"
                       autoFocus
                     />
                     <div className="flex justify-end gap-2">
                       <button
                         type="button"
+                        tabIndex={0}
                         onClick={() => setReplyingToId(null)}
-                        className="px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-200 rounded font-semibold"
+                        className="px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-200 focus:ring-2 focus:ring-blue-500 focus:outline-none rounded font-semibold"
                       >
                         Cancel
                       </button>
                       <button
                         type="button"
+                        tabIndex={0}
                         disabled={isSubmitting || !replyText.trim()}
                         onClick={() => handleAddComment(comment.id)}
-                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded shadow-sm disabled:opacity-50"
+                        className="px-3 py-1 bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none text-white text-xs font-bold rounded shadow-sm disabled:opacity-50"
                       >
                         {isSubmitting ? 'Posting...' : 'Post Reply'}
                       </button>
@@ -307,8 +313,10 @@ export default function TaskComments({
                             <div className="flex justify-end mt-1">
                               <button
                                 type="button"
+                                tabIndex={0}
                                 onClick={() => handleDeleteComment(reply.id)}
-                                className="text-[9px] text-gray-400 hover:text-red-600 transition-colors flex items-center gap-1 opacity-0 group-hover/reply:opacity-100 font-semibold"
+                                className="text-[9px] text-gray-500 hover:text-red-600 focus:text-red-600 focus:ring-2 focus:ring-red-500 focus:outline-none transition-colors flex items-center gap-1 font-semibold rounded px-1 py-0.5"
+                                title="Delete Reply"
                               >
                                 <i className="fa-solid fa-trash-can text-[8px]"></i>
                                 <span>Delete</span>
@@ -329,6 +337,7 @@ export default function TaskComments({
       {/* Main Comment Input Form */}
       <div className="mt-2 flex flex-col gap-2">
         <textarea
+          tabIndex={0}
           value={newCommentText}
           onChange={(e) => setNewCommentText(e.target.value)}
           placeholder="Add a comment..."
@@ -339,13 +348,14 @@ export default function TaskComments({
               handleAddComment(null);
             }
           }}
-          className="w-full text-xs p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#edab30] focus:border-transparent focus:outline-none resize-none bg-white custom-scrollbar"
+          className="w-full text-xs p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none resize-none bg-white custom-scrollbar"
         />
         <div className="flex items-center justify-end">
           <button
             type="button"
+            tabIndex={0}
             onClick={() => handleAddComment(null)}
-            className={`px-4 py-1.5 bg-[#254245] hover:bg-[#1a2e31] text-white text-xs font-bold rounded-md shadow-sm transition-colors flex items-center gap-1.5 focus:ring-2 focus:ring-[#edab30] focus:outline-none ${isSubmitting || !newCommentText.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`px-4 py-1.5 bg-[#254245] hover:bg-[#1a2e31] text-white text-xs font-bold rounded-md shadow-sm transition-colors flex items-center gap-1.5 focus:ring-2 focus:ring-blue-500 focus:outline-none ${isSubmitting || !newCommentText.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             <i className="fa-solid fa-paper-plane text-[10px]"></i>
             <span>{isSubmitting ? 'Posting...' : 'Comment'}</span>
