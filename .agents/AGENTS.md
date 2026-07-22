@@ -37,6 +37,18 @@ When modifying the Bird View grid, strictly follow these layout and functionalit
 14. **Absent/Leave Cell Interaction**: Grid cells corresponding to absent or leave students MUST remain clickable. Do not block the `onClick` handler using `disableCol` because the user must still be able to open the Task Entry modal or inline task to view/override it.
 
 15. **Arrow Key Navigation**: Arrow key grid navigation (highlighting and cell focusing) must only be active when `isEditMode` is `true`. Outside of Edit Mode, arrow keys must be intercepted to move the crosshair highlight (`activeSubjectIdRef` and `activeStudentIdRef`) using `updateHighlight(..., ..., true)` so that the page scrolls to keep the crosshair in view naturally.
+
+16. **Task Comments Integration (`src/components/TaskComments.tsx`)**:
+    - Tasks support Jira-style comments and threaded replies with user avatars, relative/formatted timestamps, and delete controls.
+    - Delete button in comments must remain visible (`opacity-100` or permanent icon) and provide keyboard focus rings (`tabIndex={0}`).
+
+17. **Attachment Focus & Z-Index Overlay Layering**:
+    - Attachment thumbnails and the attachment choice `+` container must be keyboard focusable (`tabIndex={0}` with `Enter`/`Space` handlers). Attachment image delete `X` buttons MUST have `tabIndex={-1}` to avoid tab trapping.
+    - Attachment Choice Modal, Cropper Modal, and Fullscreen Image Preview Modals use explicit inline `zIndex` (e.g. `9500`, `10000`) so they reliably open above the ticket overlay (`zIndex: 9000`).
+
+18. **Royal Academic Ledger Ticket Design Specification**:
+    - Compact Grid Cell Ticket: Uses a `3px` left status rail (`#124D45` Open, `#B48632` Working, `#26705A` Done, `#9A6818` Pending), `#FFFEFA` ivory background, `#D8D2C5` hairline border, `2px` radius. Header displays status label (`OPEN`, `WORKING`, `DONE`, `PENDING`), absent warning, `+N` multi-task badge, and tabular marks (`8/10`). Title fallback order: Topic -> Chapter -> Description first line -> `'Untitled task'` (no empty `Ch: -` / `Tp: -` labels). Footer displays reporter avatar, attachment count `📎 N`, comment count `💬 N`, and work type badge (`TUITION`, `HOME`, `CLASS`, `TEST`, `PROJECT`). Active selection uses `2px` `#B48632` antique-brass border.
+    - Expanded Ticket Modal: `640px` max-width backdrop modal overlay (`fixed inset-0 bg-[#0F181B]/48 backdrop-blur-[1px] z-[9000]`). Features sticky header (`MATHEMATICS · HASSAN JAWAD`, `Task details`, status/type tag, close button, brass divider), Academic Details 3-column grid + resizable Description textarea with instant `onChange` update, Assignment 2-column row (Reporter avatar select + Marks input `/ 10`) + selectable Task Type & Status tags, Attachments `54x54px` thumbnails + `+ Attach files` action, Discussion comments, `+ Add another task...` dashed button, and sticky footer with `Saved ✓`, overflow `Delete`, and `Mark done` primary button.
 <!-- END:bird-view-rules -->
 
 <!-- BEGIN:attendance-page-rules -->
