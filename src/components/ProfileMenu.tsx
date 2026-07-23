@@ -77,7 +77,8 @@ export default function ProfileMenu({ firstName, role }: { firstName: string, ro
   return (
     <div className="relative" ref={menuRef}>
       <button 
-        className={`w-8 h-8 rounded-full ${roleColorClass} text-white flex items-center justify-center text-sm font-semibold border-none cursor-pointer transition-transform hover:scale-105 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/50`} 
+        type="button"
+        className="w-8 h-8 rounded-full bg-[#124D45] text-white flex items-center justify-center text-xs font-semibold cursor-pointer transition-colors hover:ring-2 hover:ring-[#B48632] outline-none focus:ring-2 focus:ring-[#2463EB]" 
         onClick={() => setIsOpen(!isOpen)}
         aria-label="User menu"
         style={{ ...studentStyle, pointerEvents: 'auto' }}
@@ -86,17 +87,23 @@ export default function ProfileMenu({ firstName, role }: { firstName: string, ro
       </button>
       
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50 overflow-hidden animate-[fadeIn_0.2s_ease]">
-          <div className="p-4 border-b border-gray-100 font-medium text-headingGray">
-            <p>Hi, {firstName || 'User'}!</p>
+        <div className="absolute right-0 top-full mt-2 w-52 bg-[#FFFEFA] border border-[#D8D2C5] rounded-[6px] shadow-[0_4px_14px_rgba(23,34,56,0.12)] z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-120">
+          <div className="p-3 border-b border-[#D8D2C5]/60 flex flex-col gap-0.5">
+            <p className="text-xs font-semibold text-[#172238] truncate">Hi, {firstName || 'User'}!</p>
+            {role && (
+              <span className="text-[10px] font-semibold text-[#687286] uppercase tracking-wider">
+                {role}
+              </span>
+            )}
           </div>
           <button 
-            className="w-full text-left px-4 py-3 text-danger text-sm font-medium hover:bg-danger/10 transition-colors focus:outline-none" 
+            type="button"
+            className="w-full text-left px-3 py-2.5 text-[#A33B3B] hover:bg-[#A33B3B]/10 text-xs font-medium transition-colors flex items-center gap-2 outline-none focus:bg-[#A33B3B]/10" 
             onClick={handleLogout}
             style={{ pointerEvents: 'auto' }}
           >
-            <i className="fa-solid fa-arrow-right-from-bracket mr-2"></i>
-            Logout
+            <i className="fa-solid fa-arrow-right-from-bracket text-[11px]"></i>
+            <span>Sign out</span>
           </button>
         </div>
       )}

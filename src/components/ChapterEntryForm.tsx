@@ -164,9 +164,11 @@ export default function ChapterEntryForm() {
         </div>
       </div>
 
-      <button type="submit" className="btn-submit" disabled={status.type === 'loading'}>
-        {status.type === 'loading' ? 'Saving...' : 'Add Chapter'}
-      </button>
+      <div className="flex justify-start">
+        <button type="submit" className="btn-submit" disabled={status.type === 'loading'}>
+          {status.type === 'loading' ? 'Saving...' : 'Add Chapter'}
+        </button>
+      </div>
 
       {status.message && status.type !== 'loading' && (
         <div className={`status-message ${status.type === 'success' ? 'status-success' : 'status-error'}`}>

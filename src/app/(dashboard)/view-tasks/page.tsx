@@ -487,16 +487,16 @@ export default function ViewTasksPage() {
     ];
 
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-x-auto mx-4 md:mx-8">
+      <div className="bg-[#FFFEFA] rounded-[3px] border border-[#D8D2C5] overflow-x-auto shadow-xs">
         <table className="w-full text-left border-collapse whitespace-nowrap">
           <thead>
-            <tr className="border-b border-gray-200 bg-teal-50 text-teal-700 uppercase text-xs tracking-wider">
-              {headers.map(h => <th key={h} className="p-2 md:p-4 font-semibold">{h}</th>)}
+            <tr className="border-b border-[#D8D2C5] bg-[#F4F1E9] text-[#172238] uppercase text-[11px] tracking-wider font-semibold">
+              {headers.map(h => <th key={h} className="px-3 py-2.5 font-semibold text-[#172238]">{h}</th>)}
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-[#D8D2C5]/40 text-xs text-[#172238]">
             {filteredTasks.map((item, idx) => (
-              <tr key={item.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+              <tr key={item.id} className="hover:bg-[#F4F1E9]/50 transition-colors">
                 <td className="p-2 md:p-4 text-sm text-gray-600">{idx + 1}</td>
                 <td className="p-2 md:p-4 text-sm text-gray-600">{item.assignee}</td>
                 <td className="p-2 md:p-4 text-sm text-gray-600">{item.reporter}</td>
@@ -595,44 +595,43 @@ export default function ViewTasksPage() {
   const activeFilterCount = activeFilters.length;
 
   return (
-    <main className="w-auto pb-8 -mt-4 md:-mt-8 -mx-4 md:-mx-8" style={{ maxWidth: 'none' }}>
+    <main className="w-auto pb-8 pt-2 px-4 sm:px-6" style={{ maxWidth: 'none' }}>
 
-      <div className="py-2 px-4 md:px-8 mb-4" style={{ backgroundColor: '#0f766e' }}>
+      <div className="py-2.5 px-4 rounded-[4px] mb-4 bg-[#172238] border border-[#D8D2C5]/20 shadow-xs">
         <div className="flex flex-col md:flex-row items-center gap-3">
-          <h2 className="text-lg font-bold text-white hidden md:block whitespace-nowrap">Tasks Directory</h2>
+          <h2 className="text-sm font-semibold text-white hidden md:block whitespace-nowrap tracking-wide">Tasks Directory</h2>
           
           <div className="relative flex-grow w-full">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg className="h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-              </svg>
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[#687286]">
+              <i className="fa-solid fa-magnifying-glass text-xs"></i>
             </div>
             <input 
               type="text" 
               placeholder="Global search across all fields..." 
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm transition-shadow"
+              className="w-full pl-9 pr-3 h-[32px] border border-[#D8D2C5]/40 rounded-[3px] focus:outline-none focus:ring-1 focus:ring-[#2463EB] text-xs bg-white text-[#172238]"
             />
           </div>
           
           <div className="flex items-center gap-2 w-full md:w-auto">
             <button 
               onClick={() => setIsFiltersExpanded(!isFiltersExpanded)}
-              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-1.5 border rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+              className={`flex-1 md:flex-none h-[32px] flex items-center justify-center gap-2 px-3 border rounded-[3px] text-xs font-semibold transition-colors whitespace-nowrap ${
                 isFiltersExpanded || activeFilterCount > 0 
-                  ? 'bg-teal-50 border-teal-200 text-teal-700' 
-                  : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                  ? 'bg-[#124D45] border-[#B48632] text-white' 
+                  : 'bg-[#FFFEFA] border-[#D8D2C5] text-[#172238] hover:bg-[#F4F1E9]'
               }`}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
-              Filters {activeFilterCount > 0 && <span className="bg-teal-500 text-white rounded-full px-2 py-0.5 text-xs ml-1">{activeFilterCount}</span>}
+              <i className="fa-solid fa-filter text-[11px]"></i>
+              <span>Filters</span>
+              {activeFilterCount > 0 && <span className="bg-[#B48632] text-white rounded-full px-1.5 py-0.2 text-[10px] ml-0.5">{activeFilterCount}</span>}
             </button>
             
             {(activeFilterCount > 0 || searchQuery) && (
               <button 
                 onClick={clearFilters}
-                className="flex items-center justify-center px-4 py-1.5 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 rounded-md text-sm font-medium transition-colors whitespace-nowrap"
+                className="h-[32px] flex items-center justify-center px-3 border border-[#D8D2C5] bg-[#FFFEFA] text-[#172238] hover:bg-[#F4F1E9] rounded-[3px] text-xs font-semibold transition-colors whitespace-nowrap"
                 title="Clear all filters"
               >
                 Clear
@@ -642,35 +641,35 @@ export default function ViewTasksPage() {
         </div>
 
         {isFiltersExpanded && (
-          <div className="mt-4 p-4 bg-teal-50/50 rounded-md border border-teal-100 animate-slide-up">
-            <h3 className="text-xs font-semibold text-teal-700 uppercase tracking-wider mb-3">Advanced Filters</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+          <div className="mt-3 p-3 bg-[#FFFEFA] rounded-[3px] border border-[#D8D2C5] animate-in fade-in duration-120">
+            <h3 className="text-[10px] font-semibold text-[#687286] uppercase tracking-wider mb-2">Advanced Task Filters</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
               <div>
-                <label className="block text-xs text-teal-700/70 mb-1">From Date</label>
+                <label className="block text-[11px] text-[#687286] mb-1">From Date</label>
                 <input 
                   type="datetime-local"
                   value={filterStartDate}
                   onChange={e => setFilterStartDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm bg-white"
+                  className="w-full h-[32px] px-2 border border-[#D8D2C5] rounded-[3px] focus:outline-none focus:ring-1 focus:ring-[#2463EB] text-xs bg-white text-[#172238]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-teal-700/70 mb-1">To Date</label>
+                <label className="block text-[11px] text-[#687286] mb-1">To Date</label>
                 <input 
                   type="datetime-local"
                   value={filterEndDate}
                   onChange={e => setFilterEndDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm bg-white"
+                  className="w-full h-[32px] px-2 border border-[#D8D2C5] rounded-[3px] focus:outline-none focus:ring-1 focus:ring-[#2463EB] text-xs bg-white text-[#172238]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-teal-700/70 mb-1">Status</label>
+                <label className="block text-[11px] text-[#687286] mb-1">Status</label>
                 <select 
                   value={filterStatus}
                   onChange={e => setFilterStatus(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm bg-white"
+                  className="w-full h-[32px] px-2 border border-[#D8D2C5] rounded-[3px] focus:outline-none focus:ring-1 focus:ring-[#2463EB] text-xs bg-white text-[#172238]"
                 >
                   <option value="">All Statuses</option>
                   <option value="OPEN">Open</option>
@@ -681,11 +680,11 @@ export default function ViewTasksPage() {
               </div>
 
               <div>
-                <label className="block text-xs text-teal-700/70 mb-1">Task Type</label>
+                <label className="block text-[11px] text-[#687286] mb-1">Task Type</label>
                 <select 
                   value={filterTaskType}
                   onChange={e => setFilterTaskType(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm bg-white"
+                  className="w-full h-[32px] px-2 border border-[#D8D2C5] rounded-[3px] focus:outline-none focus:ring-1 focus:ring-[#2463EB] text-xs bg-white text-[#172238]"
                 >
                   <option value="">All Types</option>
                   <option value="Home Work">Home Work</option>
@@ -697,11 +696,11 @@ export default function ViewTasksPage() {
               </div>
 
               <div>
-                <label className="block text-xs text-teal-700/70 mb-1">Assignee</label>
+                <label className="block text-[11px] text-[#687286] mb-1">Assignee</label>
                 <select 
                   value={filterAssignee}
                   onChange={e => setFilterAssignee(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm bg-white"
+                  className="w-full h-[32px] px-2 border border-[#D8D2C5] rounded-[3px] focus:outline-none focus:ring-1 focus:ring-[#2463EB] text-xs bg-white text-[#172238]"
                 >
                   <option value="">All Assignees</option>
                   {studentsList.map((a: any) => <option key={a} value={a}>{a}</option>)}
@@ -709,11 +708,11 @@ export default function ViewTasksPage() {
               </div>
 
               <div>
-                <label className="block text-xs text-teal-700/70 mb-1">Subject</label>
+                <label className="block text-[11px] text-[#687286] mb-1">Subject</label>
                 <select 
                   value={filterSubject}
                   onChange={e => setFilterSubject(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm bg-white"
+                  className="w-full h-[32px] px-2 border border-[#D8D2C5] rounded-[3px] focus:outline-none focus:ring-1 focus:ring-[#2463EB] text-xs bg-white text-[#172238]"
                 >
                   <option value="">All Subjects</option>
                   {subjectsList.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
@@ -721,11 +720,11 @@ export default function ViewTasksPage() {
               </div>
 
               <div>
-                <label className="block text-xs text-teal-700/70 mb-1">Class</label>
+                <label className="block text-[11px] text-[#687286] mb-1">Class</label>
                 <select 
                   value={filterClass}
                   onChange={e => setFilterClass(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 text-sm bg-white"
+                  className="w-full h-[32px] px-2 border border-[#D8D2C5] rounded-[3px] focus:outline-none focus:ring-1 focus:ring-[#2463EB] text-xs bg-white text-[#172238]"
                 >
                   <option value="">All Classes</option>
                   {classesList.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
@@ -736,26 +735,26 @@ export default function ViewTasksPage() {
         )}
 
         {activeFilterCount > 0 && (
-          <div className="flex flex-wrap items-center gap-2 mt-4 animate-fade-in">
-            <span className="text-xs text-gray-500 font-medium uppercase tracking-wider mr-1">Active Filters:</span>
+          <div className="flex flex-wrap items-center gap-2 mt-3 text-xs">
+            <span className="text-[10px] text-gray-300 font-semibold uppercase tracking-wider">Active Filters:</span>
             {activeFilters.map(f => (
-              <span key={f.type} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-teal-50 text-teal-700 border border-teal-200 shadow-sm transition-all hover:shadow">
-                <span className="opacity-70">{f.type}:</span> {f.value}
-                <button onClick={f.clear} className="hover:bg-teal-200 hover:text-teal-900 rounded-full p-0.5 ml-1 transition-colors focus:outline-none" aria-label={`Remove ${f.type} filter`}>
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              <span key={f.type} className="inline-flex items-center bg-[#124D45] text-white text-[11px] px-2 py-0.5 rounded-[2px] border border-[#B48632]">
+                <span className="opacity-80 mr-1">{f.type}:</span> {f.value}
+                <button onClick={f.clear} className="hover:text-[#B48632] ml-1.5 focus:outline-none" aria-label={`Remove ${f.type} filter`}>
+                  <i className="fa-solid fa-xmark text-[10px]"></i>
                 </button>
               </span>
             ))}
             <button 
               onClick={clearFilters}
-              className="text-xs text-gray-500 hover:text-gray-800 underline ml-2 transition-colors focus:outline-none"
+              className="text-xs text-[#B48632] hover:underline ml-2 transition-colors focus:outline-none"
             >
               Clear All
             </button>
           </div>
         )}
       </div>
-      
+
       <div className="animate-slide-up w-full">
         {renderTable()}
       </div>

@@ -50,9 +50,11 @@ export default function SubjectEntryForm() {
         </div>
       </div>
       
-      <button type="submit" className="btn-submit" disabled={status.type === 'loading'}>
-        {status.type === 'loading' ? 'Saving...' : 'Add Subject'}
-      </button>
+      <div className="flex justify-start">
+        <button type="submit" className="btn-submit" disabled={status.type === 'loading'}>
+          {status.type === 'loading' ? 'Saving...' : 'Add Subject'}
+        </button>
+      </div>
 
       {status.message && status.type !== 'loading' && (
         <div className={`status-message ${status.type === 'success' ? 'status-success' : 'status-error'}`}>

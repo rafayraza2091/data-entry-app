@@ -14,47 +14,49 @@ export default function TopNav({
 }) {
   const pathname = usePathname();
   
-  let pageTitle = 'Dashboard';
-  if (pathname === '/book') pageTitle = 'Book Entry';
-  else if (pathname === '/chapter') pageTitle = 'Chapter Entry';
-  else if (pathname === '/classes') pageTitle = 'Class Entry';
+  let pageTitle = 'Syllabus';
+  if (pathname === '/book') pageTitle = 'Books';
+  else if (pathname === '/chapter') pageTitle = 'Chapters';
+  else if (pathname === '/classes') pageTitle = 'Classes';
   else if (pathname === '/query') pageTitle = 'Query Entry';
-  else if (pathname === '/school') pageTitle = 'School Entry';
-  else if (pathname === '/subject') pageTitle = 'Subject Entry';
-  else if (pathname === '/topic') pageTitle = 'Topic Entry';
+  else if (pathname === '/school') pageTitle = 'Schools';
+  else if (pathname === '/subject') pageTitle = 'Subjects';
+  else if (pathname === '/topic') pageTitle = 'Topics';
   else if (pathname === '/') pageTitle = 'Syllabus';
   else if (pathname === '/task') pageTitle = 'Task Entry';
-  else if (pathname === '/view-queries') pageTitle = 'View Queries';
-  else if (pathname === '/users') pageTitle = 'User Management';
-  else if (pathname === '/notification') pageTitle = 'Notifications';
-  else if (pathname === '/view-data') pageTitle = 'View Data';
-  else if (pathname === '/view-tasks') pageTitle = 'Task Viewer';
+  else if (pathname === '/view-queries') pageTitle = 'Queries';
+  else if (pathname === '/users') pageTitle = 'Profiles';
+  else if (pathname === '/admin/users') pageTitle = 'Roles & Access';
+  else if (pathname === '/notification') pageTitle = 'Approvals';
+  else if (pathname === '/view-data') pageTitle = 'Academic Data';
+  else if (pathname === '/view-tasks') pageTitle = 'Tasks';
   else if (pathname === '/employee-record') pageTitle = 'Employee Record';
-  else if (pathname === '/view-employees') pageTitle = 'Employed Staff';
+  else if (pathname === '/view-employees') pageTitle = 'Employees';
   else if (pathname === '/bird-view') pageTitle = 'Bird View';
   else if (pathname === '/attendance') pageTitle = 'Attendance';
+  else if (pathname === '/agent') pageTitle = 'Agent Assistant';
 
   return (
-    <header className="h-[40px] bg-white border-b border-gray-200 flex items-center px-6 shrink-0 shadow-sm z-50 relative">
-      {/* Left side: Hamburger */}
-      <div className="flex-none">
+    <header className="h-[48px] bg-[#FFFEFA] border-b border-[#D8D2C5] flex items-center justify-between px-4 sm:px-6 shrink-0 z-30 relative shadow-xs">
+      {/* Left side: Hamburger Toggle */}
+      <div className="flex items-center gap-3 min-w-0">
         <button 
+          type="button"
           onClick={toggleSidebar}
-          className="text-gray-500 hover:text-primary transition-colors focus:outline-none"
+          className="w-8 h-8 rounded-[3px] border border-[#D8D2C5] bg-[#F4F1E9] text-[#687286] hover:text-[#172238] hover:bg-white flex items-center justify-center transition-colors outline-none focus:ring-2 focus:ring-[#2463EB]"
+          title="Toggle Navigation"
         >
-          <i className="fa-solid fa-bars text-xl"></i>
+          <i className="fa-solid fa-bars text-xs"></i>
         </button>
-      </div>
-      
-      {/* Center: Title */}
-      <div className="flex-1 flex justify-center overflow-hidden px-4">
-        <h1 className="text-xl md:text-2xl font-bold text-primaryDark truncate tracking-tight leading-none pt-1">
+
+        {/* Page Title */}
+        <h1 className="text-[15px] sm:text-[16px] font-semibold text-[#172238] truncate tracking-tight">
           {pageTitle}
         </h1>
       </div>
 
       {/* Right side: ProfileMenu */}
-      <div className="flex-none">
+      <div className="flex items-center gap-3 shrink-0">
         <ProfileMenu firstName={firstName} role={role} />
       </div>
     </header>
