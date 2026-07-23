@@ -1726,21 +1726,43 @@ export default function BirdViewPage() {
                       </div>
                     </div>
 
-                    {/* Section 5: Status & Task Type Tags (Selectable Pill Rows) */}
+                    {/* Section 5: Status & Task Type Tags (Selectable Pill Rows with Roving TabIndex & Arrow Traversal) */}
                     <div className="w-full pt-4 border-t border-[#E2DDD3] flex flex-col gap-3">
                       {/* Task Type Tags */}
                       <div>
                         <div className="text-[12px] font-medium text-[#687286] mb-2">Task Type</div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {['Tuition Work', 'Class Work', 'Home Work', 'Test', 'Project'].map(t => {
+                        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Task Type">
+                          {['Tuition Work', 'Class Work', 'Home Work', 'Test', 'Project'].map((t, tIdx, tArr) => {
                             const isSelected = item.taskType === t;
+                            const isDefaultFocused = isSelected || (!tArr.includes(item.taskType) && tIdx === 0);
                             const b = getTaskTypeBadge(t);
                             return (
                               <button
                                 key={t}
                                 type="button"
-                                tabIndex={0}
+                                tabIndex={isDefaultFocused ? 0 : -1}
                                 onClick={() => handleUpdateTaskField(item.id, 'taskType', t)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                                    e.preventDefault();
+                                    const parent = e.currentTarget.parentElement;
+                                    if (parent) {
+                                      const buttons = Array.from(parent.querySelectorAll<HTMLButtonElement>('button'));
+                                      const currIndex = buttons.indexOf(e.currentTarget);
+                                      const nextBtn = buttons[(currIndex + 1) % buttons.length];
+                                      nextBtn?.focus();
+                                    }
+                                  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                                    e.preventDefault();
+                                    const parent = e.currentTarget.parentElement;
+                                    if (parent) {
+                                      const buttons = Array.from(parent.querySelectorAll<HTMLButtonElement>('button'));
+                                      const currIndex = buttons.indexOf(e.currentTarget);
+                                      const prevBtn = buttons[(currIndex - 1 + buttons.length) % buttons.length];
+                                      prevBtn?.focus();
+                                    }
+                                  }
+                                }}
                                 className={`h-[32px] px-3.5 border rounded-[4px] text-[13px] font-medium transition-all flex items-center gap-1.5 cursor-pointer outline-none focus:ring-2 focus:ring-[#124D45] focus:ring-offset-1 ${
                                   isSelected
                                     ? 'text-white border-transparent shadow-xs font-semibold'
@@ -1759,16 +1781,17 @@ export default function BirdViewPage() {
                       {/* Status Tags */}
                       <div>
                         <div className="text-[12px] font-medium text-[#687286] mb-2">Status</div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {['OPEN', 'IN_PROGRESS', 'DONE', 'PENDING'].map(s => {
+                        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Status">
+                          {['OPEN', 'IN_PROGRESS', 'DONE', 'PENDING'].map((s, sIdx, sArr) => {
                             const isSelected = item.status === s;
+                            const isDefaultFocused = isSelected || (!sArr.includes(item.status) && sIdx === 0);
                             const color = getStatusColor(s);
                             const label = s === 'IN_PROGRESS' ? 'In Progress' : (s.charAt(0) + s.slice(1).toLowerCase());
                             return (
                               <button
                                 key={s}
                                 type="button"
-                                tabIndex={0}
+                                tabIndex={isDefaultFocused ? 0 : -1}
                                 onClick={() => {
                                   if (s === 'PENDING') {
                                     if (item.rescheduledToId) {
@@ -1783,6 +1806,27 @@ export default function BirdViewPage() {
                                     }
                                   } else {
                                     handleUpdateTaskField(item.id, 'status', s);
+                                  }
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                                    e.preventDefault();
+                                    const parent = e.currentTarget.parentElement;
+                                    if (parent) {
+                                      const buttons = Array.from(parent.querySelectorAll<HTMLButtonElement>('button'));
+                                      const currIndex = buttons.indexOf(e.currentTarget);
+                                      const nextBtn = buttons[(currIndex + 1) % buttons.length];
+                                      nextBtn?.focus();
+                                    }
+                                  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                                    e.preventDefault();
+                                    const parent = e.currentTarget.parentElement;
+                                    if (parent) {
+                                      const buttons = Array.from(parent.querySelectorAll<HTMLButtonElement>('button'));
+                                      const currIndex = buttons.indexOf(e.currentTarget);
+                                      const prevBtn = buttons[(currIndex - 1 + buttons.length) % buttons.length];
+                                      prevBtn?.focus();
+                                    }
                                   }
                                 }}
                                 className={`h-[32px] px-3.5 border rounded-[4px] text-[13px] font-medium transition-all flex items-center gap-1.5 cursor-pointer outline-none focus:ring-2 focus:ring-[#124D45] focus:ring-offset-1 ${
@@ -1824,7 +1868,7 @@ export default function BirdViewPage() {
                       </div>
                     </div>
 
-                    {/* Section 7: Attachments (Distinct Focus & Hover Highlights) */}
+                    {/* Section 7: Attachments (Distinct Focus & Hover Highlights with Roving TabIndex) */}
                     <div className="w-full pt-4 border-t border-[#E2DDD3]">
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
@@ -1839,7 +1883,7 @@ export default function BirdViewPage() {
                         {item.images && item.images.map((img: string, iIdx: number) => (
                           <div
                             key={iIdx}
-                            tabIndex={0}
+                            tabIndex={iIdx === 0 ? 0 : -1}
                             className="relative w-[76px] h-[76px] group/img cursor-pointer outline-none rounded-[4px] border-2 border-[#E2DDD3] hover:border-[#124D45] focus:border-[#124D45] focus:ring-2 focus:ring-[#124D45]/40 transition-all shrink-0 shadow-2xs overflow-hidden"
                             onClick={() => { setPreviewImages(item.images); setPreviewIndex(iIdx); setPreviewTask(item); }}
                             onKeyDown={(e) => {
@@ -1849,6 +1893,24 @@ export default function BirdViewPage() {
                                 setPreviewImages(item.images);
                                 setPreviewIndex(iIdx);
                                 setPreviewTask(item);
+                              } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                const parent = e.currentTarget.parentElement;
+                                if (parent) {
+                                  const focusables = Array.from(parent.querySelectorAll<HTMLElement>('[tabindex]'));
+                                  const currIndex = focusables.indexOf(e.currentTarget);
+                                  const nextElem = focusables[(currIndex + 1) % focusables.length];
+                                  nextElem?.focus();
+                                }
+                              } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                const parent = e.currentTarget.parentElement;
+                                if (parent) {
+                                  const focusables = Array.from(parent.querySelectorAll<HTMLElement>('[tabindex]'));
+                                  const currIndex = focusables.indexOf(e.currentTarget);
+                                  const prevElem = focusables[(currIndex - 1 + focusables.length) % focusables.length];
+                                  prevElem?.focus();
+                                }
                               }
                             }}
                             title="View Attachment"
@@ -1873,11 +1935,32 @@ export default function BirdViewPage() {
                         {(!item.images || item.images.length < 5) && (
                           <button
                             type="button"
-                            tabIndex={0}
+                            tabIndex={(!item.images || item.images.length === 0) ? 0 : -1}
                             className="w-[76px] h-[76px] border-2 border-dashed border-[#E2DDD3] hover:border-[#124D45] hover:bg-[#124D45]/5 hover:text-[#124D45] focus:border-[#124D45] focus:ring-2 focus:ring-[#124D45]/40 text-[#687286] rounded-[4px] flex flex-col items-center justify-center gap-0.5 transition-all outline-none cursor-pointer bg-[#FFFEFA] shadow-2xs"
                             onClick={(e) => {
                               e.stopPropagation();
                               setImageChoiceModalTask(item);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                const parent = e.currentTarget.parentElement;
+                                if (parent) {
+                                  const focusables = Array.from(parent.querySelectorAll<HTMLElement>('[tabindex]'));
+                                  const currIndex = focusables.indexOf(e.currentTarget);
+                                  const nextElem = focusables[(currIndex + 1) % focusables.length];
+                                  nextElem?.focus();
+                                }
+                              } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                const parent = e.currentTarget.parentElement;
+                                if (parent) {
+                                  const focusables = Array.from(parent.querySelectorAll<HTMLElement>('[tabindex]'));
+                                  const currIndex = focusables.indexOf(e.currentTarget);
+                                  const prevElem = focusables[(currIndex - 1 + focusables.length) % focusables.length];
+                                  prevElem?.focus();
+                                }
+                              }
                             }}
                           >
                             <span className="text-lg font-bold leading-none">+</span>
@@ -1897,16 +1980,16 @@ export default function BirdViewPage() {
                       }}
                     />
 
-                    {/* Section 9: Delete Button at bottom */}
+                    {/* Section 9: Delete & Add Task Buttons at bottom (Clear Highlight Rings) */}
                     <div className="w-full pt-4 border-t border-[#E2DDD3] flex items-center justify-between">
                       <button
                         type="button"
                         tabIndex={0}
                         onClick={(e) => { e.stopPropagation(); handleDeleteInitiate(item.id); }}
-                        className="text-[#999999] hover:text-red-600 transition-colors flex items-center gap-1.5 text-xs font-medium outline-none"
+                        className="text-[#687286] hover:text-red-700 hover:bg-red-50 hover:border-red-200 border border-transparent px-3 py-1.5 rounded-[4px] focus:text-red-700 focus:bg-red-50 focus:border-red-300 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer shadow-2xs"
                         title="Delete Task"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
                         </svg>
                         <span>Delete</span>
@@ -1927,7 +2010,7 @@ export default function BirdViewPage() {
                               });
                             }
                           }}
-                          className="h-8 px-3 border border-dashed border-[#E2DDD3] bg-white hover:bg-[#FAF8F5] text-[#172238] rounded-[4px] flex items-center gap-1.5 transition-all outline-none text-xs font-medium"
+                          className="h-8 px-3.5 border border-dashed border-[#E2DDD3] bg-white hover:bg-[#124D45]/5 hover:border-[#124D45] hover:text-[#124D45] text-[#172238] rounded-[4px] flex items-center gap-1.5 transition-all outline-none focus:ring-2 focus:ring-[#124D45] focus:border-[#124D45] text-xs font-semibold shadow-2xs cursor-pointer"
                         >
                           <span className="text-sm font-bold text-[#B48632]">+</span>
                           <span>Add task</span>
