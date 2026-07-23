@@ -419,7 +419,7 @@ export default function DataEntryForm() {
           </div>
         )}
         
-        <div className={`form-group ${selectedSubject === 'Mathematics' ? '' : 'col-span-2'}`}>
+        <div className={`form-group ${selectedSubject === 'Mathematics' ? '' : 'col-span-1 sm:col-span-2'}`}>
           <label className="form-label" htmlFor="page">Page Number</label>
           <input 
             type="number" 

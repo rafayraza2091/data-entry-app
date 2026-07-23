@@ -37,26 +37,26 @@ export default function TopNav({
   else if (pathname === '/agent') pageTitle = 'Agent Assistant';
 
   return (
-    <header className="h-[48px] bg-[#FFFEFA] border-b border-[#D8D2C5] flex items-center justify-between px-4 sm:px-6 shrink-0 z-30 relative shadow-xs">
+    <header className="h-[44px] sm:h-[48px] bg-[#FFFEFA] border-b border-[#D8D2C5] flex items-center justify-between px-2.5 sm:px-6 shrink-0 z-30 relative shadow-xs">
       {/* Left side: Hamburger Toggle */}
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
         <button 
           type="button"
           onClick={toggleSidebar}
-          className="w-8 h-8 rounded-[3px] border border-[#D8D2C5] bg-[#F4F1E9] text-[#687286] hover:text-[#172238] hover:bg-white flex items-center justify-center transition-colors outline-none focus:ring-2 focus:ring-[#2463EB]"
+          className="w-7 h-7 sm:w-8 sm:h-8 rounded-[3px] border border-[#D8D2C5] bg-[#F4F1E9] text-[#687286] hover:text-[#172238] hover:bg-white flex items-center justify-center transition-colors outline-none focus:ring-2 focus:ring-[#2463EB]"
           title="Toggle Navigation"
         >
-          <i className="fa-solid fa-bars text-xs"></i>
+          <i className="fa-solid fa-bars text-[11px] sm:text-xs"></i>
         </button>
 
         {/* Page Title */}
-        <h1 className="text-[15px] sm:text-[16px] font-semibold text-[#172238] truncate tracking-tight">
+        <h1 className="text-[14px] sm:text-[16px] font-semibold text-[#172238] truncate tracking-tight">
           {pageTitle}
         </h1>
       </div>
 
       {/* Right side: ProfileMenu */}
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         <ProfileMenu firstName={firstName} role={role} />
       </div>
     </header>

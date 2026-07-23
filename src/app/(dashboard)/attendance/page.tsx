@@ -293,7 +293,7 @@ export default function AttendancePage() {
                               tabIndex={record.status === s ? 0 : -1}
                               disabled={locked || !canEdit}
                               onClick={() => handleStatusChange(record.userId, s)}
-                              className={`px-2 py-0.5 text-[10px] font-semibold rounded-[2px] transition-colors outline-none focus:ring-2 focus:ring-[#2463EB] ${
+                              className={`px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-semibold rounded-[2px] transition-colors outline-none focus:ring-2 focus:ring-[#2463EB] ${
                                 record.status === s 
                                   ? (s === 'PRESENT' ? 'bg-[#26705A] text-white border border-[#26705A]' : 
                                      s === 'ABSENT' ? 'bg-[#A33B3B] text-white border border-[#A33B3B]' : 
@@ -302,7 +302,8 @@ export default function AttendancePage() {
                                   : 'bg-[#F4F1E9] text-[#687286] hover:bg-[#ECE7DC] border border-[#D8D2C5]'
                               } ${locked || !canEdit ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                             >
-                              {s}
+                              <span className="hidden sm:inline">{s}</span>
+                              <span className="sm:hidden">{s === 'PRESENT' ? 'P' : s === 'ABSENT' ? 'A' : s === 'LATE' ? 'L' : 'Lve'}</span>
                             </button>
                           ))}
                         </div>

@@ -629,7 +629,7 @@ export default function TaskEntryClient({
 
         {taskStatus === 'DONE' && (
           <div className="form-row mt-2 md:mt-4">
-            <div className="form-group w-1/2">
+            <div className="form-group w-full sm:w-1/2">
               <label className="form-label">Obtained Marks</label>
               <input 
                 type="number" 
