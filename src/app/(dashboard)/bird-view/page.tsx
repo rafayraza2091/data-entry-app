@@ -1410,7 +1410,7 @@ export default function BirdViewPage() {
             }}
           >
             <div
-              className="w-[95vw] sm:w-[680px] md:w-[760px] max-w-[760px] max-h-[88vh] bg-[#FFFEFA] rounded-[6px] p-4 sm:p-6 shadow-2xl border border-[#E2DDD3] overflow-y-auto custom-scrollbar flex flex-col gap-4 relative animate-in fade-in zoom-in-95 duration-150"
+              className="w-[96vw] sm:w-[680px] md:w-[760px] max-w-[760px] max-h-[92vh] sm:max-h-[88vh] bg-[#FFFEFA] rounded-[6px] p-3 sm:p-6 shadow-2xl border border-[#E2DDD3] overflow-y-auto custom-scrollbar flex flex-col gap-3 sm:gap-4 relative animate-in fade-in zoom-in-95 duration-150"
               onMouseDown={(e) => e.stopPropagation()}
               ref={(el) => {
                 if (el && el.dataset.opened !== 'true') {
@@ -1454,9 +1454,9 @@ export default function BirdViewPage() {
               }}
             >
               {/* Modal Header (Breadcrumb + Student Title) */}
-              <div className="flex items-start justify-between pb-3.5 border-b border-[#E2DDD3]">
+              <div className="flex items-start justify-between pb-2 sm:pb-3.5 border-b border-[#E2DDD3]">
                 <div className="flex flex-col truncate pr-2">
-                  <div className="text-xs font-medium text-[#687286] flex items-center gap-1.5 mb-1 truncate">
+                  <div className="text-[10px] sm:text-xs font-medium text-[#687286] flex items-center gap-1 sm:gap-1.5 mb-0.5 sm:mb-1 truncate">
                     <span>{subjectNameStr}</span>
                     {(items[0]?.chapter || items[0]?.topic) && (
                       <>
@@ -1465,15 +1465,15 @@ export default function BirdViewPage() {
                       </>
                     )}
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-[#172238] tracking-tight truncate">
+                  <h2 className="text-lg sm:text-2xl font-bold text-[#172238] tracking-tight truncate">
                     {studentFullNameStr || 'Student Assignment'}
                   </h2>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0 pt-1">
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 pt-0.5">
                   {items.length > 1 && (
-                    <div className="flex items-center gap-1.5 bg-[#FAF8F5] border border-[#E2DDD3] px-2.5 py-1 rounded-[4px] text-xs">
-                      <span className="font-semibold text-[#687286] text-[11px]">
+                    <div className="flex items-center gap-1 sm:gap-1.5 bg-[#FAF8F5] border border-[#E2DDD3] px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-[4px] text-[10px] sm:text-xs">
+                      <span className="font-semibold text-[#687286] text-[10px] sm:text-[11px]">
                         {Math.min(multiRecordIndex, items.length - 1) + 1} of {items.length}
                       </span>
                       <button
@@ -1499,10 +1499,10 @@ export default function BirdViewPage() {
                   <button
                     type="button"
                     onClick={() => { setClickedCellId(null); setMultiRecordIndex(0); }}
-                    className="w-7 h-7 flex items-center justify-center rounded-[4px] text-[#687286] hover:bg-[#FAF8F5] hover:text-[#172238] transition-colors border border-[#E2DDD3]"
+                    className="w-6.5 h-6.5 sm:w-7 sm:h-7 flex items-center justify-center rounded-[4px] text-[#687286] hover:bg-[#FAF8F5] hover:text-[#172238] transition-colors border border-[#E2DDD3]"
                     title="Close"
                   >
-                    <i className="fa-solid fa-xmark text-sm"></i>
+                    <i className="fa-solid fa-xmark text-xs sm:text-sm"></i>
                   </button>
                 </div>
               </div>
@@ -1518,36 +1518,36 @@ export default function BirdViewPage() {
                   const qStatusLabel = (item.status || 'OPEN').toUpperCase();
 
                   return (
-                    <div key={idx} className="w-full flex flex-col gap-4 relative">
-                      <div className="flex items-center justify-between border-b border-[#E2DDD3] pb-2">
+                    <div key={idx} className="w-full flex flex-col gap-3 sm:gap-4 relative">
+                      <div className="flex items-center justify-between border-b border-[#E2DDD3] pb-1.5 sm:pb-2">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold uppercase tracking-wider text-[#172238]">Query details</span>
-                          <span className="px-2 py-0.5 text-[10px] font-bold rounded-[4px] text-white uppercase" style={{ backgroundColor: qRailColor }}>
+                          <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#172238]">Query details</span>
+                          <span className="px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold rounded-[4px] text-white uppercase" style={{ backgroundColor: qRailColor }}>
                             {qStatusLabel}
                           </span>
                         </div>
-                        <span className="text-xs font-semibold text-[#687286]">
+                        <span className="text-[10px] sm:text-xs font-semibold text-[#687286]">
                           {item.createdAt ? new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : formattedDate}
                         </span>
                       </div>
 
                       {/* Academic & Student Details */}
-                      <div className="grid grid-cols-2 gap-3 text-xs bg-[#FAF8F5] p-3 rounded-[4px] border border-[#E2DDD3]">
+                      <div className="grid grid-cols-2 gap-2 sm:gap-3 text-xs bg-[#FAF8F5] p-2.5 sm:p-3 rounded-[4px] border border-[#E2DDD3]">
                         <div>
-                          <span className="text-[10px] font-semibold uppercase text-[#687286] block">Student</span>
-                          <span className="font-bold text-[#172238]">{studentFullNameStr || item.studentName || 'Unknown Student'}</span>
+                          <span className="text-[9px] sm:text-[10px] font-semibold uppercase text-[#687286] block">Student</span>
+                          <span className="font-bold text-[#172238] text-[12px] sm:text-xs">{studentFullNameStr || item.studentName || 'Unknown Student'}</span>
                         </div>
                         <div>
-                          <span className="text-[10px] font-semibold uppercase text-[#687286] block">Subject</span>
-                          <span className="font-bold text-[#172238]">{subjectNameStr || item.subject || 'Unknown Subject'}</span>
+                          <span className="text-[9px] sm:text-[10px] font-semibold uppercase text-[#687286] block">Subject</span>
+                          <span className="font-bold text-[#172238] text-[12px] sm:text-xs">{subjectNameStr || item.subject || 'Unknown Subject'}</span>
                         </div>
                       </div>
 
                       {/* Query Statement preview if available */}
                       {item.statement && (
                         <div className="text-xs">
-                          <span className="text-[10px] font-semibold uppercase text-[#687286] block mb-1">Query Statement</span>
-                          <p className="p-3 bg-[#FAF8F5] border border-[#E2DDD3] rounded-[4px] text-[#172238] leading-relaxed whitespace-pre-wrap font-medium">
+                          <span className="text-[9px] sm:text-[10px] font-semibold uppercase text-[#687286] block mb-1">Query Statement</span>
+                          <p className="p-2.5 sm:p-3 bg-[#FAF8F5] border border-[#E2DDD3] rounded-[4px] text-[#172238] leading-relaxed whitespace-pre-wrap font-medium text-[12px] sm:text-xs">
                             {item.statement}
                           </p>
                         </div>
@@ -1556,14 +1556,14 @@ export default function BirdViewPage() {
                       {/* Attachments Section */}
                       {item.images && item.images.length > 0 && (
                         <div>
-                          <span className="text-[10px] font-semibold uppercase text-[#687286] block mb-1.5">Attachments ({item.images.length})</span>
+                          <span className="text-[9px] sm:text-[10px] font-semibold uppercase text-[#687286] block mb-1.5">Attachments ({item.images.length})</span>
                           <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
                             {item.images.map((imgUrl: string, imgIdx: number) => (
                               <button
                                 key={imgIdx}
                                 type="button"
                                 onClick={() => { setPreviewImages(item.images); setPreviewIndex(imgIdx); setPreviewTask(item); }}
-                                className="w-[72px] h-[72px] rounded-[4px] border border-[#E2DDD3] overflow-hidden shrink-0 group relative hover:border-[#172238] transition-all"
+                                className="w-[56px] h-[56px] sm:w-[72px] sm:h-[72px] rounded-[4px] border border-[#E2DDD3] overflow-hidden shrink-0 group relative hover:border-[#172238] transition-all"
                               >
                                 <img src={imgUrl} alt={`Attachment ${imgIdx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                               </button>
@@ -1600,14 +1600,14 @@ export default function BirdViewPage() {
                 const marksPercent = totalNum > 0 ? Math.round((obtainedNum / totalNum) * 100) : 0;
 
                 return (
-                  <div key={idx} className="w-full flex flex-col gap-5 py-2">
+                  <div key={idx} className="w-full flex flex-col gap-3.5 sm:gap-5 py-1 sm:py-2">
                     {/* Academic Details Section (3-Column Grid) */}
                     <div className="w-full">
-                      <h3 className="text-xs font-semibold text-[#172238] mb-3">Assignment Details</h3>
+                      <h3 className="text-[11px] sm:text-xs uppercase tracking-wider text-[#172238] font-bold mb-2 sm:mb-3">Assignment Details</h3>
                       
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 w-full mb-3">
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[12px] font-medium text-[#687286]">Chapter</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-2.5 w-full mb-2 sm:mb-3">
+                        <div className="flex flex-col gap-0.5 sm:gap-1">
+                          <label className="text-[11px] sm:text-[12px] font-medium text-[#687286]">Chapter</label>
                           <select
                             tabIndex={0}
                             value={item.chapter || ''}
@@ -1619,7 +1619,7 @@ export default function BirdViewPage() {
                               handleUpdateTaskField(item.id, 'topic', '');
                               handleUpdateTaskField(item.id, 'exercise', '');
                             }}
-                            className="h-[38px] text-[14px] text-[#172238] font-medium bg-white hover:border-[#999999] focus:border-[#124D45] transition-colors cursor-pointer rounded-[4px] px-2.5 border border-[#E2DDD3] truncate outline-none"
+                            className="h-[34px] sm:h-[38px] text-[13px] sm:text-[14px] text-[#172238] font-medium bg-white hover:border-[#999999] focus:border-[#124D45] transition-colors cursor-pointer rounded-[4px] px-2 sm:px-2.5 border border-[#E2DDD3] truncate outline-none"
                           >
                             <option value="">Select chapter...</option>
                             {Object.entries(chaptersByBook).map(([bName, chs]) => (
@@ -1633,8 +1633,8 @@ export default function BirdViewPage() {
                           </select>
                         </div>
 
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[12px] font-medium text-[#687286]">Topic</label>
+                        <div className="flex flex-col gap-0.5 sm:gap-1">
+                          <label className="text-[11px] sm:text-[12px] font-medium text-[#687286]">Topic</label>
                           <select
                             tabIndex={0}
                             value={item.topic || ''}
@@ -1643,7 +1643,7 @@ export default function BirdViewPage() {
                               handleUpdateTaskField(item.id, 'topic', val);
                               handleUpdateTaskField(item.id, 'exercise', '');
                             }}
-                            className="h-[38px] text-[14px] text-[#172238] font-medium bg-white hover:border-[#999999] focus:border-[#124D45] transition-colors cursor-pointer rounded-[4px] px-2.5 border border-[#E2DDD3] truncate outline-none"
+                            className="h-[34px] sm:h-[38px] text-[13px] sm:text-[14px] text-[#172238] font-medium bg-white hover:border-[#999999] focus:border-[#124D45] transition-colors cursor-pointer rounded-[4px] px-2 sm:px-2.5 border border-[#E2DDD3] truncate outline-none"
                           >
                             <option value="">Select topic...</option>
                             {uniqueTopicNames.map(tn => (
@@ -1652,14 +1652,14 @@ export default function BirdViewPage() {
                           </select>
                         </div>
 
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[12px] font-medium text-[#687286]">Exercise</label>
+                        <div className="flex flex-col gap-0.5 sm:gap-1">
+                          <label className="text-[11px] sm:text-[12px] font-medium text-[#687286]">Exercise</label>
                           {uniqueExercises.length > 0 ? (
                             <select
                               tabIndex={0}
                               value={item.exercise || ''}
                               onChange={(e) => handleUpdateTaskField(item.id, 'exercise', e.target.value)}
-                              className="h-[38px] text-[14px] text-[#172238] font-medium bg-white hover:border-[#999999] focus:border-[#124D45] transition-colors cursor-pointer rounded-[4px] px-2.5 border border-[#E2DDD3] truncate outline-none"
+                              className="h-[34px] sm:h-[38px] text-[13px] sm:text-[14px] text-[#172238] font-medium bg-white hover:border-[#999999] focus:border-[#124D45] transition-colors cursor-pointer rounded-[4px] px-2 sm:px-2.5 border border-[#E2DDD3] truncate outline-none"
                             >
                               <option value="">Select exercise...</option>
                               {uniqueExercises.map(ex => (
@@ -1673,33 +1673,33 @@ export default function BirdViewPage() {
                               value={item.exercise || ''}
                               onChange={(e) => handleUpdateTaskField(item.id, 'exercise', e.target.value)}
                               placeholder="Exercise..."
-                              className="h-[38px] text-[14px] text-[#172238] font-medium bg-white hover:border-[#999999] focus:border-[#124D45] transition-colors rounded-[4px] px-2.5 border border-[#E2DDD3] outline-none placeholder:text-[#999999]"
+                              className="h-[34px] sm:h-[38px] text-[13px] sm:text-[14px] text-[#172238] font-medium bg-white hover:border-[#999999] focus:border-[#124D45] transition-colors rounded-[4px] px-2 sm:px-2.5 border border-[#E2DDD3] outline-none placeholder:text-[#999999]"
                             />
                           )}
                         </div>
                       </div>
 
                       {/* Description */}
-                      <div className="flex flex-col gap-1 w-full">
-                        <label className="text-[12px] font-medium text-[#687286]">Description</label>
+                      <div className="flex flex-col gap-0.5 sm:gap-1 w-full">
+                        <label className="text-[11px] sm:text-[12px] font-medium text-[#687286]">Description</label>
                         <textarea
                           tabIndex={0}
                           value={item.description || ''}
                           onChange={(e) => {
                             e.currentTarget.style.height = 'auto';
-                            e.currentTarget.style.height = Math.max(72, e.currentTarget.scrollHeight) + 'px';
+                            e.currentTarget.style.height = Math.max(56, e.currentTarget.scrollHeight) + 'px';
                           }}
                           onBlur={(e) => { if (e.target.value !== (item.description || '')) handleUpdateTaskField(item.id, 'description', e.target.value) }}
-                          className="text-[14px] text-[#172238] font-medium w-full leading-relaxed text-left bg-white hover:border-[#999999] focus:border-[#124D45] transition-colors resize-y min-h-[72px] whitespace-normal custom-scrollbar rounded-[4px] p-2.5 border border-[#E2DDD3] outline-none placeholder:text-[#999999]"
+                          className="text-[13px] sm:text-[14px] text-[#172238] font-medium w-full leading-relaxed text-left bg-white hover:border-[#999999] focus:border-[#124D45] transition-colors resize-y min-h-[56px] sm:min-h-[72px] whitespace-normal custom-scrollbar rounded-[4px] p-2 sm:p-2.5 border border-[#E2DDD3] outline-none placeholder:text-[#999999]"
                           placeholder="Complete the solution..."
                         />
                       </div>
                     </div>
 
                     {/* Section 4: Grading (Score + Progress Bar) */}
-                    <div className="w-full pt-4 border-t border-[#E2DDD3]">
-                      <h3 className="text-xs font-semibold text-[#172238] mb-2">Grading</h3>
-                      <div className="flex items-baseline gap-1.5 mb-2">
+                    <div className="w-full pt-2.5 sm:pt-4 border-t border-[#E2DDD3]">
+                      <h3 className="text-[11px] sm:text-xs uppercase tracking-wider text-[#172238] font-bold mb-1.5 sm:mb-2">Grading</h3>
+                      <div className="flex items-baseline gap-1.5 mb-1.5 sm:mb-2">
                         <input
                           type="number"
                           tabIndex={0}
@@ -1711,10 +1711,10 @@ export default function BirdViewPage() {
                             handleUpdateTaskField(item.id, 'obtainedMarks', val as any);
                           }}
                           placeholder="-"
-                          className="w-14 h-10 text-center text-3xl font-bold text-[#172238] bg-white border border-[#E2DDD3] rounded-[4px] focus:border-[#124D45] outline-none"
+                          className="w-11 h-8 sm:w-14 sm:h-10 text-center text-xl sm:text-3xl font-bold text-[#172238] bg-white border border-[#E2DDD3] rounded-[4px] focus:border-[#124D45] outline-none"
                         />
-                        <span className="text-base font-normal text-[#999999]">/ {totalNum}</span>
-                        <span className="text-xs font-medium text-[#687286] ml-auto">{marksPercent}%</span>
+                        <span className="text-xs sm:text-base font-normal text-[#999999]">/ {totalNum}</span>
+                        <span className="text-[11px] sm:text-xs font-medium text-[#687286] ml-auto">{marksPercent}%</span>
                       </div>
 
                       {/* Progress Bar */}
@@ -1727,11 +1727,11 @@ export default function BirdViewPage() {
                     </div>
 
                     {/* Section 5: Status & Task Type Tags (Selectable Pill Rows with Roving TabIndex & Arrow Traversal) */}
-                    <div className="w-full pt-4 border-t border-[#E2DDD3] flex flex-col gap-3">
+                    <div className="w-full pt-2.5 sm:pt-4 border-t border-[#E2DDD3] flex flex-col gap-2.5 sm:gap-3">
                       {/* Task Type Tags */}
                       <div>
-                        <div className="text-[12px] font-medium text-[#687286] mb-2">Task Type</div>
-                        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Task Type">
+                        <div className="text-[11px] sm:text-[12px] font-medium text-[#687286] mb-1.5 sm:mb-2">Task Type</div>
+                        <div className="flex flex-wrap gap-1 sm:gap-1.5" role="radiogroup" aria-label="Task Type">
                           {['Tuition Work', 'Class Work', 'Home Work', 'Test', 'Project'].map((t, tIdx, tArr) => {
                             const isSelected = item.taskType === t;
                             const isDefaultFocused = isSelected || (!tArr.includes(item.taskType) && tIdx === 0);
@@ -1763,14 +1763,14 @@ export default function BirdViewPage() {
                                     }
                                   }
                                 }}
-                                className={`h-[32px] px-3.5 border rounded-[4px] text-[13px] font-medium transition-all flex items-center gap-1.5 cursor-pointer outline-none focus:ring-2 focus:ring-[#124D45] focus:ring-offset-1 ${
+                                className={`h-[28px] sm:h-[32px] px-2.5 sm:px-3.5 border rounded-[4px] text-[11px] sm:text-[13px] font-medium transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer outline-none focus:ring-2 focus:ring-[#124D45] focus:ring-offset-1 ${
                                   isSelected
                                     ? 'text-white border-transparent shadow-xs font-semibold'
                                     : 'bg-white text-[#687286] border-[#E2DDD3] hover:border-[#124D45] hover:text-[#172238]'
                                 }`}
                                 style={{ backgroundColor: isSelected ? b.color : undefined }}
                               >
-                                {isSelected && <span className="text-xs font-bold">✓</span>}
+                                {isSelected && <span className="text-[10px] sm:text-xs font-bold">✓</span>}
                                 <span>{t}</span>
                               </button>
                             );
@@ -1780,8 +1780,8 @@ export default function BirdViewPage() {
 
                       {/* Status Tags */}
                       <div>
-                        <div className="text-[12px] font-medium text-[#687286] mb-2">Status</div>
-                        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Status">
+                        <div className="text-[11px] sm:text-[12px] font-medium text-[#687286] mb-1.5 sm:mb-2">Status</div>
+                        <div className="flex flex-wrap gap-1 sm:gap-1.5" role="radiogroup" aria-label="Status">
                           {['OPEN', 'IN_PROGRESS', 'DONE', 'PENDING'].map((s, sIdx, sArr) => {
                             const isSelected = item.status === s;
                             const isDefaultFocused = isSelected || (!sArr.includes(item.status) && sIdx === 0);
@@ -1829,14 +1829,14 @@ export default function BirdViewPage() {
                                     }
                                   }
                                 }}
-                                className={`h-[32px] px-3.5 border rounded-[4px] text-[13px] font-medium transition-all flex items-center gap-1.5 cursor-pointer outline-none focus:ring-2 focus:ring-[#124D45] focus:ring-offset-1 ${
+                                className={`h-[28px] sm:h-[32px] px-2.5 sm:px-3.5 border rounded-[4px] text-[11px] sm:text-[13px] font-medium transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer outline-none focus:ring-2 focus:ring-[#124D45] focus:ring-offset-1 ${
                                   isSelected
                                     ? 'text-white border-transparent shadow-xs font-semibold'
                                     : 'bg-white text-[#687286] border-[#E2DDD3] hover:border-[#124D45] hover:text-[#172238]'
                                 }`}
                                 style={{ backgroundColor: isSelected ? color : undefined }}
                               >
-                                {isSelected && <span className="text-xs font-bold">✓</span>}
+                                {isSelected && <span className="text-[10px] sm:text-xs font-bold">✓</span>}
                                 <span>{label}</span>
                               </button>
                             );
@@ -1846,11 +1846,11 @@ export default function BirdViewPage() {
                     </div>
 
                     {/* Section 6: Reporter / Student Row (Prominent Focus/Hover Ring) */}
-                    <div className="w-full pt-4 border-t border-[#E2DDD3]">
-                      <div className="text-[12px] font-medium text-[#687286] mb-2">Reporter</div>
-                      <div className="flex items-center gap-2.5 w-full h-[42px] px-3 border border-[#E2DDD3] hover:border-[#124D45] focus-within:border-[#124D45] focus-within:ring-2 focus-within:ring-[#124D45]/30 rounded-[4px] bg-white transition-all shadow-2xs">
+                    <div className="w-full pt-2.5 sm:pt-4 border-t border-[#E2DDD3]">
+                      <div className="text-[11px] sm:text-[12px] font-medium text-[#687286] mb-1.5 sm:mb-2">Reporter</div>
+                      <div className="flex items-center gap-2 sm:gap-2.5 w-full h-[36px] sm:h-[42px] px-2.5 sm:px-3 border border-[#E2DDD3] hover:border-[#124D45] focus-within:border-[#124D45] focus-within:ring-2 focus-within:ring-[#124D45]/30 rounded-[4px] bg-white transition-all shadow-2xs">
                         <div
-                          className="w-6.5 h-6.5 rounded-[4px] text-white flex items-center justify-center text-[12px] font-bold shrink-0 shadow-2xs"
+                          className="w-5.5 h-5.5 sm:w-6.5 sm:h-6.5 rounded-[4px] text-white flex items-center justify-center text-[10px] sm:text-[12px] font-bold shrink-0 shadow-2xs"
                           style={{ backgroundColor: getReporterColor(item.reporter) }}
                         >
                           {(item.reporter || '?').charAt(0).toUpperCase()}
@@ -1859,7 +1859,7 @@ export default function BirdViewPage() {
                           tabIndex={0}
                           value={item.reporter || ''}
                           onChange={(e) => handleUpdateTaskField(item.id, 'reporter', e.target.value)}
-                          className="text-[14px] font-semibold text-[#172238] bg-transparent outline-none flex-1 cursor-pointer focus:outline-none"
+                          className="text-[13px] sm:text-[14px] font-semibold text-[#172238] bg-transparent outline-none flex-1 cursor-pointer focus:outline-none"
                         >
                           {uniqueReporters.map(r => (
                             <option key={r} value={r}>{r}</option>
@@ -1869,22 +1869,22 @@ export default function BirdViewPage() {
                     </div>
 
                     {/* Section 7: Attachments (Distinct Focus & Hover Highlights with Roving TabIndex) */}
-                    <div className="w-full pt-4 border-t border-[#E2DDD3]">
-                      <div className="flex items-center justify-between mb-3">
+                    <div className="w-full pt-2.5 sm:pt-4 border-t border-[#E2DDD3]">
+                      <div className="flex items-center justify-between mb-2 sm:mb-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-[#172238]">Attachments</span>
-                          <span className="text-[12px] font-bold text-[#124D45] bg-[#124D45]/10 px-2.5 py-0.5 rounded-[4px] border border-[#124D45]/20">
+                          <span className="text-[11px] sm:text-xs font-semibold text-[#172238]">Attachments</span>
+                          <span className="text-[10px] sm:text-[12px] font-bold text-[#124D45] bg-[#124D45]/10 px-2 sm:px-2.5 py-0.5 rounded-[4px] border border-[#124D45]/20">
                             {item.images ? item.images.length : 0}
                           </span>
                         </div>
                       </div>
 
-                      <div className="flex gap-3 flex-wrap items-center">
+                      <div className="flex gap-2 sm:gap-3 flex-wrap items-center">
                         {item.images && item.images.map((img: string, iIdx: number) => (
                           <div
                             key={iIdx}
                             tabIndex={iIdx === 0 ? 0 : -1}
-                            className="relative w-[76px] h-[76px] group/img cursor-pointer outline-none rounded-[4px] border-2 border-[#E2DDD3] hover:border-[#124D45] focus:border-[#124D45] focus:ring-2 focus:ring-[#124D45]/40 transition-all shrink-0 shadow-2xs overflow-hidden"
+                            className="relative w-[56px] h-[56px] sm:w-[76px] sm:h-[76px] group/img cursor-pointer outline-none rounded-[4px] border-2 border-[#E2DDD3] hover:border-[#124D45] focus:border-[#124D45] focus:ring-2 focus:ring-[#124D45]/40 transition-all shrink-0 shadow-2xs overflow-hidden"
                             onClick={() => { setPreviewImages(item.images); setPreviewIndex(iIdx); setPreviewTask(item); }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' || e.key === ' ') {
@@ -1926,7 +1926,7 @@ export default function BirdViewPage() {
                                   handleUpdateTaskField(item.id, 'images', newImages);
                                 }
                               }}
-                              className="absolute top-1 right-1 bg-[#172238]/80 hover:bg-red-600 text-white w-5 h-5 rounded-[3px] text-[11px] flex items-center justify-center transition-colors shadow-xs"
+                              className="absolute top-0.5 right-0.5 bg-[#172238]/80 hover:bg-red-600 text-white w-4 h-4 sm:w-5 sm:h-5 rounded-[3px] text-[9px] sm:text-[11px] flex items-center justify-center transition-colors shadow-xs"
                             >
                               &times;
                             </button>
@@ -1936,7 +1936,7 @@ export default function BirdViewPage() {
                           <button
                             type="button"
                             tabIndex={(!item.images || item.images.length === 0) ? 0 : -1}
-                            className="w-[76px] h-[76px] border-2 border-dashed border-[#E2DDD3] hover:border-[#124D45] hover:bg-[#124D45]/5 hover:text-[#124D45] focus:border-[#124D45] focus:ring-2 focus:ring-[#124D45]/40 text-[#687286] rounded-[4px] flex flex-col items-center justify-center gap-0.5 transition-all outline-none cursor-pointer bg-[#FFFEFA] shadow-2xs"
+                            className="w-[56px] h-[56px] sm:w-[76px] sm:h-[76px] border-2 border-dashed border-[#E2DDD3] hover:border-[#124D45] hover:bg-[#124D45]/5 hover:text-[#124D45] focus:border-[#124D45] focus:ring-2 focus:ring-[#124D45]/40 text-[#687286] rounded-[4px] flex flex-col items-center justify-center gap-0.5 transition-all outline-none cursor-pointer bg-[#FFFEFA] shadow-2xs"
                             onClick={(e) => {
                               e.stopPropagation();
                               setImageChoiceModalTask(item);
@@ -1963,8 +1963,8 @@ export default function BirdViewPage() {
                               }
                             }}
                           >
-                            <span className="text-lg font-bold leading-none">+</span>
-                            <span className="text-[10px] font-bold uppercase tracking-wider">Add</span>
+                            <span className="text-base sm:text-lg font-bold leading-none">+</span>
+                            <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">Add</span>
                           </button>
                         )}
                       </div>
@@ -1981,15 +1981,15 @@ export default function BirdViewPage() {
                     />
 
                     {/* Section 9: Delete & Add Task Buttons at bottom (Clear Highlight Rings) */}
-                    <div className="w-full pt-4 border-t border-[#E2DDD3] flex items-center justify-between">
+                    <div className="w-full pt-2.5 sm:pt-4 border-t border-[#E2DDD3] flex items-center justify-between">
                       <button
                         type="button"
                         tabIndex={0}
                         onClick={(e) => { e.stopPropagation(); handleDeleteInitiate(item.id); }}
-                        className="text-[#687286] hover:text-red-700 hover:bg-red-50 hover:border-red-200 border border-transparent px-3 py-1.5 rounded-[4px] focus:text-red-700 focus:bg-red-50 focus:border-red-300 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all flex items-center gap-1.5 text-xs font-semibold cursor-pointer shadow-2xs"
+                        className="text-[#687286] hover:text-red-700 hover:bg-red-50 hover:border-red-200 border border-transparent px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-[4px] focus:text-red-700 focus:bg-red-50 focus:border-red-300 focus:ring-2 focus:ring-red-500 focus:outline-none transition-all flex items-center gap-1.5 text-[11px] sm:text-xs font-semibold cursor-pointer shadow-2xs"
                         title="Delete Task"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
                           <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
                         </svg>
                         <span>Delete</span>
@@ -2010,9 +2010,9 @@ export default function BirdViewPage() {
                               });
                             }
                           }}
-                          className="h-8 px-3.5 border border-dashed border-[#E2DDD3] bg-white hover:bg-[#124D45]/5 hover:border-[#124D45] hover:text-[#124D45] text-[#172238] rounded-[4px] flex items-center gap-1.5 transition-all outline-none focus:ring-2 focus:ring-[#124D45] focus:border-[#124D45] text-xs font-semibold shadow-2xs cursor-pointer"
+                          className="h-7 sm:h-8 px-2.5 sm:px-3.5 border border-dashed border-[#E2DDD3] bg-white hover:bg-[#124D45]/5 hover:border-[#124D45] hover:text-[#124D45] text-[#172238] rounded-[4px] flex items-center gap-1 sm:gap-1.5 transition-all outline-none focus:ring-2 focus:ring-[#124D45] focus:border-[#124D45] text-[11px] sm:text-xs font-semibold shadow-2xs cursor-pointer"
                         >
-                          <span className="text-sm font-bold text-[#B48632]">+</span>
+                          <span className="text-xs sm:text-sm font-bold text-[#B48632]">+</span>
                           <span>Add task</span>
                         </button>
                       )}
