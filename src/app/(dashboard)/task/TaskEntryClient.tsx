@@ -346,12 +346,12 @@ export default function TaskEntryClient({
   };
 
   return (
-    <div className="glass-panel animate-slide-up mx-auto max-w-4xl mt-0 md:mt-8 p-4 md:p-8 w-full" style={{ position: 'relative', maxHeight: onClose ? '85vh' : 'auto', overflowY: onClose ? 'auto' : 'visible' }}>
+    <div className="glass-panel animate-slide-up mx-auto max-w-4xl mt-0 md:mt-8 p-3 sm:p-6 md:p-8 w-full" style={{ position: 'relative', maxHeight: onClose ? '85vh' : 'auto', overflowY: onClose ? 'auto' : 'visible' }}>
       {onClose && (
         <button 
           onClick={onClose}
           type="button"
-          style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', zIndex: 10, color: '#6b7280' }}
+          style={{ position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', zIndex: 10, color: '#6b7280' }}
         >
           <i className="fa-solid fa-xmark"></i>
         </button>
@@ -361,8 +361,8 @@ export default function TaskEntryClient({
       {(showBeautifulHeader || showBeautifulHeaderForOwner) && renderBeautifulHeader()}
 
       {(assigneeStatus === 'ABSENT' || assigneeStatus === 'LEAVE') && (
-        <div className="mb-6 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2 shadow-sm animate-pulse">
-          <span className="text-lg leading-none mt-0.5">⚠️</span>
+        <div className="mb-4 text-xs sm:text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-2.5 flex items-start gap-2 shadow-sm animate-pulse">
+          <span className="text-base leading-none mt-0.5">⚠️</span>
           <div>
             <strong className="block mb-0.5 text-red-800">Warning: Assignee is {assigneeStatus}</strong>
             <span>{assigneeReason || `The selected assignee (${assignee}) is currently marked as ${assigneeStatus.toLowerCase()} for the selected date.`}</span>
@@ -397,7 +397,7 @@ export default function TaskEntryClient({
                 />
               </div>
 
-              <div className="form-group col-span-2">
+              <div className="form-group col-span-1 sm:col-span-2">
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">Reporter <span className="text-red-500">*</span></label>
@@ -580,7 +580,7 @@ export default function TaskEntryClient({
 
         </div>
 
-        <div className="form-row mt-2 md:mt-4">
+        <div className="form-row mt-1 sm:mt-2 md:mt-3">
           <div className="form-group">
             <label className="form-label">Task Type <span className="text-red-500 ml-1">*</span></label>
             <select 
@@ -617,18 +617,18 @@ export default function TaskEntryClient({
             <div className="relative">
               <input 
                 type="date" 
-                className="form-control pl-10 md:pl-10" 
+                className="form-control pl-8 sm:pl-10" 
                 value={dueDate} 
                 onChange={e => setDueDate(e.target.value)} 
                 required
               />
-              <i className="fa-regular fa-calendar absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+              <i className="fa-regular fa-calendar absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
             </div>
           </div>
         </div>
 
         {taskStatus === 'DONE' && (
-          <div className="form-row mt-2 md:mt-4">
+          <div className="form-row mt-1 sm:mt-2 md:mt-3">
             <div className="form-group w-full sm:w-1/2">
               <label className="form-label">Obtained Marks</label>
               <input 
@@ -644,21 +644,21 @@ export default function TaskEntryClient({
           </div>
         )}
 
-        <div className="form-group mt-2 md:mt-4">
+        <div className="form-group mt-1 sm:mt-2 md:mt-3">
           <label className="form-label">Description <span className="text-red-500 ml-1">*</span></label>
           <textarea 
-            className="form-control" 
+            className="form-control min-h-[56px] sm:min-h-[72px]" 
             value={description} 
             onChange={e => setDescription(e.target.value)} 
             required 
-            rows={4}
+            rows={3}
             placeholder="Enter task description"
             style={{ resize: 'vertical' }}
           ></textarea>
         </div>
 
         {/* Attachments Section */}
-        <div className="form-group mt-2 md:mt-4">
+        <div className="form-group mt-1 sm:mt-2 md:mt-3">
           <label className="form-label">Attachments (Max 5)</label>
           
           <input 

@@ -290,19 +290,19 @@ export default function QueryEntryClient({
   };
 
   return (
-    <div className="glass-panel animate-slide-up mx-auto max-w-4xl mt-0 md:mt-8 p-4 md:p-8 w-full" style={{ position: 'relative', maxHeight: onClose ? '85vh' : 'auto', overflowY: onClose ? 'auto' : 'visible' }}>
+    <div className="glass-panel animate-slide-up mx-auto max-w-4xl mt-0 md:mt-8 p-3 sm:p-6 md:p-8 w-full" style={{ position: 'relative', maxHeight: onClose ? '85vh' : 'auto', overflowY: onClose ? 'auto' : 'visible' }}>
       {onClose && (
         <button 
           onClick={onClose}
           type="button"
-          style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', zIndex: 10, color: '#6b7280' }}
+          style={{ position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', zIndex: 10, color: '#6b7280' }}
         >
           <i className="fa-solid fa-xmark"></i>
         </button>
       )}
 
       {status.message && (
-        <div className={`p-4 mb-4 rounded ${status.type === 'error' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+        <div className={`p-3 mb-3 text-xs rounded ${status.type === 'error' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
           {status.message}
         </div>
       )}
@@ -493,21 +493,21 @@ export default function QueryEntryClient({
             </select>
           </div>
 
-          <div className="form-group col-span-2">
+          <div className="form-group col-span-1 sm:col-span-2">
             <label className="form-label">Query</label>
             <textarea 
-              className="form-control" 
+              className="form-control min-h-[56px] sm:min-h-[72px]" 
               value={queryStatement} 
               onChange={e => setQueryStatement(e.target.value)} 
               rows={2}
               placeholder="Enter your query statement here..."
               required
-              style={{ padding: '12px', resize: 'vertical' }}
+              style={{ padding: '8px 10px', resize: 'vertical' }}
             />
           </div>
 
           {/* Attachments Section */}
-          <div className="form-group col-span-2">
+          <div className="form-group col-span-1 sm:col-span-2">
             <label className="form-label">Attachments (Optional)</label>
             
             <input 
