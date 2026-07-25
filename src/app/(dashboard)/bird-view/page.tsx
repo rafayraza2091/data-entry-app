@@ -412,6 +412,18 @@ export default function BirdViewPage() {
     if (taskToDelete === null) return;
     const taskId = taskToDelete;
 
+    if (previewTask && previewTask.id === taskId) {
+      setPreviewImages(null);
+      setPreviewIndex(0);
+      setPreviewTask(null);
+    }
+    if (clickedCellId) {
+      const cleanCellId = String(clickedCellId).replace(/^cell-/, '');
+      if (cleanCellId === String(taskId) || String(clickedCellId) === String(taskId)) {
+        setClickedCellId(null);
+      }
+    }
+
     // Optimistically hide from UI
     setPendingDeletions(prev => [...prev, taskId]);
     setTaskToDelete(null);
@@ -971,6 +983,94 @@ export default function BirdViewPage() {
 
   useEffect(() => {
     function handleNumberShortcut(event: KeyboardEvent) {
+      // If Delete confirmation prompt modal is open, consume Escape to cancel prompt without closing ticket/preview
+      if (taskToDelete !== null) {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          setTaskToDelete(null);
+        }
+        return;
+      }
+
+      // Handle Delete / Backspace key on open ticket card modal (clickedCellId)
+      const isDeleteKey = event.key === 'Delete' || event.key === 'Backspace' || event.code === 'Delete' || event.code === 'Backspace' || event.keyCode === 8 || event.keyCode === 46;
+      const targetTag = (event.target as HTMLElement)?.tagName || '';
+      const isEditingText = ['INPUT', 'TEXTAREA'].includes(targetTag) || Boolean((event.target as HTMLElement)?.isContentEditable);
+
+      if (isDeleteKey && !isEditingText && clickedCellId && !previewTask) {
+        const cleanCellId = String(clickedCellId).replace(/^cell-/, '');
+        const targetTask = filteredCellData.find(d => String(d.id) === String(clickedCellId) || String(d.id) === cleanCellId);
+        if (targetTask) {
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          setTaskToDelete(targetTask.id);
+          return;
+        }
+      }
+
+      // Cmd + Shift + P (or Ctrl + Shift + P) shortcut -> Directly open Preview Mode
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'p') {
+        event.preventDefault();
+        event.stopPropagation();
+
+        let targetTask: any = null;
+        let targetStudent: any = null;
+
+        // 1. If expanded ticket modal (main card) is open (clickedCellId)
+        if (clickedCellId) {
+          const cleanCellId = String(clickedCellId).replace(/^cell-/, '');
+          targetTask = filteredCellData.find(d => String(d.id) === String(clickedCellId) || String(d.id) === cleanCellId);
+        }
+
+        // 2. If in Edit Mode (currentRow & currentCol)
+        if (!targetTask && isEditMode && currentRow !== null && currentCol !== null && subjects[currentRow]) {
+          const subject = subjects[currentRow];
+          const studentId = visibleStudentIds[currentCol];
+          targetStudent = students.find(s => s.id === studentId);
+          if (targetStudent) {
+            const studentFullName = `${targetStudent.firstName} ${targetStudent.secondName}`.trim();
+            const cellTasks = filteredCellData.filter(d =>
+              (d.assignee === studentFullName || d.studentName === studentFullName) &&
+              d.subject === subject.name
+            );
+            if (cellTasks.length > 0) {
+              targetTask = cellTasks[0];
+            }
+          }
+        }
+
+        // 3. If crosshair active (activeSubjectIdRef & activeStudentIdRef)
+        if (!targetTask && activeSubjectIdRef.current && activeStudentIdRef.current) {
+          const subject = subjects.find(s => s.id === activeSubjectIdRef.current);
+          targetStudent = students.find(s => s.id === activeStudentIdRef.current);
+          if (subject && targetStudent) {
+            const studentFullName = `${targetStudent.firstName} ${targetStudent.secondName}`.trim();
+            const cellTasks = filteredCellData.filter(d =>
+              (d.assignee === studentFullName || d.studentName === studentFullName) &&
+              d.subject === subject.name
+            );
+            if (cellTasks.length > 0) {
+              targetTask = cellTasks[0];
+            }
+          }
+        }
+
+        if (targetTask) {
+          if (!targetStudent) {
+            targetStudent = students.find(s => `${s.firstName} ${s.secondName}`.trim().toLowerCase() === (targetTask.assignee || targetTask.studentName || '').trim().toLowerCase());
+          }
+          const placeholderSvg = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"><rect width="100%" height="100%" fill="%23080B10"/><text x="50%" y="50%" fill="%23687286" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="16">No attachment image uploaded yet. Click + ADD to upload.</text></svg>';
+          const images = targetTask.images && targetTask.images.length > 0 ? targetTask.images : [placeholderSvg];
+          setPreviewImages(images);
+          setPreviewIndex(0);
+          setPreviewTask(targetTask);
+        }
+        return;
+      }
+
       if (event.key.toLowerCase() === 'e' && !event.metaKey && !event.ctrlKey) {
         if (!['INPUT', 'TEXTAREA', 'SELECT'].includes((event.target as HTMLElement).tagName)) {
           event.preventDefault();
@@ -3426,48 +3526,63 @@ export default function BirdViewPage() {
         </div>
       )}
 
+      {previewImages && (
+        <ImagePreview
+          images={previewImages}
+          initialIndex={previewIndex}
+          task={previewTask}
+          student={students.find(s => `${s.firstName} ${s.secondName}`.trim().toLowerCase() === (previewTask?.assignee || previewTask?.studentName || '').trim().toLowerCase())}
+          attendanceStatus={
+            attendanceData?.find(a => a.userId === (students.find(s => `${s.firstName} ${s.secondName}`.trim().toLowerCase() === (previewTask?.assignee || previewTask?.studentName || '').trim().toLowerCase()) as any)?.userId)?.status as any
+          }
+          chaptersList={chaptersList}
+          topicsList={topicsList}
+          reportersList={reportersList}
+          onUpdateTaskField={handleUpdateTaskField}
+          onAddAttachment={() => previewTask && setImageChoiceModalTask(previewTask)}
+          currentUser={currentUser}
+          onClose={() => {
+            setPreviewImages(null);
+            setPreviewIndex(0);
+            setPreviewTask(null);
+          }}
+          onDeleteTaskTicket={(taskId) => {
+            setTaskToDelete(taskId);
+          }}
+          onDelete={(idxToDelete) => {
+            if (previewTask) {
+              const newImages = (previewTask.images || []).filter((_: any, i: number) => i !== idxToDelete);
+              setPreviewImages(newImages.length > 0 ? newImages : null);
+              handleUpdateTaskField(previewTask.id, 'images', newImages);
+            }
+          }}
+        />
+      )}
 
-      {/* Confirmation Modal */}
+      {/* Delete Confirmation Modal (Layered above ImagePreview & Ticket Modal) */}
       {taskToDelete !== null && (
-        <div className="fixed inset-0 z-[400] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full transform transition-all">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Delete Task</h3>
-            <p className="text-sm text-gray-600 mb-6">Are you sure you want to delete this task? This action can be undone within 7 seconds.</p>
+        <div data-delete-modal="true" className="fixed inset-0 z-[20000] bg-[#0F181B]/70 backdrop-blur-[3px] flex items-center justify-center p-4 animate-fade-in" style={{ zIndex: 20000 }}>
+          <div className="bg-[#FFFEFA] border border-[#D8D2C5] rounded-xl shadow-2xl p-6 max-w-sm w-full transform transition-all">
+            <h3 className="text-lg font-bold text-[#124D45] tracking-tight mb-2">Delete Task</h3>
+            <p className="text-sm text-[#4A5568] mb-6 leading-relaxed">Are you sure you want to delete this task? This action can be undone within 7 seconds.</p>
             <div className="flex justify-end space-x-3">
               <button
+                type="button"
                 onClick={() => setTaskToDelete(null)}
-                className="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-semibold text-[#254245] bg-[#EAE5D9] hover:bg-[#DDD7C6] border border-[#D8D2C5] rounded-lg transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleDeleteConfirm}
-                className="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-semibold text-white bg-[#C53030] hover:bg-[#9B2C2C] rounded-lg transition-colors shadow-sm cursor-pointer"
               >
                 Delete
               </button>
             </div>
           </div>
         </div>
-      )}
-
-      {previewImages && (
-        <ImagePreview
-          images={previewImages}
-          initialIndex={previewIndex}
-          onClose={() => {
-            setPreviewImages(null);
-            setPreviewIndex(0);
-            setPreviewTask(null);
-          }}
-          onDelete={(idxToDelete) => {
-            if (previewTask) {
-              const newImages = previewTask.images.filter((_: any, i: number) => i !== idxToDelete);
-              setPreviewImages(newImages.length > 0 ? newImages : null);
-              handleUpdateTaskField(previewTask.id, 'images', newImages);
-            }
-          }}
-        />
       )}
 
       {cropFile && targetTaskForCrop && (

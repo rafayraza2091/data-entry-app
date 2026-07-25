@@ -240,6 +240,24 @@ export default function ViewTasksPage() {
     }
   };
 
+  const handleUpdateTaskField = async (taskId: number, fieldName: string, newValue: any) => {
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: taskId, fieldName, newValue })
+      });
+      if (res.ok) {
+        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, [fieldName]: newValue } : t));
+        if (previewTask && previewTask.id === taskId) {
+          setPreviewTask((prev: any) => prev ? { ...prev, [fieldName]: newValue } : null);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const renderEditableCell = (task: any, field: string) => {
     let isSelect = false;
     let isDate = false;
@@ -906,25 +924,34 @@ export default function ViewTasksPage() {
         <ImagePreview
           images={previewImages}
           initialIndex={previewIndex}
+          task={previewTask}
+          onUpdateTaskField={handleUpdateTaskField}
+          currentUser={currentUser}
           onClose={() => {
             setPreviewImages(null);
             setPreviewIndex(0);
             setPreviewTask(null);
           }}
+          onDeleteTaskTicket={async (taskId) => {
+            setPreviewImages(null);
+            setPreviewIndex(0);
+            setPreviewTask(null);
+            if (window.confirm("Are you sure you want to delete this task ticket?")) {
+              try {
+                const res = await fetch(`/api/tasks?id=${taskId}`, { method: 'DELETE' });
+                if (res.ok) {
+                  setTasks(prev => prev.filter(t => t.id !== taskId));
+                }
+              } catch (err) {
+                console.error(err);
+              }
+            }
+          }}
           onDelete={async (idxToDelete) => {
             if (previewTask) {
-              const newImages = previewTask.images.filter((_: any, i: number) => i !== idxToDelete);
+              const newImages = (previewTask.images || []).filter((_: any, i: number) => i !== idxToDelete);
               setPreviewImages(newImages.length > 0 ? newImages : null);
-              setTasks(prev => prev.map(t => t.id === previewTask.id ? { ...t, images: newImages } : t));
-              try {
-                await fetch('/api/tasks', {
-                  method: 'PATCH',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ id: previewTask.id, fieldName: 'images', newValue: newImages })
-                });
-              } catch (err) {
-                console.error('Failed to delete image:', err);
-              }
+              handleUpdateTaskField(previewTask.id, 'images', newImages);
             }
           }}
         />
