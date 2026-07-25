@@ -243,6 +243,7 @@ export default function BirdViewPage() {
   const copiedTaskRef = useRef<any>(null);
   const [chaptersList, setChaptersList] = useState<any[]>([]);
   const [topicsList, setTopicsList] = useState<any[]>([]);
+  const [booksList, setBooksList] = useState<any[]>([]);
 
   // Reschedule states
   const [rescheduleTaskId, setRescheduleTaskId] = useState<number | null>(null);
@@ -674,15 +675,17 @@ export default function BirdViewPage() {
       try {
         const initialDateStr = getLocalDateString(new Date());
 
-        const [response, chapRes, topRes, taskUsersRes] = await Promise.all([
+        const [response, chapRes, topRes, taskUsersRes, booksRes] = await Promise.all([
           fetch(`/api/bird-view?date=${initialDateStr}&view=task`),
           fetch('/api/chapters'),
           fetch('/api/topics'),
-          fetch('/api/task-users')
+          fetch('/api/task-users'),
+          fetch('/api/books')
         ]);
 
         if (chapRes.ok) setChaptersList(await chapRes.json());
         if (topRes.ok) setTopicsList(await topRes.json());
+        if (booksRes.ok) setBooksList(await booksRes.json());
 
         if (taskUsersRes.ok) {
           const data = await taskUsersRes.json();
@@ -831,13 +834,25 @@ export default function BirdViewPage() {
       return;
     }
 
-    const newStudents = [...students];
-    const draggedItem = newStudents[draggedStudentIdx];
-    newStudents.splice(draggedStudentIdx, 1);
-    newStudents.splice(dropIndex, 0, draggedItem);
+    const draggedStudent = displayStudents[draggedStudentIdx];
+    const dropStudent = displayStudents[dropIndex];
+    if (!draggedStudent || !dropStudent) {
+      setDraggedStudentIdx(null);
+      setHoveredStudentIdx(null);
+      return;
+    }
 
-    setStudents(newStudents);
-    saveOrder(subjects, newStudents);
+    const newStudents = [...students];
+    const fromIdx = newStudents.findIndex(s => s.id === draggedStudent.id);
+    const toIdx = newStudents.findIndex(s => s.id === dropStudent.id);
+
+    if (fromIdx !== -1 && toIdx !== -1) {
+      const [draggedItem] = newStudents.splice(fromIdx, 1);
+      newStudents.splice(toIdx, 0, draggedItem);
+      setStudents(newStudents);
+      saveOrder(subjects, newStudents);
+    }
+
     setDraggedStudentIdx(null);
     setHoveredStudentIdx(null);
   };
@@ -1579,7 +1594,19 @@ export default function BirdViewPage() {
                 const statusColor = getStatusColor(item.status);
                 const isLastNewItem = idx === arr.length - 1;
 
-                const availableChapters = chaptersList.filter(c => c.subject === item.subject && (!item.book || c.book === item.book));
+                const availableBooksForItem = booksList.filter(b => {
+                  if (b.subject !== item.subject) return false;
+                  if (!item.className) return true;
+                  const targetLower = item.className.trim().toLowerCase();
+                  const bookClasses = (b.className || '').split(',').map((s: string) => s.trim().toLowerCase()).filter(Boolean);
+                  return bookClasses.length === 0 || bookClasses.some((c: string) => c === targetLower || c.includes(targetLower) || targetLower.includes(c));
+                });
+                const classBookTitles = new Set(availableBooksForItem.map(b => b.title));
+
+                const availableChapters = chaptersList.filter(c => 
+                  c.subject === item.subject && 
+                  (item.book ? c.book === item.book : (classBookTitles.size === 0 || classBookTitles.has(c.book)))
+                );
                 const chaptersByBook = availableChapters.reduce<Record<string, typeof availableChapters>>((acc, c) => {
                   const bName = c.book || 'Other';
                   if (!acc[bName]) acc[bName] = [];
@@ -1587,7 +1614,11 @@ export default function BirdViewPage() {
                   return acc;
                 }, {});
 
-                const availableTopics = topicsList.filter(t => t.subject === item.subject && (!item.book || t.book === item.book) && (t.chapterTitle === item.chapter || t.chapterName === item.chapter));
+                const availableTopics = topicsList.filter(t => 
+                  t.subject === item.subject && 
+                  (item.book ? t.book === item.book : (classBookTitles.size === 0 || classBookTitles.has(t.book))) && 
+                  (t.chapterTitle === item.chapter || t.chapterName === item.chapter)
+                );
                 const uniqueTopicNames = Array.from(new Set(availableTopics.map(t => t.topicName)));
                 const uniqueExercises = Array.from(new Set(availableTopics.filter(t => t.topicName === item.topic && t.exercise).map(t => t.exercise)));
                 const uniqueReporters = Array.from(new Set([
@@ -1686,10 +1717,12 @@ export default function BirdViewPage() {
                           tabIndex={0}
                           value={item.description || ''}
                           onChange={(e) => {
+                            const newVal = e.target.value;
                             e.currentTarget.style.height = 'auto';
                             e.currentTarget.style.height = Math.max(56, e.currentTarget.scrollHeight) + 'px';
+                            setCellData(prev => prev.map(d => d.id === item.id ? { ...d, description: newVal } : d));
                           }}
-                          onBlur={(e) => { if (e.target.value !== (item.description || '')) handleUpdateTaskField(item.id, 'description', e.target.value) }}
+                          onBlur={(e) => handleUpdateTaskField(item.id, 'description', e.target.value)}
                           className="text-[13px] sm:text-[14px] text-[#172238] font-medium w-full leading-relaxed text-left bg-white hover:border-[#999999] focus:border-[#124D45] transition-colors resize-y min-h-[56px] sm:min-h-[72px] whitespace-normal custom-scrollbar rounded-[4px] p-2 sm:p-2.5 border border-[#E2DDD3] outline-none placeholder:text-[#999999]"
                           placeholder="Complete the solution..."
                         />
@@ -2591,7 +2624,7 @@ export default function BirdViewPage() {
                       const isLeave = studentAttendance?.status === 'LEAVE';
                       const disableCol = isAbsent || isLeave;
 
-                      const isDraggable = !disableCol && !hasAbsencesOrLeaves;
+                      const isDraggable = true;
 
                       return (
                         <th
@@ -2601,7 +2634,7 @@ export default function BirdViewPage() {
                           className={`p-0 text-center border-b border-r border-gray-200 whitespace-nowrap w-24 min-w-[6rem] max-w-[6rem] md:w-[120px] md:min-w-[120px] md:max-w-[120px] scroll-ml-16 md:scroll-ml-[80px]`}
                         >
                           <div
-                            className={`w-full h-full px-1 py-2 md:px-4 md:py-4 cursor-pointer hover:bg-gray-100 group flex flex-col items-center justify-center relative cell-student-${student.id}
+                            className={`w-full h-full px-1 py-2 md:px-4 md:py-4 cursor-grab active:cursor-grabbing hover:bg-gray-100 group flex flex-col items-center justify-center relative cell-student-${student.id}
                             ${isDraggable ? 'active:cursor-grabbing' : ''}
                             ${isDragged ? 'dragged-column' : ''}
                             ${showLeftIndicator ? 'drop-target-left' : ''}

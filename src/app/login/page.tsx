@@ -152,31 +152,31 @@ export default function LoginPage() {
       </div>
 
       {/* Right Side (Form Panel) */}
-      <div className="flex-1 flex flex-col justify-center items-center p-6 sm:p-12 bg-[#FFFEFA]">
+      <div className="flex-1 flex flex-col justify-center items-center p-6 sm:p-12 bg-[#124D45]">
         <div className="w-full max-w-[400px]">
           {/* Header */}
           <div className="mb-8 text-left">
             <div className="lg:hidden flex items-center gap-2 mb-4">
-              <div className="w-7 h-7 rounded-[2px] bg-[#124D45] text-white font-bold text-xs flex items-center justify-center border border-[#B48632]">
+              <div className="w-7 h-7 rounded-[2px] bg-[#172238] text-white font-bold text-xs flex items-center justify-center border border-[#B48632]">
                 M
               </div>
-              <span className="text-base font-bold text-[#172238] uppercase tracking-wider">
+              <span className="text-base font-bold text-white uppercase tracking-wider">
                 My<span className="text-[#B48632]">Academy</span>
               </span>
             </div>
-            <h1 className="text-2xl font-semibold text-[#172238] tracking-tight">
+            <h1 className="text-2xl font-semibold text-white tracking-tight">
               Welcome back
             </h1>
-            <p className="text-xs text-[#687286] mt-1">Please sign in to access your dashboard</p>
+            <p className="text-xs text-[#D8D2C5] mt-1">Please sign in to access your dashboard</p>
           </div>
           
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-[11.5px] font-medium text-[#687286] mb-1" htmlFor="username">Username</label>
+              <label className="block text-[11.5px] font-medium text-[#FFFEFA] mb-1" htmlFor="username">Username</label>
               <input 
                 type="text" 
                 id="username" 
-                className="w-full h-[36px] px-3 bg-white text-[13px] font-medium text-[#172238] rounded-[3px] border border-[#D8D2C5] focus:border-[#2463EB] focus:ring-1 focus:ring-[#2463EB] outline-none transition-colors" 
+                className="w-full h-[36px] px-3 bg-white text-[13px] font-medium text-[#172238] rounded-[3px] border border-[#D8D2C5] focus:border-[#B48632] focus:ring-1 focus:ring-[#B48632] outline-none transition-colors" 
                 placeholder="Enter your username"
                 required 
                 value={username}
@@ -185,12 +185,12 @@ export default function LoginPage() {
             </div>
             
             <div>
-              <label className="block text-[11.5px] font-medium text-[#687286] mb-1" htmlFor="password">Password</label>
+              <label className="block text-[11.5px] font-medium text-[#FFFEFA] mb-1" htmlFor="password">Password</label>
               <div className="relative">
                 <input 
                   type={showPassword ? "text" : "password"} 
                   id="password" 
-                  className="w-full h-[36px] px-3 bg-white text-[13px] font-medium text-[#172238] rounded-[3px] border border-[#D8D2C5] focus:border-[#2463EB] focus:ring-1 focus:ring-[#2463EB] outline-none transition-colors pr-10" 
+                  className="w-full h-[36px] px-3 bg-white text-[13px] font-medium text-[#172238] rounded-[3px] border border-[#D8D2C5] focus:border-[#B48632] focus:ring-1 focus:ring-[#B48632] outline-none transition-colors pr-10" 
                   placeholder="Enter your password"
                   required 
                   value={password}
@@ -207,14 +207,14 @@ export default function LoginPage() {
             </div>
 
             {loginError && (
-              <div className="p-2.5 bg-[#A33B3B]/10 border border-[#A33B3B]/30 rounded-[3px] flex items-center gap-2 text-[#A33B3B] text-xs font-medium">
+              <div className="p-2.5 bg-red-900/30 border border-red-400/40 rounded-[3px] flex items-center gap-2 text-red-200 text-xs font-medium">
                 <i className="fa-solid fa-circle-exclamation text-xs shrink-0"></i>
                 <span>{loginError}</span>
               </div>
             )}
             
             {loginSuccess && (
-              <div className="p-2.5 bg-[#26705A]/10 border border-[#26705A]/30 rounded-[3px] flex items-center gap-2 text-[#26705A] text-xs font-medium">
+              <div className="p-2.5 bg-emerald-900/30 border border-emerald-400/40 rounded-[3px] flex items-center gap-2 text-emerald-200 text-xs font-medium">
                 <i className="fa-solid fa-circle-check text-xs shrink-0"></i>
                 <span>{loginSuccess}</span>
               </div>
@@ -222,7 +222,7 @@ export default function LoginPage() {
 
             <button 
               type="submit" 
-              className="w-full h-[36px] bg-[#124D45] hover:bg-[#1A6358] text-white font-semibold text-xs rounded-[3px] transition-colors flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed mt-2" 
+              className="w-full h-[36px] bg-[#B48632] hover:bg-[#9A6818] text-white font-semibold text-xs rounded-[3px] transition-colors flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed mt-2 shadow-sm" 
               disabled={isLoggingIn}
             >
               {isLoggingIn ? (
@@ -236,14 +236,14 @@ export default function LoginPage() {
             </button>
             
             <div className="relative flex items-center py-3">
-              <div className="flex-grow border-t border-[#D8D2C5]"></div>
-              <span className="flex-shrink-0 mx-3 text-[#687286] text-xs">New to MyAcademy?</span>
-              <div className="flex-grow border-t border-[#D8D2C5]"></div>
+              <div className="flex-grow border-t border-white/20"></div>
+              <span className="flex-shrink-0 mx-3 text-[#D8D2C5] text-xs">New to MyAcademy?</span>
+              <div className="flex-grow border-t border-white/20"></div>
             </div>
 
             <button 
               type="button" 
-              className="w-full h-[36px] bg-[#F4F1E9] hover:bg-[#F4F1E9]/80 border border-[#D8D2C5] text-[#172238] font-semibold text-xs rounded-[3px] transition-colors"
+              className="w-full h-[36px] bg-white/10 hover:bg-white/20 border border-white/30 text-white font-semibold text-xs rounded-[3px] transition-colors"
               onClick={() => setShowRegisterModal(true)}
             >
               Create an account

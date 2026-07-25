@@ -247,14 +247,19 @@ export default function QueryEntryClient({
     }
   }
 
-  const availableBooks = booksList.filter(b => 
-    b.subject === subject && 
-    (b.className || '').includes(derivedClassName)
-  );
+  const availableBooks = booksList.filter(b => {
+    if (b.subject !== subject) return false;
+    if (!derivedClassName) return true;
+    const targetLower = derivedClassName.trim().toLowerCase();
+    const bookClasses = (b.className || '').split(',').map((s: string) => s.trim().toLowerCase()).filter(Boolean);
+    return bookClasses.length === 0 || bookClasses.some((c: string) => c === targetLower || c.includes(targetLower) || targetLower.includes(c));
+  });
+
+  const classBookTitles = new Set(availableBooks.map(b => b.title));
   
   const availableTopics = topicsList.filter(t => 
     t.subject === subject && 
-    (book ? t.book === book : true)
+    (book ? t.book === book : (classBookTitles.size === 0 || classBookTitles.has(t.book)))
   );
   
   const uniqueTopicNames = Array.from(new Set(availableTopics.map(t => t.topicName).filter(Boolean)));
@@ -290,19 +295,19 @@ export default function QueryEntryClient({
   };
 
   return (
-    <div className="glass-panel animate-slide-up mx-auto max-w-4xl mt-0 md:mt-8 p-3 sm:p-6 md:p-8 w-full" style={{ position: 'relative', maxHeight: onClose ? '85vh' : 'auto', overflowY: onClose ? 'auto' : 'visible' }}>
+    <div className="glass-panel animate-slide-up mx-auto max-w-4xl mt-0 md:mt-8 p-2 sm:p-6 md:p-8 w-full" style={{ position: 'relative', maxHeight: onClose ? '85vh' : 'auto', overflowY: onClose ? 'auto' : 'visible' }}>
       {onClose && (
         <button 
           onClick={onClose}
           type="button"
-          style={{ position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', zIndex: 10, color: '#6b7280' }}
+          style={{ position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', zIndex: 10, color: '#6b7280' }}
         >
           <i className="fa-solid fa-xmark"></i>
         </button>
       )}
 
       {status.message && (
-        <div className={`p-3 mb-3 text-xs rounded ${status.type === 'error' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+        <div className={`p-2 mb-2 text-[10px] sm:text-xs rounded ${status.type === 'error' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
           {status.message}
         </div>
       )}
@@ -310,23 +315,24 @@ export default function QueryEntryClient({
       {showBeautifulHeader && renderBeautifulHeader()}
 
       <form onSubmit={handleSubmit}>
-        <div className="form-row">
+        <div className="grid grid-cols-2 gap-1 sm:gap-3">
           
           {!showBeautifulHeader && (
             <>
-              <div className="form-group">
-                <label className="form-label">Student Name</label>
+              {/* Row 1: Student Name & Class */}
+              <div className="form-group mb-1 sm:mb-3">
+                <label className="form-label text-[9px] sm:text-[11.5px]">Student Name</label>
                 {isStudent ? (
                   <input 
                     type="text" 
-                    className="form-control" 
+                    className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
                     value={studentName} 
                     disabled 
                     style={{ backgroundColor: 'var(--border-color)' }}
                   />
                 ) : (
                   <select 
-                    className="form-control" 
+                    className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
                     value={studentName} 
                     onChange={e => setStudentName(e.target.value)} 
                     required
@@ -340,8 +346,8 @@ export default function QueryEntryClient({
                   </select>
                 )}
                 {(studentStatus === 'ABSENT' || studentStatus === 'LEAVE') && (
-                  <div className="mt-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded p-1.5 flex items-start gap-1.5">
-                    <span className="text-sm">⚠️</span>
+                  <div className="mt-0.5 text-[9px] sm:text-xs text-red-600 bg-red-50 border border-red-200 rounded p-0.5 flex items-start gap-1 col-span-2">
+                    <span className="text-[10px]">⚠️</span>
                     <span>
                       <strong>{studentStatus}:</strong> {studentReason || 'No reason provided.'}
                     </span>
@@ -349,21 +355,61 @@ export default function QueryEntryClient({
                 )}
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Class</label>
+              <div className="form-group mb-1 sm:mb-3">
+                <label className="form-label text-[9px] sm:text-[11.5px]">Class</label>
                 <input 
                   type="text" 
-                  className="form-control" 
+                  className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
                   value={derivedClassName || 'N/A'} 
                   disabled 
                   style={{ backgroundColor: 'var(--border-color)' }}
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Subject</label>
+              {/* Row 2: Teacher & Status */}
+              <div className="form-group mb-1 sm:mb-3">
+                <label className="form-label text-[9px] sm:text-[11.5px]">Teacher</label>
+                {isStudent ? (
+                  <input 
+                    type="text" 
+                    className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
+                    value={teacherName} 
+                    disabled 
+                    style={{ backgroundColor: 'var(--border-color)' }}
+                  />
+                ) : (
+                  <select 
+                    className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
+                    value={teacherName} 
+                    onChange={e => setTeacherName(e.target.value)} 
+                    required
+                  >
+                    <option value="" disabled>Select Teacher</option>
+                    {teachers.map((t, i) => (
+                      <option key={i} value={t}>{t}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              <div className="form-group mb-1 sm:mb-3">
+                <label className="form-label text-[9px] sm:text-[11.5px]">Status</label>
                 <select 
-                  className="form-control" 
+                  className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
+                  value={queryStatus} 
+                  onChange={e => setQueryStatus(e.target.value)} 
+                >
+                  <option value="open">Open</option>
+                  <option value="pending">Pending</option>
+                  <option value="done">Done</option>
+                </select>
+              </div>
+
+              {/* Row 3: Subject & Book */}
+              <div className="form-group mb-1 sm:mb-3">
+                <label className="form-label text-[9px] sm:text-[11.5px]">Subject</label>
+                <select 
+                  className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
                   value={subject} 
                   onChange={e => {
                     setSubject(e.target.value);
@@ -381,11 +427,10 @@ export default function QueryEntryClient({
             </>
           )}
 
-          {/* Dynamic Fields Section based on Subject */}
-          <div className="form-group">
-            <label className="form-label">Book</label>
+          <div className="form-group mb-1 sm:mb-3">
+            <label className="form-label text-[9px] sm:text-[11.5px]">Book</label>
             <select 
-              className="form-control" 
+              className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
               value={book} 
               onChange={e => {
                 setBook(e.target.value);
@@ -400,21 +445,22 @@ export default function QueryEntryClient({
             </select>
           </div>
           
-          <div className="form-group">
-            <label className="form-label">Chapter</label>
+          {/* Row 4: Chapter & Topic */}
+          <div className="form-group mb-1 sm:mb-3">
+            <label className="form-label text-[9px] sm:text-[11.5px]">Chapter</label>
             <input
               type="text"
-              className="form-control"
+              className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0"
               value={chapter}
               onChange={(e) => setChapter(e.target.value)}
-              placeholder="Enter Chapter (Optional)"
+              placeholder="Chapter (Optional)"
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Topic</label>
+          <div className="form-group mb-1 sm:mb-3">
+            <label className="form-label text-[9px] sm:text-[11.5px]">Topic</label>
             <select 
-              className="form-control" 
+              className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
               value={topic} 
               onChange={e => {
                 setTopic(e.target.value);
@@ -429,10 +475,11 @@ export default function QueryEntryClient({
             </select>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Exercise</label>
+          {/* Row 5: Exercise & Page Number */}
+          <div className="form-group mb-1 sm:mb-3">
+            <label className="form-label text-[9px] sm:text-[11.5px]">Exercise</label>
             <select 
-              className="form-control" 
+              className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
               value={exercise} 
               onChange={e => setExercise(e.target.value)} 
               disabled={!topic || availableExercises.length === 0}
@@ -444,70 +491,33 @@ export default function QueryEntryClient({
             </select>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Page Number</label>
+          <div className="form-group mb-1 sm:mb-3">
+            <label className="form-label text-[9px] sm:text-[11.5px]">Page Number</label>
             <input 
               type="text" 
-              className="form-control" 
+              className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
               value={pageNumber} 
               onChange={e => setPageNumber(e.target.value)} 
               placeholder="e.g. 42 (Optional)"
             />
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Teacher</label>
-            {isStudent ? (
-              <input 
-                type="text" 
-                className="form-control" 
-                value={teacherName} 
-                disabled 
-                style={{ backgroundColor: 'var(--border-color)' }}
-              />
-            ) : (
-              <select 
-                className="form-control" 
-                value={teacherName} 
-                onChange={e => setTeacherName(e.target.value)} 
-                required
-              >
-                <option value="" disabled>Select Teacher</option>
-                {teachers.map((t, i) => (
-                  <option key={i} value={t}>{t}</option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Status</label>
-            <select 
-              className="form-control" 
-              value={queryStatus} 
-              onChange={e => setQueryStatus(e.target.value)} 
-            >
-              <option value="open">Open</option>
-              <option value="pending">Pending</option>
-              <option value="done">Done</option>
-            </select>
-          </div>
-
-          <div className="form-group col-span-1 sm:col-span-2">
-            <label className="form-label">Query</label>
+          {/* Full Width Row 6: Query */}
+          <div className="form-group mb-1 sm:mb-3 col-span-2">
+            <label className="form-label text-[9px] sm:text-[11.5px]">Query</label>
             <textarea 
-              className="form-control min-h-[56px] sm:min-h-[72px]" 
+              className="form-control text-[10px] sm:text-[13px] min-h-[38px] sm:min-h-[72px] p-1 sm:p-2.5" 
               value={queryStatement} 
               onChange={e => setQueryStatement(e.target.value)} 
               rows={2}
               placeholder="Enter your query statement here..."
               required
-              style={{ padding: '8px 10px', resize: 'vertical' }}
+              style={{ padding: '4px 6px', resize: 'vertical' }}
             />
           </div>
 
-          {/* Attachments Section */}
-          <div className="form-group col-span-1 sm:col-span-2">
+          {/* Full Width Row 7: Attachments */}
+          <div className="form-group mb-1 sm:mb-3 col-span-2">
             <label className="form-label">Attachments (Optional)</label>
             
             <input 

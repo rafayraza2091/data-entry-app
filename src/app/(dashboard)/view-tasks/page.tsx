@@ -256,17 +256,45 @@ export default function ViewTasksPage() {
       options = subjectsList.map(s => s.name);
     } else if (field === 'book') {
       isSelect = true;
-      options = booksList.filter(b => b.subject === task.subject).map(b => b.title);
+      const classBooks = booksList.filter(b => {
+        if (b.subject !== task.subject) return false;
+        if (!task.className) return true;
+        const targetLower = task.className.trim().toLowerCase();
+        const bookClasses = (b.className || '').split(',').map((s: string) => s.trim().toLowerCase()).filter(Boolean);
+        return bookClasses.length === 0 || bookClasses.some((c: string) => c === targetLower || c.includes(targetLower) || targetLower.includes(c));
+      });
+      options = classBooks.map(b => b.title);
     } else if (field === 'chapter') {
       isSelect = true;
-      options = chaptersList.filter(c => c.subject === task.subject && (!task.book || c.book === task.book)).map(c => c.chapterTitle || c.chapterName);
+      const classBookTitles = new Set(booksList.filter(b => {
+        if (b.subject !== task.subject) return false;
+        if (!task.className) return true;
+        const targetLower = task.className.trim().toLowerCase();
+        const bookClasses = (b.className || '').split(',').map((s: string) => s.trim().toLowerCase()).filter(Boolean);
+        return bookClasses.length === 0 || bookClasses.some((c: string) => c === targetLower || c.includes(targetLower) || targetLower.includes(c));
+      }).map(b => b.title));
+      options = chaptersList.filter(c => c.subject === task.subject && (task.book ? c.book === task.book : (classBookTitles.size === 0 || classBookTitles.has(c.book)))).map(c => c.chapterTitle || c.chapterName);
     } else if (field === 'topic') {
       isSelect = true;
-      const availableTopics = topicsList.filter(t => t.subject === task.subject && (!task.book || t.book === task.book) && (t.chapterTitle === task.chapter || t.chapterName === task.chapter));
+      const classBookTitles = new Set(booksList.filter(b => {
+        if (b.subject !== task.subject) return false;
+        if (!task.className) return true;
+        const targetLower = task.className.trim().toLowerCase();
+        const bookClasses = (b.className || '').split(',').map((s: string) => s.trim().toLowerCase()).filter(Boolean);
+        return bookClasses.length === 0 || bookClasses.some((c: string) => c === targetLower || c.includes(targetLower) || targetLower.includes(c));
+      }).map(b => b.title));
+      const availableTopics = topicsList.filter(t => t.subject === task.subject && (task.book ? t.book === task.book : (classBookTitles.size === 0 || classBookTitles.has(t.book))) && (t.chapterTitle === task.chapter || t.chapterName === task.chapter));
       options = Array.from(new Set(availableTopics.map(t => t.topicName).filter(Boolean)));
     } else if (field === 'exercise') {
       isSelect = true;
-      const availableTopics = topicsList.filter(t => t.subject === task.subject && (!task.book || t.book === task.book) && (t.chapterTitle === task.chapter || t.chapterName === task.chapter));
+      const classBookTitles = new Set(booksList.filter(b => {
+        if (b.subject !== task.subject) return false;
+        if (!task.className) return true;
+        const targetLower = task.className.trim().toLowerCase();
+        const bookClasses = (b.className || '').split(',').map((s: string) => s.trim().toLowerCase()).filter(Boolean);
+        return bookClasses.length === 0 || bookClasses.some((c: string) => c === targetLower || c.includes(targetLower) || targetLower.includes(c));
+      }).map(b => b.title));
+      const availableTopics = topicsList.filter(t => t.subject === task.subject && (task.book ? t.book === task.book : (classBookTitles.size === 0 || classBookTitles.has(t.book))) && (t.chapterTitle === task.chapter || t.chapterName === task.chapter));
       options = Array.from(new Set(availableTopics.map(t => t.exercise).filter(Boolean)));
     } else if (field === 'dueDate') {
       isDate = true;
