@@ -56,6 +56,66 @@ When modifying the Bird View grid, strictly follow these layout and functionalit
     - **Focus & Hover Highlights**: Delete button, Add Task button, Reporter selector, Status pills, Task Type pills, and Attachment tiles MUST have distinct, highly visible focus ring & hover highlight styles (`focus:ring-2`, `hover:border-...`).
 <!-- END:bird-view-rules -->
 
+<!-- BEGIN:attachment-preview-workspace-rules -->
+# Attachment Preview & Review Workspace Guidelines (`src/components/ImagePreview.tsx`)
+
+When creating, updating, or maintaining the Attachment Preview & Review Workspace (`ImagePreview.tsx`), strictly enforce all of the following rules, layout specifications, and keyboard behaviors:
+
+1. **3-Zone Layout & Parity**:
+   - **Top Command Bar (`bg-[#0B0F17]`, `border-slate-800`)**: Displays task metadata (`SUBJECT · STUDENT NAME · TASK #ID`), rotation controls (-90° / +90°), 50% step zoom controls (`-` / `+` / `Fit` / `Reset`), optional attachment image deletion action, and top-right close button (`×`).
+   - **Center Interactive Canvas (`bg-[#080B10]`)**: Deep dark workspace displaying the active image with CSS transform (`transform: translate(${pan.x}px, ${pan.y}px) scale(${zoom}) rotate(${rotation}deg)`). Features top-left active badges for rotation angle and zoom percentage, plus a bottom-center thumbnail navigation bar when multiple attachments exist.
+   - **Right Review Panel**: Parity with the main expanded ticket modal. Contains:
+     - Header: Task Subject & Student Name, Task ID badge, Status pill tag.
+     - Academic details 3-column row: Chapter, Topic, Exercise selectors.
+     - Description textarea with instant state update.
+     - Grading section: Obtained Marks input (`/ 10`) + dynamic green progress bar.
+     - Task Type pills: `TUITION`, `HOME`, `CLASS`, `TEST`, `PROJECT`.
+     - Status pills: `OPEN`, `WORKING`, `DONE`, `PENDING` (Reschedule).
+     - Reporter dropdown selector with user avatars.
+     - Attachments section: `54x54px` thumbnail strip + `+ ADD` attachment button.
+     - Discussion comments: `TaskComments` component for Jira-style comments and threaded replies.
+
+2. **Shortcut `Cmd + Shift + P` (or `Ctrl + Shift + P`)**:
+   - Pressing `Cmd + Shift + P` (or `Ctrl + Shift + P`) in Bird View (`bird-view/page.tsx`) immediately opens the Attachment Preview Review Workspace for the target task.
+   - **Context Resolution Hierarchy**:
+     1. If the main expanded ticket modal is open (`clickedCellId`), open Preview Mode for that active task.
+     2. If in Edit Mode (`isEditMode` / `currentRow` / `currentCol`) or crosshair is active (`activeSubjectIdRef` / `activeStudentIdRef`), locate the task in that cell and open Preview Mode.
+   - **No Attachment Fallback**: If the task has no uploaded attachment images, a lightweight SVG data URL placeholder (`No attachment image uploaded yet. Click + ADD to upload.`) is supplied automatically so Preview Mode opens cleanly for editing task details, grading, status/type, discussion comments, or adding new files.
+
+3. **Delete Task Ticket with Warning & 7-Second Undo Banner**:
+   - The top command bar and review panel include a **Delete Task Ticket** action.
+   - Pressing **Delete** or **Backspace** when not editing text inside an `INPUT` or `TEXTAREA` triggers ticket deletion.
+   - Prompts the confirmation modal (*"Are you sure you want to delete this task? This action can be undone within 7 seconds."*).
+   - Confirming deletion immediately closes `ImagePreview`, optimistically hides the task from the grid, starts a 7-second countdown, and displays the bottom-center **Undo Toast Banner** (`"Task deleted. [ UNDO ]"`).
+   - Clicking **[ UNDO ]** within 7 seconds cancels the deletion request and restores the task back into place.
+
+4. **Roving TabIndex & Keyboard Traversal**:
+   - **Top Command Bar Roving TabIndex**: Only the active top bar button has `tabIndex={0}` (`topBarFocusedIdx`); all other top bar buttons have `tabIndex={-1}`.
+   - **Top Bar to Right Panel Tab Jump**: Pressing `Tab` from *any* top bar button jumps **directly to Chapter select** (skipping all remaining top bar buttons).
+   - **Option Pill Roving TabIndex**: Task Type pills, Status pills, and Attachment thumbnails use roving `tabIndex`. Pressing `Tab` lands only on the active pill (`tabIndex={0}`) and skips all other option pills (`tabIndex={-1}`) to jump directly to the next section (`Task Type Group` -> `Status Group` -> `Reporter` -> `Attachments Group` -> `Delete` -> `Add Task`).
+   - **Arrow Key Navigation within Option Groups**: Arrow keys (`ArrowLeft`, `ArrowRight`, `ArrowUp`, `ArrowDown`) navigate and move focus between option pills/tiles inside Task Type, Status, and Attachment groups via programmatic `.focus()`.
+
+5. **High-Contrast Focus Rings & No Autofocus on Mount**:
+   - Focusable controls feature high-contrast gold focus rings (`focus:ring-2 focus:ring-[#B48632] focus:ring-offset-1 focus:ring-offset-[#0B0F17]`).
+   - On mount, `ImagePreview` does NOT autofocus any button or control (opens clean without an initial gold highlight).
+
+6. **Escape Key Un-Highlight & Close Hierarchy**:
+   - **First Escape Press**: If an option control (`INPUT`, `TEXTAREA`, `SELECT`, `BUTTON`) is currently focused/highlighted, pressing `Escape` calls `activeEl.blur()` to remove focus and clear the highlight ring without closing Preview Mode.
+   - **Second Escape Press**: If no control is focused/highlighted, pressing `Escape` closes the Attachment Preview modal.
+
+7. **Zooming (50% Step Value)**:
+   - Zooming uses **50 percentage point steps** (0.50 scale increment/decrement, e.g. 100% -> 150% -> 200% -> 250% -> 300%).
+   - Triggered by `+` / `-` buttons, `+` / `-` keyboard shortcuts, or double-clicking the canvas (zooms to 150% / resets to 100%).
+   - Zooming in (`zoom > 1.0`) automatically focuses the image container (`imageViewportRef`) to allow instant arrow-key panning, while preserving any active option highlights.
+
+8. **Screen-Bound Scrolling & 50% Viewport Arrow Jumps (`zoom > 1.0`)**:
+   - **Horizontal Scroll Enable Condition**: Left / Right arrow key panning is **only enabled when the scaled image width expands beyond the visible screen viewport** (`scaledWidth > viewportWidth + 10`). If the image fits horizontally within the screen, horizontal scrolling is disabled.
+   - **Vertical Scroll Enable Condition**: Up / Down arrow key panning is **only enabled when the scaled image height expands beyond the visible screen viewport** (`scaledHeight > viewportHeight + 10`). If the image fits vertically within the screen, vertical scrolling is disabled.
+   - **Arrow Jump Step**: Each arrow key press jumps **50% of the viewport dimension** (`Math.max(320, Math.round(viewportH * 0.5))`), allowing users to reach the top, bottom, or edges of a document/image in 2 to 3 key presses.
+   - **Boundary Clamping**: Both arrow-key scrolling and mouse-drag panning are strictly clamped within `[-maxPanX, maxPanX]` and `[-maxPanY, maxPanY]` so the image cannot pan off into empty space.
+   - **Attachment File Switching (`zoom <= 1.0`)**: When the image is fully zoomed out (`zoom <= 1.0`) and no option control is focused, **ArrowRight** / **ArrowLeft** switch attachment files.
+<!-- END:attachment-preview-workspace-rules -->
+
 <!-- BEGIN:attendance-page-rules -->
 # Attendance Page (src/app/(dashboard)/attendance/page.tsx) Guidelines
 
