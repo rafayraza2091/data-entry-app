@@ -410,6 +410,10 @@ export default function ImagePreview({
           items[(idx - 1 + items.length) % items.length]?.focus();
         }
       }
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      e.stopPropagation();
+      e.currentTarget.click();
     }
   };
 

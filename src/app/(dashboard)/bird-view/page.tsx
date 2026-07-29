@@ -1899,6 +1899,10 @@ export default function BirdViewPage() {
                                       const prevBtn = buttons[(currIndex - 1 + buttons.length) % buttons.length];
                                       prevBtn?.focus();
                                     }
+                                  } else if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.currentTarget.click();
                                   }
                                 }}
                                 className={`h-[28px] sm:h-[32px] px-2.5 sm:px-3.5 border rounded-[4px] text-[11px] sm:text-[13px] font-medium transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer outline-none focus:ring-2 focus:ring-[#124D45] focus:ring-offset-1 ${
@@ -1965,6 +1969,10 @@ export default function BirdViewPage() {
                                       const prevBtn = buttons[(currIndex - 1 + buttons.length) % buttons.length];
                                       prevBtn?.focus();
                                     }
+                                  } else if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    e.currentTarget.click();
                                   }
                                 }}
                                 className={`h-[28px] sm:h-[32px] px-2.5 sm:px-3.5 border rounded-[4px] text-[11px] sm:text-[13px] font-medium transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer outline-none focus:ring-2 focus:ring-[#124D45] focus:ring-offset-1 ${
