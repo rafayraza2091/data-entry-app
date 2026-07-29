@@ -54,6 +54,11 @@ const getTaskTypeBadge = (typeStr: string) => {
   return { initials: type.slice(0, 2).toUpperCase() || 'TK', color: '#474E30' };
 };
 
+const matchStudentName = (name1?: string | null, name2?: string | null) => {
+  if (!name1 || !name2) return false;
+  return name1.trim().toLowerCase() === name2.trim().toLowerCase();
+};
+
 const getStatusColor = (statusStr: string) => {
   if (!statusStr) return '#64748b'; // Dark grey
   const status = statusStr.toUpperCase();
@@ -943,7 +948,7 @@ export default function BirdViewPage() {
   const tasksPerStudent = useMemo(() => {
     return displayStudents.map(student => {
       const studentFullName = `${student.firstName} ${student.secondName}`.trim();
-      const studentTasks = filteredCellData.filter(t => t.assignee === studentFullName || t.studentName === studentFullName);
+      const studentTasks = filteredCellData.filter(t => matchStudentName(t.assignee, studentFullName) || matchStudentName(t.studentName, studentFullName));
       const statusOrder = ['IN_PROGRESS', 'OPEN', 'PENDING', 'DONE'];
       studentTasks.sort((a, b) => statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status));
       return { studentId: student.id, tasks: studentTasks };
@@ -1033,7 +1038,7 @@ export default function BirdViewPage() {
           if (targetStudent) {
             const studentFullName = `${targetStudent.firstName} ${targetStudent.secondName}`.trim();
             const cellTasks = filteredCellData.filter(d =>
-              (d.assignee === studentFullName || d.studentName === studentFullName) &&
+              (matchStudentName(d.assignee, studentFullName) || matchStudentName(d.studentName, studentFullName)) &&
               d.subject === subject.name
             );
             if (cellTasks.length > 0) {
@@ -1049,7 +1054,7 @@ export default function BirdViewPage() {
           if (subject && targetStudent) {
             const studentFullName = `${targetStudent.firstName} ${targetStudent.secondName}`.trim();
             const cellTasks = filteredCellData.filter(d =>
-              (d.assignee === studentFullName || d.studentName === studentFullName) &&
+              (matchStudentName(d.assignee, studentFullName) || matchStudentName(d.studentName, studentFullName)) &&
               d.subject === subject.name
             );
             if (cellTasks.length > 0) {
@@ -1182,7 +1187,7 @@ export default function BirdViewPage() {
               const studentFullName = `${student.firstName} ${student.secondName}`.trim();
 
               const cellTasks = filteredCellData.filter(d =>
-                (d.assignee === studentFullName || d.studentName === studentFullName) &&
+                (matchStudentName(d.assignee, studentFullName) || matchStudentName(d.studentName, studentFullName)) &&
                 d.subject === subject.name
               );
 
@@ -1224,7 +1229,7 @@ export default function BirdViewPage() {
               const studentFullName = `${student.firstName} ${student.secondName}`.trim();
 
               const cellTasks = filteredCellData.filter(d =>
-                (d.assignee === studentFullName || d.studentName === studentFullName) &&
+                (matchStudentName(d.assignee, studentFullName) || matchStudentName(d.studentName, studentFullName)) &&
                 d.subject === subject.name
               );
 
@@ -1266,7 +1271,7 @@ export default function BirdViewPage() {
               const studentFullName = `${student.firstName} ${student.secondName}`.trim();
 
               const cellHasTasks = filteredCellData.some(d =>
-                (d.assignee === studentFullName || d.studentName === studentFullName) &&
+                (matchStudentName(d.assignee, studentFullName) || matchStudentName(d.studentName, studentFullName)) &&
                 d.subject === subject.name
               );
 
@@ -1477,7 +1482,7 @@ export default function BirdViewPage() {
             if (targetStudent && targetSubject) {
               const studentFullName = `${targetStudent.firstName} ${targetStudent.secondName}`.trim();
               items = filteredCellData.filter(d =>
-                (d.assignee === studentFullName || d.studentName === studentFullName) &&
+                (matchStudentName(d.assignee, studentFullName) || matchStudentName(d.studentName, studentFullName)) &&
                 d.subject === targetSubject!.name
               );
             }
@@ -2714,7 +2719,7 @@ export default function BirdViewPage() {
 
                       const studentFullName = `${student.firstName} ${student.secondName}`.trim();
                       const activeTaskCount = filteredCellData.filter(d =>
-                        (d.assignee === studentFullName || d.studentName === studentFullName) &&
+                        (matchStudentName(d.assignee, studentFullName) || matchStudentName(d.studentName, studentFullName)) &&
                         d.status !== 'DONE' &&
                         d.status !== 'COMPLETED'
                       ).length;
@@ -2944,7 +2949,7 @@ export default function BirdViewPage() {
                                     let items = [];
                                     if (isGrid && subject) {
                                       items = filteredCellData.filter(d =>
-                                        (d.assignee === studentFullName || d.studentName === studentFullName) &&
+                                        (matchStudentName(d.assignee, studentFullName) || matchStudentName(d.studentName, studentFullName)) &&
                                         d.subject === subject.name
                                       );
                                     } else {
@@ -2983,7 +2988,7 @@ export default function BirdViewPage() {
                                     let items = [];
                                     if (isGrid && subject) {
                                       items = filteredCellData.filter(d =>
-                                        (d.assignee === studentFullName || d.studentName === studentFullName) &&
+                                        (matchStudentName(d.assignee, studentFullName) || matchStudentName(d.studentName, studentFullName)) &&
                                         d.subject === subject.name
                                       );
                                     } else {
