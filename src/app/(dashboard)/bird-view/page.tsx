@@ -1310,14 +1310,17 @@ export default function BirdViewPage() {
         const cellEl = document.getElementById(`cell-${clickedCellId}`);
         if (cellEl) {
           cellEl.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-          const cardContainer = cellEl.querySelector('.overflow-y-auto') as HTMLElement;
-          if (cardContainer) cardContainer.scrollTop = 0;
-
-          const firstInput = cellEl.querySelector('select:not([tabindex="-1"]), input:not([tabindex="-1"]), textarea:not([tabindex="-1"])') as HTMLElement;
-          if (firstInput) {
-            firstInput.focus({ preventScroll: true });
+        }
+        const modalContainer = document.querySelector('div[style*="z-index: 9000"], div[style*="zIndex: 9000"]') as HTMLElement | null;
+        if (modalContainer) {
+          const targetInput = (modalContainer.querySelector('textarea') || modalContainer.querySelector('select:not([tabindex="-1"]), input:not([tabindex="-1"])')) as HTMLElement | null;
+          if (targetInput) {
+            targetInput.focus({ preventScroll: true });
+            if (targetInput instanceof HTMLTextAreaElement || targetInput instanceof HTMLInputElement) {
+              const len = targetInput.value.length;
+              targetInput.setSelectionRange(len, len);
+            }
           }
-          if (cardContainer) cardContainer.scrollTop = 0;
         }
       }, 50);
       return () => clearTimeout(timeoutId);
@@ -1533,17 +1536,22 @@ export default function BirdViewPage() {
               className="w-[96vw] sm:w-[680px] md:w-[760px] max-w-[760px] max-h-[92vh] sm:max-h-[88vh] bg-[#FFFEFA] rounded-[6px] p-3 sm:p-6 shadow-2xl border border-[#E2DDD3] overflow-y-auto custom-scrollbar flex flex-col gap-3 sm:gap-4 relative animate-in fade-in zoom-in-95 duration-150"
               onMouseDown={(e) => e.stopPropagation()}
               ref={(el) => {
-                if (el && el.dataset.opened !== 'true') {
-                  el.dataset.opened = 'true';
-                  setTimeout(() => {
-                    el.scrollTop = 0;
-                    const firstFocusable = el.querySelector('select:not([tabindex="-1"]), input:not([tabindex="-1"]), textarea:not([tabindex="-1"]), button:not([tabindex="-1"])') as HTMLElement;
-                    if (firstFocusable) {
-                      firstFocusable.focus({ preventScroll: true });
-                      if (firstFocusable instanceof HTMLTextAreaElement || firstFocusable instanceof HTMLInputElement) {
-                        firstFocusable.setSelectionRange(firstFocusable.value.length, firstFocusable.value.length);
+                if (el && el.dataset.openedId !== String(clickedCellId)) {
+                  el.dataset.openedId = String(clickedCellId);
+                  const focusDescription = () => {
+                    const descInput = (el.querySelector('textarea') || el.querySelector('select:not([tabindex="-1"]), input:not([tabindex="-1"]), textarea:not([tabindex="-1"]), button:not([tabindex="-1"])')) as HTMLElement | null;
+                    if (descInput) {
+                      descInput.focus({ preventScroll: true });
+                      if (descInput instanceof HTMLTextAreaElement || descInput instanceof HTMLInputElement) {
+                        const len = descInput.value.length;
+                        descInput.setSelectionRange(len, len);
                       }
                     }
+                  };
+                  focusDescription();
+                  setTimeout(() => {
+                    el.scrollTop = 0;
+                    focusDescription();
                     el.scrollTop = 0;
                   }, 50);
                 }
