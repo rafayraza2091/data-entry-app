@@ -984,6 +984,119 @@ export default function BirdViewPage() {
     }
   }, [visibleStudentIds, studentSearchQuery]);
 
+  // Dedicated capture-phase keydown listener for Cmd + Shift + P (or Ctrl + Shift + P)
+  useEffect(() => {
+    function handleCmdShiftP(event: KeyboardEvent) {
+      const isPKey = event.code === 'KeyP' || (event.key && event.key.toLowerCase() === 'p');
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && isPKey) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        let targetTask: any = null;
+        let targetStudent: any = null;
+
+        // 1. If expanded ticket modal (main card) is open (clickedCellId)
+        if (clickedCellId) {
+          const isGrid = viewMode === 'grid';
+          let items: any[] = [];
+          const cleanCellId = String(clickedCellId).replace(/^cell-/, '');
+
+          if (isGrid) {
+            const parts = cleanCellId.split('-');
+            if (parts.length >= 2) {
+              const subjectId = Number(parts[0]);
+              const studentId = Number(parts[1]);
+              const tSubject = subjects.find(s => s.id === subjectId) || null;
+              const tStudent = students.find(s => s.id === studentId) || null;
+              if (tStudent && tSubject) {
+                targetStudent = tStudent;
+                const studentFullName = `${tStudent.firstName} ${tStudent.secondName}`.trim();
+                items = filteredCellData.filter(d =>
+                  (matchStudentName(d.assignee, studentFullName) || matchStudentName(d.studentName, studentFullName)) &&
+                  d.subject === tSubject.name
+                );
+              }
+            }
+          } else {
+            const parts = cleanCellId.split('-');
+            if (parts.length >= 3) {
+              const studentId = Number(parts[1]);
+              const itemIndex = Number(parts[2]);
+              const tStudent = students.find(s => s.id === studentId) || null;
+              if (tStudent) {
+                targetStudent = tStudent;
+                const studentData = tasksPerStudent.find(s => s.studentId === tStudent.id);
+                const task = studentData?.tasks[itemIndex];
+                if (task) items = [task];
+              }
+            }
+          }
+
+          if (items.length === 0) {
+            const directTask = filteredCellData.find(d => String(d.id) === String(clickedCellId) || String(d.id) === cleanCellId);
+            if (directTask) items = [directTask];
+          }
+
+          if (items.length > 0) {
+            targetTask = items[multiRecordIndex] || items[0];
+          }
+        }
+
+        // 2. If in Edit Mode (currentRow & currentCol)
+        if (!targetTask && isEditMode && currentRow !== null && currentCol !== null && subjects[currentRow]) {
+          const subject = subjects[currentRow];
+          const studentId = visibleStudentIds[currentCol];
+          targetStudent = students.find(s => s.id === studentId) || null;
+          if (targetStudent && subject) {
+            const studentFullName = `${targetStudent.firstName} ${targetStudent.secondName}`.trim();
+            const cellTasks = filteredCellData.filter(d =>
+              (matchStudentName(d.assignee, studentFullName) || matchStudentName(d.studentName, studentFullName)) &&
+              d.subject === subject.name
+            );
+            if (cellTasks.length > 0) {
+              targetTask = cellTasks[0];
+            }
+          }
+        }
+
+        // 3. If crosshair active (activeSubjectIdRef & activeStudentIdRef)
+        if (!targetTask && activeSubjectIdRef.current && activeStudentIdRef.current) {
+          const subject = subjects.find(s => s.id === activeSubjectIdRef.current);
+          targetStudent = students.find(s => s.id === activeStudentIdRef.current) || null;
+          if (subject && targetStudent) {
+            const studentFullName = `${targetStudent.firstName} ${targetStudent.secondName}`.trim();
+            const cellTasks = filteredCellData.filter(d =>
+              (matchStudentName(d.assignee, studentFullName) || matchStudentName(d.studentName, studentFullName)) &&
+              d.subject === subject.name
+            );
+            if (cellTasks.length > 0) {
+              targetTask = cellTasks[0];
+            }
+          }
+        }
+
+        // 4. Fallback: If any task exists on the grid, open the first task
+        if (!targetTask && filteredCellData.length > 0) {
+          targetTask = filteredCellData[0];
+        }
+
+        if (targetTask) {
+          if (!targetStudent) {
+            targetStudent = students.find(s => `${s.firstName} ${s.secondName}`.trim().toLowerCase() === (targetTask.assignee || targetTask.studentName || '').trim().toLowerCase());
+          }
+          const placeholderSvg = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"><rect width="100%" height="100%" fill="%23080B10"/><text x="50%" y="45%" fill="%23687286" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="600">No attachment image uploaded yet.</text><text x="50%" y="55%" fill="%23B48632" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14">Click + ADD to upload.</text></svg>';
+          const images = targetTask.images && targetTask.images.length > 0 ? targetTask.images : [placeholderSvg];
+          setPreviewImages(images);
+          setPreviewIndex(0);
+          setPreviewTask(targetTask);
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleCmdShiftP, true);
+    return () => window.removeEventListener('keydown', handleCmdShiftP, true);
+  }, [clickedCellId, viewMode, subjects, students, visibleStudentIds, filteredCellData, isEditMode, currentRow, currentCol, multiRecordIndex, tasksPerStudent]);
+
 
 
   useEffect(() => {
@@ -1017,7 +1130,8 @@ export default function BirdViewPage() {
       }
 
       // Cmd + Shift + P (or Ctrl + Shift + P) shortcut -> Directly open Preview Mode
-      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'p') {
+      const isPKey = event.code === 'KeyP' || (event.key && event.key.toLowerCase() === 'p');
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && isPKey) {
         event.preventDefault();
         event.stopPropagation();
 
@@ -1026,16 +1140,57 @@ export default function BirdViewPage() {
 
         // 1. If expanded ticket modal (main card) is open (clickedCellId)
         if (clickedCellId) {
+          const isGrid = viewMode === 'grid';
+          let items: any[] = [];
           const cleanCellId = String(clickedCellId).replace(/^cell-/, '');
-          targetTask = filteredCellData.find(d => String(d.id) === String(clickedCellId) || String(d.id) === cleanCellId);
+
+          if (isGrid) {
+            const parts = cleanCellId.split('-');
+            if (parts.length >= 2) {
+              const subjectId = Number(parts[0]);
+              const studentId = Number(parts[1]);
+              const tSubject = subjects.find(s => s.id === subjectId) || null;
+              const tStudent = students.find(s => s.id === studentId) || null;
+              if (tStudent && tSubject) {
+                targetStudent = tStudent;
+                const studentFullName = `${tStudent.firstName} ${tStudent.secondName}`.trim();
+                items = filteredCellData.filter(d =>
+                  (matchStudentName(d.assignee, studentFullName) || matchStudentName(d.studentName, studentFullName)) &&
+                  d.subject === tSubject.name
+                );
+              }
+            }
+          } else {
+            const parts = cleanCellId.split('-');
+            if (parts.length >= 3) {
+              const studentId = Number(parts[1]);
+              const itemIndex = Number(parts[2]);
+              const tStudent = students.find(s => s.id === studentId) || null;
+              if (tStudent) {
+                targetStudent = tStudent;
+                const studentData = tasksPerStudent.find(s => s.studentId === tStudent.id);
+                const task = studentData?.tasks[itemIndex];
+                if (task) items = [task];
+              }
+            }
+          }
+
+          if (items.length === 0) {
+            const directTask = filteredCellData.find(d => String(d.id) === String(clickedCellId) || String(d.id) === cleanCellId);
+            if (directTask) items = [directTask];
+          }
+
+          if (items.length > 0) {
+            targetTask = items[multiRecordIndex] || items[0];
+          }
         }
 
         // 2. If in Edit Mode (currentRow & currentCol)
         if (!targetTask && isEditMode && currentRow !== null && currentCol !== null && subjects[currentRow]) {
           const subject = subjects[currentRow];
           const studentId = visibleStudentIds[currentCol];
-          targetStudent = students.find(s => s.id === studentId);
-          if (targetStudent) {
+          targetStudent = students.find(s => s.id === studentId) || null;
+          if (targetStudent && subject) {
             const studentFullName = `${targetStudent.firstName} ${targetStudent.secondName}`.trim();
             const cellTasks = filteredCellData.filter(d =>
               (matchStudentName(d.assignee, studentFullName) || matchStudentName(d.studentName, studentFullName)) &&
@@ -1050,7 +1205,7 @@ export default function BirdViewPage() {
         // 3. If crosshair active (activeSubjectIdRef & activeStudentIdRef)
         if (!targetTask && activeSubjectIdRef.current && activeStudentIdRef.current) {
           const subject = subjects.find(s => s.id === activeSubjectIdRef.current);
-          targetStudent = students.find(s => s.id === activeStudentIdRef.current);
+          targetStudent = students.find(s => s.id === activeStudentIdRef.current) || null;
           if (subject && targetStudent) {
             const studentFullName = `${targetStudent.firstName} ${targetStudent.secondName}`.trim();
             const cellTasks = filteredCellData.filter(d =>
@@ -1063,11 +1218,16 @@ export default function BirdViewPage() {
           }
         }
 
+        // 4. Fallback: If any task exists on the grid, open the first task
+        if (!targetTask && filteredCellData.length > 0) {
+          targetTask = filteredCellData[0];
+        }
+
         if (targetTask) {
           if (!targetStudent) {
             targetStudent = students.find(s => `${s.firstName} ${s.secondName}`.trim().toLowerCase() === (targetTask.assignee || targetTask.studentName || '').trim().toLowerCase());
           }
-          const placeholderSvg = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"><rect width="100%" height="100%" fill="%23080B10"/><text x="50%" y="50%" fill="%23687286" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="16">No attachment image uploaded yet. Click + ADD to upload.</text></svg>';
+          const placeholderSvg = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400"><rect width="100%" height="100%" fill="%23080B10"/><text x="50%" y="45%" fill="%23687286" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="600">No attachment image uploaded yet.</text><text x="50%" y="55%" fill="%23B48632" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14">Click + ADD to upload.</text></svg>';
           const images = targetTask.images && targetTask.images.length > 0 ? targetTask.images : [placeholderSvg];
           setPreviewImages(images);
           setPreviewIndex(0);
