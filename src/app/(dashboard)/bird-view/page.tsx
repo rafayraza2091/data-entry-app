@@ -1097,6 +1097,117 @@ export default function BirdViewPage() {
     return () => window.removeEventListener('keydown', handleCmdShiftP, true);
   }, [clickedCellId, viewMode, subjects, students, visibleStudentIds, filteredCellData, isEditMode, currentRow, currentCol, multiRecordIndex, tasksPerStudent]);
 
+  // Dedicated capture-phase keydown listener for Cmd + Shift + Arrow Keys ticket navigation
+  useEffect(() => {
+    function handleTicketNavigation(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey) {
+        const isRight = event.key === 'ArrowRight';
+        const isLeft = event.key === 'ArrowLeft';
+        const isUp = event.key === 'ArrowUp';
+        const isDown = event.key === 'ArrowDown';
+
+        if (!isRight && !isLeft && !isUp && !isDown) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        const isGrid = viewMode === 'grid';
+
+        let currentSubjIdx = -1;
+        let currentStudIdx = -1;
+        let currentItemIdx = -1;
+
+        if (clickedCellId) {
+          const cleanCellId = String(clickedCellId).replace(/^cell-/, '');
+          if (isGrid) {
+            const parts = cleanCellId.split('-');
+            if (parts.length >= 2) {
+              const subjectId = Number(parts[0]);
+              const studentId = Number(parts[1]);
+              currentSubjIdx = subjects.findIndex(s => s.id === subjectId);
+              currentStudIdx = visibleStudentIds.findIndex(id => id === studentId);
+            }
+          } else {
+            const parts = cleanCellId.split('-');
+            if (parts.length >= 3) {
+              const studentId = Number(parts[1]);
+              currentItemIdx = Number(parts[2]);
+              currentStudIdx = visibleStudentIds.findIndex(id => id === studentId);
+            }
+          }
+        }
+
+        if (currentSubjIdx === -1 && activeSubjectIdRef.current !== null) {
+          currentSubjIdx = subjects.findIndex(s => s.id === activeSubjectIdRef.current);
+        }
+        if (currentStudIdx === -1 && activeStudentIdRef.current !== null) {
+          currentStudIdx = visibleStudentIds.findIndex(id => id === activeStudentIdRef.current);
+        }
+
+        if (currentSubjIdx === -1) currentSubjIdx = 0;
+        if (currentStudIdx === -1) currentStudIdx = 0;
+
+        if (isGrid) {
+          let nextSubjIdx = currentSubjIdx;
+          let nextStudIdx = currentStudIdx;
+
+          if (isRight) {
+            nextStudIdx = currentStudIdx + 1;
+            if (nextStudIdx >= visibleStudentIds.length) return;
+          } else if (isLeft) {
+            nextStudIdx = currentStudIdx - 1;
+            if (nextStudIdx < 0) return;
+          } else if (isDown) {
+            nextSubjIdx = currentSubjIdx + 1;
+            if (nextSubjIdx >= subjects.length) return;
+          } else if (isUp) {
+            nextSubjIdx = currentSubjIdx - 1;
+            if (nextSubjIdx < 0) return;
+          }
+
+          const targetSubj = subjects[nextSubjIdx];
+          const targetStudId = visibleStudentIds[nextStudIdx];
+          if (targetSubj && targetStudId !== undefined) {
+            const nextCellId = `cell-${targetSubj.id}-${targetStudId}`;
+            setClickedCellId(nextCellId);
+            updateHighlight(targetSubj.id, targetStudId);
+          }
+        } else {
+          let nextStudIdx = currentStudIdx;
+          let nextItemIdx = currentItemIdx >= 0 ? currentItemIdx : 0;
+
+          if (isRight) {
+            nextStudIdx = currentStudIdx + 1;
+            if (nextStudIdx >= visibleStudentIds.length) return;
+            nextItemIdx = 0;
+          } else if (isLeft) {
+            nextStudIdx = currentStudIdx - 1;
+            if (nextStudIdx < 0) return;
+            nextItemIdx = 0;
+          } else if (isDown) {
+            nextItemIdx = currentItemIdx + 1;
+            const currentStudId = visibleStudentIds[currentStudIdx];
+            const studTasks = tasksPerStudent.find(s => s.studentId === currentStudId)?.tasks || [];
+            if (nextItemIdx >= studTasks.length) return;
+          } else if (isUp) {
+            nextItemIdx = currentItemIdx - 1;
+            if (nextItemIdx < 0) return;
+          }
+
+          const targetStudId = visibleStudentIds[nextStudIdx];
+          if (targetStudId !== undefined) {
+            const nextCellId = `cell-stacked-${targetStudId}-${nextItemIdx}`;
+            setClickedCellId(nextCellId);
+            updateHighlight(null, targetStudId);
+          }
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleTicketNavigation, true);
+    return () => window.removeEventListener('keydown', handleTicketNavigation, true);
+  }, [clickedCellId, viewMode, subjects, visibleStudentIds, tasksPerStudent]);
+
 
 
   useEffect(() => {
