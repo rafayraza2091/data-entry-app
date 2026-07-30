@@ -57,9 +57,18 @@ export default function QueryEntryClient({
   const [isMobile, setIsMobile] = useState(false);
   const fileInputRefQuery = useRef<HTMLInputElement>(null);
   const cameraInputRefQuery = useRef<HTMLInputElement>(null);
+  const queryStatementRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth < 768);
+    const timer = setTimeout(() => {
+      if (queryStatementRef.current) {
+        queryStatementRef.current.focus({ preventScroll: true });
+        const len = queryStatementRef.current.value.length;
+        queryStatementRef.current.setSelectionRange(len, len);
+      }
+    }, 50);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -506,6 +515,8 @@ export default function QueryEntryClient({
           <div className="form-group mb-1 sm:mb-3 col-span-2">
             <label className="form-label text-[9px] sm:text-[11.5px]">Query</label>
             <textarea 
+              ref={queryStatementRef}
+              autoFocus
               className="form-control text-[10px] sm:text-[13px] min-h-[38px] sm:min-h-[72px] p-1 sm:p-2.5" 
               value={queryStatement} 
               onChange={e => setQueryStatement(e.target.value)} 

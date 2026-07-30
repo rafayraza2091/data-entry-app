@@ -62,9 +62,18 @@ export default function TaskEntryClient({
   const [isMobile, setIsMobile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth < 768);
+    const timer = setTimeout(() => {
+      if (descriptionInputRef.current) {
+        descriptionInputRef.current.focus({ preventScroll: true });
+        const len = descriptionInputRef.current.value.length;
+        descriptionInputRef.current.setSelectionRange(len, len);
+      }
+    }, 50);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -658,6 +667,8 @@ export default function TaskEntryClient({
           <div className="form-group mb-1 sm:mb-3 col-span-2">
             <label className="form-label text-[9px] sm:text-[11.5px]">Description <span className="text-red-500 ml-0.5">*</span></label>
             <textarea 
+              ref={descriptionInputRef}
+              autoFocus
               className="form-control text-[10px] sm:text-[13px] min-h-[38px] sm:min-h-[72px] p-1 sm:p-2.5" 
               value={description} 
               onChange={e => setDescription(e.target.value)} 

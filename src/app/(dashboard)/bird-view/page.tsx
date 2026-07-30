@@ -3391,7 +3391,21 @@ export default function BirdViewPage() {
       {newEntryModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => setNewEntryModal(null)}></div>
-          <div className="w-full max-w-4xl relative z-10">
+          <div
+            className="w-full max-w-4xl relative z-10"
+            ref={(el) => {
+              if (el) {
+                setTimeout(() => {
+                  const ta = el.querySelector('textarea') as HTMLTextAreaElement | null;
+                  if (ta) {
+                    ta.focus({ preventScroll: true });
+                    const len = ta.value.length;
+                    ta.setSelectionRange(len, len);
+                  }
+                }, 50);
+              }
+            }}
+          >
             {newEntryModal.type === 'task' ? (
               <TaskEntryClient
                 currentUser={currentUser}
