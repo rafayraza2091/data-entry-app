@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { getCachedStudentProfile } from '@/lib/cached-queries';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
@@ -13,12 +15,7 @@ export async function GET() {
     let className = '';
 
     if (session.role === 'STUDENT') {
-      const student = await prisma.student.findFirst({
-        where: {
-          firstName: session.firstName,
-          secondName: session.lastName,
-        }
-      });
+      const student = await getCachedStudentProfile(session.firstName, session.lastName);
       if (student) {
         className = student.className;
       }

@@ -57,23 +57,23 @@ export default function Sidebar({
           <div>
             {isExpanded && <div className="text-[10px] uppercase text-[#687286] font-semibold mt-1 mb-1 px-2 tracking-wider">Daily Work</div>}
             
-            <Link href="/bird-view" className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/bird-view' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Bird View">
+            <Link href="/bird-view" prefetch={true} className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/bird-view' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Bird View">
               <i className="fa-solid fa-chart-pie w-5 text-center text-[13px] text-[#B48632]"></i>
               {isExpanded && <span className="ml-2.5 truncate">Bird View</span>}
             </Link>
 
-            <Link href="/task" className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/task' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="New Task">
+            <Link href="/task" prefetch={true} className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/task' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="New Task">
               <i className="fa-solid fa-clipboard-check w-5 text-center text-[13px]"></i>
               {isExpanded && <span className="ml-2.5 truncate">New Task</span>}
             </Link>
 
-            <Link href="/query" className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/query' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="New Query">
+            <Link href="/query" prefetch={true} className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/query' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="New Query">
               <i className="fa-solid fa-question-circle w-5 text-center text-[13px]"></i>
               {isExpanded && <span className="ml-2.5 truncate">New Query</span>}
             </Link>
 
             {(role === 'OWNER' || role === 'COORDINATOR' || role === 'TEACHER') && (
-              <Link href="/attendance" className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/attendance' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Attendance">
+              <Link href="/attendance" prefetch={true} className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/attendance' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Attendance">
                 <i className="fa-solid fa-calendar-check w-5 text-center text-[13px]"></i>
                 {isExpanded && <span className="ml-2.5 truncate">Attendance</span>}
               </Link>
@@ -84,37 +84,37 @@ export default function Sidebar({
           <div className="mt-1 pt-1.5 border-t border-[#D8D2C5]/15">
             {isExpanded && <div className="text-[10px] uppercase text-[#687286] font-semibold mb-1 px-2 tracking-wider">Academic Catalogue</div>}
             
-            <Link href="/" className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Syllabus">
+            <Link href="/" prefetch={true} className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Syllabus">
               <i className="fa-solid fa-book-open w-5 text-center text-[13px]"></i>
               {isExpanded && <span className="ml-2.5 truncate">Syllabus</span>}
             </Link>
 
-            <Link href="/school" className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/school' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Schools">
+            <Link href="/school" prefetch={true} className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/school' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Schools">
               <i className="fa-solid fa-school w-5 text-center text-[13px]"></i>
               {isExpanded && <span className="ml-2.5 truncate">Schools</span>}
             </Link>
 
-            <Link href="/classes" className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/classes' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Classes">
+            <Link href="/classes" prefetch={true} className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/classes' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Classes">
               <i className="fa-solid fa-chalkboard-user w-5 text-center text-[13px]"></i>
               {isExpanded && <span className="ml-2.5 truncate">Classes</span>}
             </Link>
 
-            <Link href="/subject" className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/subject' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Subjects">
+            <Link href="/subject" prefetch={true} className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/subject' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Subjects">
               <i className="fa-solid fa-bookmark w-5 text-center text-[13px]"></i>
               {isExpanded && <span className="ml-2.5 truncate">Subjects</span>}
             </Link>
 
-            <Link href="/book" className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/book' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Books">
+            <Link href="/book" prefetch={true} className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/book' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Books">
               <i className="fa-solid fa-book w-5 text-center text-[13px]"></i>
               {isExpanded && <span className="ml-2.5 truncate">Books</span>}
             </Link>
 
-            <Link href="/chapter" className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/chapter' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Chapters">
+            <Link href="/chapter" prefetch={true} className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/chapter' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Chapters">
               <i className="fa-solid fa-list-ol w-5 text-center text-[13px]"></i>
               {isExpanded && <span className="ml-2.5 truncate">Chapters</span>}
             </Link>
 
-            <Link href="/topic" className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/topic' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Topics">
+            <Link href="/topic" prefetch={true} className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/topic' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Topics">
               <i className="fa-solid fa-file-lines w-5 text-center text-[13px]"></i>
               {isExpanded && <span className="ml-2.5 truncate">Topics</span>}
             </Link>
@@ -124,17 +124,17 @@ export default function Sidebar({
           <div className="mt-1 pt-1.5 border-t border-[#D8D2C5]/15">
             {isExpanded && <div className="text-[10px] uppercase text-[#687286] font-semibold mb-1 px-2 tracking-wider">Records</div>}
             
-            <Link href="/view-data" className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/view-data' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Academic Data">
+            <Link href="/view-data" prefetch={true} className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/view-data' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Academic Data">
               <i className="fa-solid fa-table w-5 text-center text-[13px]"></i>
               {isExpanded && <span className="ml-2.5 truncate">Academic Data</span>}
             </Link>
 
-            <Link href="/view-tasks" className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/view-tasks' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Tasks">
+            <Link href="/view-tasks" prefetch={true} className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/view-tasks' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Tasks">
               <i className="fa-solid fa-tasks w-5 text-center text-[13px]"></i>
               {isExpanded && <span className="ml-2.5 truncate">Tasks</span>}
             </Link>
 
-            <Link href="/view-queries" className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/view-queries' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Queries">
+            <Link href="/view-queries" prefetch={true} className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/view-queries' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Queries">
               <i className="fa-solid fa-clipboard-question w-5 text-center text-[13px]"></i>
               {isExpanded && <span className="ml-2.5 truncate">Queries</span>}
             </Link>
@@ -144,19 +144,19 @@ export default function Sidebar({
           <div className="mt-1 pt-1.5 border-t border-[#D8D2C5]/15">
             {isExpanded && <div className="text-[10px] uppercase text-[#687286] font-semibold mb-1 px-2 tracking-wider">People</div>}
             
-            <Link href="/users" className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/users' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Profiles">
+            <Link href="/users" prefetch={true} className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/users' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Profiles">
               <i className="fa-solid fa-users w-5 text-center text-[13px]"></i>
               {isExpanded && <span className="ml-2.5 truncate">Profiles</span>}
             </Link>
 
             {(role === 'OWNER' || role === 'COORDINATOR') && (
               <>
-                <Link href="/employee-record" className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/employee-record' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Employee Record">
+                <Link href="/employee-record" prefetch={true} className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/employee-record' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Employee Record">
                   <i className="fa-solid fa-address-card w-5 text-center text-[13px]"></i>
                   {isExpanded && <span className="ml-2.5 truncate">Employee Record</span>}
                 </Link>
 
-                <Link href="/view-employees" className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/view-employees' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Employees">
+                <Link href="/view-employees" prefetch={true} className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/view-employees' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Employees">
                   <i className="fa-solid fa-users-viewfinder w-5 text-center text-[13px]"></i>
                   {isExpanded && <span className="ml-2.5 truncate">Employees</span>}
                 </Link>
@@ -165,12 +165,12 @@ export default function Sidebar({
 
             {role === 'OWNER' && (
               <>
-                <Link href="/admin/users" className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/admin/users' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Roles & Access">
+                <Link href="/admin/users" prefetch={true} className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/admin/users' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Roles & Access">
                   <i className="fa-solid fa-user-shield w-5 text-center text-[13px]"></i>
                   {isExpanded && <span className="ml-2.5 truncate">Roles & Access</span>}
                 </Link>
                 
-                <Link href="/notification" className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/notification' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Approvals">
+                <Link href="/notification" prefetch={true} className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/notification' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Approvals">
                   <i className="fa-solid fa-bell w-5 text-center text-[13px]"></i>
                   {isExpanded && <span className="ml-2.5 truncate">Approvals</span>}
                 </Link>
@@ -183,7 +183,7 @@ export default function Sidebar({
             <div className="mt-1 pt-1.5 border-t border-[#D8D2C5]/15">
               {isExpanded && <div className="text-[10px] uppercase text-[#687286] font-semibold mb-1 px-2 tracking-wider">Owner Tools</div>}
               
-              <Link href="/agent" className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/agent' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Agent Assistant">
+              <Link href="/agent" prefetch={true} className={`flex items-center h-[34px] px-2.5 rounded-[3px] transition-colors ${pathname === '/agent' ? 'bg-[#124D45]/40 text-white font-semibold border-l-2 border-[#B48632]' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`} title="Agent Assistant">
                 <i className="fa-solid fa-robot w-5 text-center text-[13px]"></i>
                 {isExpanded && <span className="ml-2.5 truncate">Agent Assistant</span>}
               </Link>

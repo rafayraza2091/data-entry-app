@@ -1,12 +1,18 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { getSession } from '@/lib/auth';
 import { getCachedUsersList, revalidateCacheTag, revalidatePath } from '@/lib/cached-queries';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
+    const session = await getSession();
+    if (!session || session.role === 'STUDENT') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     const data = await request.json();
     const { category, username, password, confirmPassword, ...userData } = data;
 
@@ -129,6 +135,11 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
+    const session = await getSession();
+    if (!session || session.role === 'STUDENT') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     const data = await getCachedUsersList();
     return NextResponse.json(data, { status: 200 });
   } catch (error: any) {
@@ -139,6 +150,11 @@ export async function GET() {
 
 export async function PUT(request: Request) {
   try {
+    const session = await getSession();
+    if (!session || session.role === 'STUDENT') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+    }
+
     const data = await request.json();
     const { category, id, ...updateData } = data;
 

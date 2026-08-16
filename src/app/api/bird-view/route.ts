@@ -43,6 +43,23 @@ export async function GET(request: Request) {
       const [att, cd] = await Promise.all([attendancePromise, dataPromise]);
       attendanceData = att;
       cellData = cd;
+
+      // STRICT SECURITY: If requester is a student, ensure cellData only contains their own records
+      if (isStudent && cellData.length > 0) {
+        const studentFullName = `${session.firstName} ${session.lastName}`.trim().toLowerCase();
+        if (viewType === 'task') {
+          cellData = cellData.filter((t) => {
+            const a = (t.assignee || '').trim().toLowerCase();
+            const c = (t.createdBy || '').trim().toLowerCase();
+            return a === studentFullName || c === studentFullName;
+          });
+        } else if (viewType === 'query') {
+          cellData = cellData.filter((q) => {
+            const s = (q.studentName || '').trim().toLowerCase();
+            return s === studentFullName;
+          });
+        }
+      }
     }
 
     return NextResponse.json({ subjects, students, cellData, attendanceData }, {
