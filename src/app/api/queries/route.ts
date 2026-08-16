@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { revalidateCacheTag, revalidatePath } from '@/lib/cached-queries';
+import { getCachedFilteredQueries, revalidateCacheTag, revalidatePath } from '@/lib/cached-queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,63 +58,16 @@ export async function GET(request: Request) {
     const endDate = searchParams.get('endDate');
     const search = searchParams.get('search');
 
-    let whereClause: any = {};
-
-    if (studentName) whereClause.studentName = studentName;
-    if (teacherName) whereClause.teacherName = teacherName;
-    if (subject) whereClause.subject = subject;
-    if (status) whereClause.status = status;
-    if (search) {
-      whereClause.queryStatement = { contains: search, mode: 'insensitive' };
-    }
-
-    if (startDate || endDate) {
-      whereClause.createdAt = {};
-      if (startDate) whereClause.createdAt.gte = new Date(startDate);
-      if (endDate) whereClause.createdAt.lte = new Date(endDate);
-    } else if (dateFilter) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      if (dateFilter === 'today') {
-        whereClause.createdAt = { gte: today };
-      } else if (dateFilter === 'this_week') {
-        const lastWeek = new Date(today);
-        lastWeek.setDate(lastWeek.getDate() - 7);
-        whereClause.createdAt = { gte: lastWeek };
-      } else if (dateFilter === 'this_month') {
-        const lastMonth = new Date(today);
-        lastMonth.setMonth(lastMonth.getMonth() - 1);
-        whereClause.createdAt = { gte: lastMonth };
-      }
-    } else if (!dateFilter) {
-      // Default fallback: today
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      whereClause.createdAt = { gte: today };
-    }
-
-    const queries = await prisma.queryEntry.findMany({
-      where: whereClause,
-      orderBy: { createdAt: 'desc' },
+    const { queries, analytics } = await getCachedFilteredQueries({
+      studentName,
+      teacherName,
+      subject,
+      status,
+      dateFilter,
+      startDate,
+      endDate,
+      search,
     });
-
-    // Generate Analytics
-    const statusCounts = await prisma.queryEntry.groupBy({
-      by: ['status'],
-      where: whereClause,
-      _count: { id: true }
-    });
-
-    const subjectCounts = await prisma.queryEntry.groupBy({
-      by: ['subject'],
-      where: whereClause,
-      _count: { id: true }
-    });
-
-    const analytics = {
-      byStatus: statusCounts.reduce((acc: any, curr) => ({ ...acc, [curr.status]: curr._count.id }), {}),
-      bySubject: subjectCounts.reduce((acc: any, curr) => ({ ...acc, [curr.subject || 'Unknown']: curr._count.id }), {})
-    };
 
     return NextResponse.json({
       success: true,

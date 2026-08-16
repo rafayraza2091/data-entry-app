@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
+import { getCachedAdminUsers } from '@/lib/cached-queries';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
@@ -9,20 +11,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const users = await prisma.dataentryUser.findMany({
-      select: {
-        id: true,
-        username: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        createdAt: true,
-      },
-      orderBy: {
-        createdAt: 'asc',
-      }
-    });
-
+    const users = await getCachedAdminUsers();
     return NextResponse.json(users);
   } catch (error) {
     console.error('Error fetching users:', error);

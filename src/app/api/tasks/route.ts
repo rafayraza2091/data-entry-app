@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
-import { revalidateCacheTag, revalidatePath } from '@/lib/cached-queries';
+import { getCachedFilteredTasks, revalidateCacheTag, revalidatePath } from '@/lib/cached-queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -72,109 +72,24 @@ export async function GET(request: Request) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
-    let whereClause: any = {};
+    const userName = `${session.firstName} ${session.lastName}`.trim();
 
-    // Role-based access control
-    if (session.role === 'STUDENT') {
-      const userName = `${session.firstName} ${session.lastName}`.trim();
-      whereClause.OR = [
-        { assignee: userName },
-        { createdBy: userName }
-      ];
-    }
-
-    // Apply URL filters
-    if (assignee) whereClause.assignee = assignee;
-    if (reporter) whereClause.reporter = reporter;
-    if (subject) whereClause.subject = subject;
-    if (status) whereClause.status = status;
-    if (taskType) whereClause.taskType = taskType;
-    if (createdBy) whereClause.createdBy = createdBy;
-    if (className) whereClause.className = className;
-
-    // Date filtering (Default to today if no dates provided at all)
-    if (startDate || endDate) {
-      whereClause.dueDate = {};
-      if (startDate) {
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
-        whereClause.dueDate.gte = start;
-      }
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        whereClause.dueDate.lte = end;
-      }
-    } else if (dateFilter) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const endOfToday = new Date(today);
-      endOfToday.setHours(23, 59, 59, 999);
-
-      if (dateFilter === 'today') {
-        whereClause.dueDate = { gte: today, lte: endOfToday };
-      } else if (dateFilter === 'this_week') {
-        const lastWeek = new Date(today);
-        lastWeek.setDate(lastWeek.getDate() - 7);
-        whereClause.dueDate = { gte: lastWeek };
-      } else if (dateFilter === 'this_month') {
-        const lastMonth = new Date(today);
-        lastMonth.setMonth(lastMonth.getMonth() - 1);
-        whereClause.dueDate = { gte: lastMonth };
-      }
-    } else if (!dateFilter) {
-      // Default fallback: today
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const endOfToday = new Date(today);
-      endOfToday.setHours(23, 59, 59, 999);
-      whereClause.dueDate = { gte: today, lte: endOfToday };
-    }
-
-    // Execute query
-    const tasks = await prisma.taskEntry.findMany({
-      where: whereClause,
-      include: {
-        comments: {
-          where: { parentId: null },
-          include: {
-            replies: {
-              orderBy: { createdAt: 'asc' }
-            }
-          },
-          orderBy: { createdAt: 'asc' }
-        }
+    const { tasks, analytics } = await getCachedFilteredTasks(
+      {
+        assignee,
+        reporter,
+        subject,
+        status,
+        taskType,
+        createdBy,
+        className,
+        dateFilter,
+        startDate,
+        endDate,
       },
-      orderBy: { dueDate: 'asc' }
-    });
-
-    // Generate Analytics
-    const statusCounts = await prisma.taskEntry.groupBy({
-      by: ['status'],
-      where: whereClause,
-      _count: { id: true }
-    });
-
-    const typeCounts = await prisma.taskEntry.groupBy({
-      by: ['taskType'],
-      where: whereClause,
-      _count: { id: true }
-    });
-
-    const studentCounts = await prisma.taskEntry.groupBy({
-      by: ['assignee'],
-      where: whereClause,
-      _count: { id: true }
-    });
-
-    const analytics = {
-      byStatus: statusCounts.reduce((acc: any, curr) => ({ ...acc, [curr.status]: curr._count.id }), {}),
-      byType: typeCounts.reduce((acc: any, curr) => ({ ...acc, [curr.taskType || 'Unknown']: curr._count.id }), {}),
-      byStudent: studentCounts.map(s => ({
-        studentName: s.assignee,
-        totalTasks: s._count.id
-      }))
-    };
+      session.role,
+      userName
+    );
 
     return NextResponse.json({
       success: true,
@@ -184,10 +99,9 @@ export async function GET(request: Request) {
         totalRecords: tasks.length
       }
     }, { status: 200 });
-
   } catch (error: any) {
     console.error('Error fetching tasks:', error);
-    return NextResponse.json({ error: 'Failed to fetch tasks' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch tasks', details: error.message }, { status: 500 });
   }
 }
 
