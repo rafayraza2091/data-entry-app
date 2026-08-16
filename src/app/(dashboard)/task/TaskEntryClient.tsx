@@ -62,9 +62,18 @@ export default function TaskEntryClient({
   const [isMobile, setIsMobile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const descriptionInputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0 || window.innerWidth < 768);
+    const timer = setTimeout(() => {
+      if (descriptionInputRef.current) {
+        descriptionInputRef.current.focus({ preventScroll: true });
+        const len = descriptionInputRef.current.value.length;
+        descriptionInputRef.current.setSelectionRange(len, len);
+      }
+    }, 50);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -273,18 +282,33 @@ export default function TaskEntryClient({
     return true;
   });
 
-  const availableBooks = booksList.filter(b => 
-    b.subject === subject && 
-    (b.className || '').includes(derivedClassName)
+  const availableBooks = booksList.filter(b => {
+    if (b.subject !== subject) return false;
+    if (!derivedClassName) return true;
+    const targetLower = derivedClassName.trim().toLowerCase();
+    const bookClasses = (b.className || '').split(',').map((s: string) => s.trim().toLowerCase()).filter(Boolean);
+    return bookClasses.length === 0 || bookClasses.some((c: string) => c === targetLower || c.includes(targetLower) || targetLower.includes(c));
+  });
+
+  const classBookTitles = new Set(availableBooks.map(b => b.title));
+
+  const availableChapters = chaptersList.filter(c => 
+    c.subject === subject && 
+    (book ? c.book === book : (classBookTitles.size === 0 || classBookTitles.has(c.book)))
   );
-  const availableChapters = chaptersList.filter(c => c.subject === subject && (!book || c.book === book));
+
   const chaptersByBook = availableChapters.reduce<Record<string, typeof availableChapters>>((acc, c) => {
     const bName = c.book || 'Other';
     if (!acc[bName]) acc[bName] = [];
     acc[bName].push(c);
     return acc;
   }, {});
-  const availableTopics = topicsList.filter(t => t.subject === subject && (!book || t.book === book) && (t.chapterTitle === chapter || t.chapterName === chapter));
+
+  const availableTopics = topicsList.filter(t => 
+    t.subject === subject && 
+    (book ? t.book === book : (classBookTitles.size === 0 || classBookTitles.has(t.book))) && 
+    (t.chapterTitle === chapter || t.chapterName === chapter)
+  );
   
   const uniqueTopicNames = Array.from(new Set(availableTopics.map(t => t.topicName).filter(Boolean)));
   const uniqueExercises = Array.from(new Set(availableTopics.map(t => t.exercise).filter(Boolean)));
@@ -346,12 +370,12 @@ export default function TaskEntryClient({
   };
 
   return (
-    <div className="glass-panel animate-slide-up mx-auto max-w-4xl mt-0 md:mt-8 p-4 md:p-8 w-full" style={{ position: 'relative', maxHeight: onClose ? '85vh' : 'auto', overflowY: onClose ? 'auto' : 'visible' }}>
+    <div className="glass-panel animate-slide-up mx-auto max-w-4xl mt-0 md:mt-8 p-2 sm:p-6 md:p-8 w-full" style={{ position: 'relative', maxHeight: onClose ? '85vh' : 'auto', overflowY: onClose ? 'auto' : 'visible' }}>
       {onClose && (
         <button 
           onClick={onClose}
           type="button"
-          style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', zIndex: 10, color: '#6b7280' }}
+          style={{ position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', zIndex: 10, color: '#6b7280' }}
         >
           <i className="fa-solid fa-xmark"></i>
         </button>
@@ -361,8 +385,8 @@ export default function TaskEntryClient({
       {(showBeautifulHeader || showBeautifulHeaderForOwner) && renderBeautifulHeader()}
 
       {(assigneeStatus === 'ABSENT' || assigneeStatus === 'LEAVE') && (
-        <div className="mb-6 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2 shadow-sm animate-pulse">
-          <span className="text-lg leading-none mt-0.5">⚠️</span>
+        <div className="mb-2 text-[10px] sm:text-sm text-red-700 bg-red-50 border border-red-200 rounded p-1.5 flex items-start gap-1.5 shadow-xs animate-pulse">
+          <span className="text-sm leading-none mt-0.5">⚠️</span>
           <div>
             <strong className="block mb-0.5 text-red-800">Warning: Assignee is {assigneeStatus}</strong>
             <span>{assigneeReason || `The selected assignee (${assignee}) is currently marked as ${assigneeStatus.toLowerCase()} for the selected date.`}</span>
@@ -371,92 +395,90 @@ export default function TaskEntryClient({
       )}
 
       <form onSubmit={handleSubmit}>
-        <div className="form-row">
+        <div className="grid grid-cols-2 gap-1 sm:gap-3">
           
           {!(showBeautifulHeader || showBeautifulHeaderForOwner) && (
             <>
-              <div className="form-group">
-                <label className="form-label">Name <span className="text-red-500">*</span></label>
+              {/* Row 1: Name & Class */}
+              <div className="form-group mb-1 sm:mb-3">
+                <label className="form-label text-[9px] sm:text-[11.5px]">Name <span className="text-red-500">*</span></label>
                 <input 
                   type="text" 
-                  className="form-control" 
+                  className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
                   value={userName} 
                   disabled 
                   style={{ backgroundColor: 'var(--border-color)' }}
                 />
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Class</label>
+              <div className="form-group mb-1 sm:mb-3">
+                <label className="form-label text-[9px] sm:text-[11.5px]">Class</label>
                 <input 
                   type="text" 
-                  className="form-control" 
+                  className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
                   value={derivedClassName || 'N/A'} 
                   disabled 
                   style={{ backgroundColor: 'var(--border-color)' }}
                 />
               </div>
 
-              <div className="form-group col-span-2">
-                <div className="form-row">
-                  <div className="form-group">
-                    <label className="form-label">Reporter <span className="text-red-500">*</span></label>
-                    <select 
-                      className="form-control" 
-                      value={reporter} 
-                      onChange={e => setReporter(e.target.value)} 
-                      required
-                    >
-                      <option value="" disabled>Select Reporter</option>
-                      {teachers.map((u, i) => (
-                        <option key={i} value={u}>{u}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Assignee <span className="text-red-500 ml-1">*</span></label>
-                    {isStudent ? (
-                      <input 
-                        type="text" 
-                        className="form-control" 
-                        value={assignee} 
-                        disabled 
-                        style={{ backgroundColor: 'var(--border-color)' }}
-                      />
-                    ) : (
-                      <select 
-                        className="form-control" 
-                        value={assignee} 
-                        onChange={e => setAssignee(e.target.value)} 
-                        required
-                      >
-                        <option value="" disabled>Select Assignee</option>
-                        {allUsers.map((u, i) => (
-                          <option key={i} value={u}>{u}</option>
-                        ))}
-                      </select>
-                    )}
-                    {(assigneeStatus === 'ABSENT' || assigneeStatus === 'LEAVE') && (
-                      <div className="mt-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded p-1.5 flex items-start gap-1.5">
-                        <span className="text-sm">⚠️</span>
-                        <span>
-                          <strong>{assigneeStatus}:</strong> {assigneeReason || 'No reason provided.'}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
+              {/* Row 2: Reporter & Assignee */}
+              <div className="form-group mb-1 sm:mb-3">
+                <label className="form-label text-[9px] sm:text-[11.5px]">Reporter <span className="text-red-500">*</span></label>
+                <select 
+                  className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
+                  value={reporter} 
+                  onChange={e => setReporter(e.target.value)} 
+                  required
+                >
+                  <option value="" disabled>Select Reporter</option>
+                  {teachers.map((u, i) => (
+                    <option key={i} value={u}>{u}</option>
+                  ))}
+                </select>
               </div>
 
+              <div className="form-group mb-1 sm:mb-3">
+                <label className="form-label text-[9px] sm:text-[11.5px]">Assignee <span className="text-red-500 ml-0.5">*</span></label>
+                {isStudent ? (
+                  <input 
+                    type="text" 
+                    className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
+                    value={assignee} 
+                    disabled 
+                    style={{ backgroundColor: 'var(--border-color)' }}
+                  />
+                ) : (
+                  <select 
+                    className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
+                    value={assignee} 
+                    onChange={e => setAssignee(e.target.value)} 
+                    required
+                  >
+                    <option value="" disabled>Select Assignee</option>
+                    {allUsers.map((u, i) => (
+                      <option key={i} value={u}>{u}</option>
+                    ))}
+                  </select>
+                )}
+                {(assigneeStatus === 'ABSENT' || assigneeStatus === 'LEAVE') && (
+                  <div className="mt-0.5 text-[9px] sm:text-xs text-red-600 bg-red-50 border border-red-200 rounded p-0.5 flex items-start gap-1 col-span-2">
+                    <span className="text-[10px]">⚠️</span>
+                    <span>
+                      <strong>{assigneeStatus}:</strong> {assigneeReason || 'No reason provided.'}
+                    </span>
+                  </div>
+                )}
+              </div>
             </>
           )}
 
+          {/* Row 3: Subject & Book */}
           {(!(showBeautifulHeader || showBeautifulHeaderForOwner) || !initialValues?.subject) && (
-            <div className="form-group">
-              <label className="form-label">Subject <span className="text-red-500 ml-1">*</span></label>
+            <div className="form-group mb-1 sm:mb-3">
+              <label className="form-label text-[9px] sm:text-[11.5px]">Subject <span className="text-red-500 ml-0.5">*</span></label>
               <select 
-                className="form-control" 
+                className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
                 value={subject} 
                 onChange={e => {
                   setSubject(e.target.value);
@@ -476,10 +498,10 @@ export default function TaskEntryClient({
           )}
 
           {showBeautifulHeaderForOwner && (
-            <div className="form-group">
-              <label className="form-label">Reporter <span className="text-red-500">*</span></label>
+            <div className="form-group mb-1 sm:mb-3">
+              <label className="form-label text-[9px] sm:text-[11.5px]">Reporter <span className="text-red-500">*</span></label>
               <select 
-                className="form-control" 
+                className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
                 value={reporter} 
                 onChange={e => setReporter(e.target.value)} 
                 required
@@ -492,10 +514,10 @@ export default function TaskEntryClient({
             </div>
           )}
 
-          <div className="form-group">
-            <label className="form-label">Book</label>
+          <div className="form-group mb-1 sm:mb-3">
+            <label className="form-label text-[9px] sm:text-[11.5px]">Book</label>
             <select 
-              className="form-control" 
+              className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
               value={book} 
               onChange={e => {
                 setBook(e.target.value);
@@ -512,10 +534,11 @@ export default function TaskEntryClient({
             </select>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Chapter</label>
+          {/* Row 4: Chapter & Topic */}
+          <div className="form-group mb-1 sm:mb-3">
+            <label className="form-label text-[9px] sm:text-[11.5px]">Chapter</label>
             <select 
-              className="form-control" 
+              className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
               value={chapter} 
               onChange={e => {
                 const selectedChTitle = e.target.value;
@@ -545,10 +568,10 @@ export default function TaskEntryClient({
             </select>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Topic</label>
+          <div className="form-group mb-1 sm:mb-3">
+            <label className="form-label text-[9px] sm:text-[11.5px]">Topic</label>
             <select 
-              className="form-control" 
+              className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
               value={topic} 
               onChange={e => handleTopicChange(e.target.value)} 
               disabled={!chapter}
@@ -558,14 +581,14 @@ export default function TaskEntryClient({
                 <option key={i} value={tName as string}>{tName as string}</option>
               ))}
             </select>
-            {!chapter && <p className="text-[10px] text-gray-400 mt-1 italic">Please select a chapter first.</p>}
+            {!chapter && <p className="text-[8px] text-gray-400 mt-0.5 italic">Select chapter first.</p>}
           </div>
 
           {uniqueExercises.length > 0 && (
-            <div className="form-group">
-              <label className="form-label">Exercise</label>
+            <div className="form-group mb-1 sm:mb-3 col-span-2 sm:col-span-1">
+              <label className="form-label text-[9px] sm:text-[11.5px]">Exercise</label>
               <select 
-                className="form-control" 
+                className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
                 value={exercise} 
                 onChange={e => handleExerciseChange(e.target.value)} 
                 disabled={!chapter}
@@ -578,13 +601,11 @@ export default function TaskEntryClient({
             </div>
           )}
 
-        </div>
-
-        <div className="form-row mt-2 md:mt-4">
-          <div className="form-group">
-            <label className="form-label">Task Type <span className="text-red-500 ml-1">*</span></label>
+          {/* Row 5: Task Type & Status */}
+          <div className="form-group mb-1 sm:mb-3">
+            <label className="form-label text-[9px] sm:text-[11.5px]">Task Type <span className="text-red-500 ml-0.5">*</span></label>
             <select 
-              className="form-control" 
+              className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
               value={taskType} 
               onChange={e => setTaskType(e.target.value)} 
               required
@@ -597,10 +618,10 @@ export default function TaskEntryClient({
             </select>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Status <span className="text-red-500 ml-1">*</span></label>
+          <div className="form-group mb-1 sm:mb-3">
+            <label className="form-label text-[9px] sm:text-[11.5px]">Status <span className="text-red-500 ml-0.5">*</span></label>
             <select 
-              className="form-control" 
+              className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
               value={taskStatus} 
               onChange={e => setTaskStatus(e.target.value)} 
               required
@@ -612,53 +633,54 @@ export default function TaskEntryClient({
             </select>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Due Date <span className="text-red-500 ml-1">*</span></label>
+          {/* Row 6: Due Date & Obtained Marks (if Done) */}
+          <div className="form-group mb-1 sm:mb-3 col-span-2 sm:col-span-1">
+            <label className="form-label text-[9px] sm:text-[11.5px]">Due Date <span className="text-red-500 ml-0.5">*</span></label>
             <div className="relative">
               <input 
                 type="date" 
-                className="form-control pl-10 md:pl-10" 
+                className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] pl-5 sm:pl-10 px-1 py-0" 
                 value={dueDate} 
                 onChange={e => setDueDate(e.target.value)} 
                 required
               />
-              <i className="fa-regular fa-calendar absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+              <i className="fa-regular fa-calendar absolute left-1.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-[9px] sm:text-xs pointer-events-none"></i>
             </div>
           </div>
-        </div>
 
-        {taskStatus === 'DONE' && (
-          <div className="form-row mt-2 md:mt-4">
-            <div className="form-group w-1/2">
-              <label className="form-label">Obtained Marks</label>
+          {taskStatus === 'DONE' && (
+            <div className="form-group mb-1 sm:mb-3 col-span-2 sm:col-span-1">
+              <label className="form-label text-[9px] sm:text-[11.5px]">Obtained Marks</label>
               <input 
                 type="number" 
                 step="0.5"
                 min="0"
-                className="form-control" 
+                className="form-control h-[26px] sm:h-[36px] text-[10px] sm:text-[13px] px-1 py-0" 
                 value={obtainedMarks} 
                 onChange={e => setObtainedMarks(e.target.value)} 
                 placeholder="e.g. 8"
               />
             </div>
-          </div>
-        )}
+          )}
 
-        <div className="form-group mt-2 md:mt-4">
-          <label className="form-label">Description <span className="text-red-500 ml-1">*</span></label>
-          <textarea 
-            className="form-control" 
-            value={description} 
-            onChange={e => setDescription(e.target.value)} 
-            required 
-            rows={4}
-            placeholder="Enter task description"
-            style={{ resize: 'vertical' }}
-          ></textarea>
-        </div>
+          {/* Full Width Row 7: Description */}
+          <div className="form-group mb-1 sm:mb-3 col-span-2">
+            <label className="form-label text-[9px] sm:text-[11.5px]">Description <span className="text-red-500 ml-0.5">*</span></label>
+            <textarea 
+              ref={descriptionInputRef}
+              autoFocus
+              className="form-control text-[10px] sm:text-[13px] min-h-[38px] sm:min-h-[72px] p-1 sm:p-2.5" 
+              value={description} 
+              onChange={e => setDescription(e.target.value)} 
+              required 
+              rows={2}
+              placeholder="Enter task description"
+              style={{ resize: 'vertical' }}
+            ></textarea>
+          </div>
 
         {/* Attachments Section */}
-        <div className="form-group mt-2 md:mt-4">
+        <div className="form-group mt-1 sm:mt-2 md:mt-3 col-span-2">
           <label className="form-label">Attachments (Max 5)</label>
           
           <input 
@@ -757,6 +779,7 @@ export default function TaskEntryClient({
             </div>
           )}
         </div>
+      </div>
 
         {status.message && (
           <div className={`status-message ${status.type === 'error' ? 'status-error' : 'status-success'}`} style={{ marginBottom: '1.5rem' }}>

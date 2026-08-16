@@ -419,7 +419,7 @@ export default function DataEntryForm() {
           </div>
         )}
         
-        <div className={`form-group ${selectedSubject === 'Mathematics' ? '' : 'col-span-2'}`}>
+        <div className={`form-group ${selectedSubject === 'Mathematics' ? '' : 'col-span-1 sm:col-span-2'}`}>
           <label className="form-label" htmlFor="page">Page Number</label>
           <input 
             type="number" 
@@ -440,9 +440,11 @@ export default function DataEntryForm() {
         <textarea id="description" name="description" className="form-control" placeholder="Provide a brief explanation of the topic..." required></textarea>
       </div>
 
-      <button type="submit" className="btn-submit" disabled={status.type === 'loading'}>
-        {status.type === 'loading' ? 'Saving...' : 'Submit Entry'}
-      </button>
+      <div className="flex justify-start">
+        <button type="submit" className="btn-submit" disabled={status.type === 'loading'}>
+          {status.type === 'loading' ? 'Saving...' : 'Submit Entry'}
+        </button>
+      </div>
 
       {status.message && status.type !== 'loading' && (
         <div className={`status-message ${status.type === 'success' ? 'status-success' : 'status-error'}`}>

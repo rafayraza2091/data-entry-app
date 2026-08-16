@@ -323,13 +323,15 @@ export default function EmployeeRecordClient() {
           </div>
         )}
 
-        <button 
-          type="submit" 
-          className="btn-submit mt-4"
-          disabled={loading}
-        >
-          {loading ? 'Saving...' : 'Submit Entry'}
-        </button>
+        <div className="flex justify-start">
+          <button 
+            type="submit" 
+            className="btn-submit mt-4"
+            disabled={loading}
+          >
+            {loading ? 'Saving...' : 'Submit Entry'}
+          </button>
+        </div>
       </form>
     </main>
   );

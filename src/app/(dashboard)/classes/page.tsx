@@ -95,14 +95,15 @@ export default function ClassesPage() {
               </div>
             </div>
 
-            <button
-              type="submit"
-              className="btn-submit"
-              disabled={loading}
-              style={{ width: '100%' }}
-            >
-              {loading ? 'Saving...' : 'Add Class'}
-            </button>
+            <div className="flex justify-start">
+              <button
+                type="submit"
+                className="btn-submit"
+                disabled={loading}
+              >
+                {loading ? 'Saving...' : 'Add Class'}
+              </button>
+            </div>
           </form>
         </div>
 
