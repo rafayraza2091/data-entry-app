@@ -26,21 +26,41 @@ export async function GET(request: Request) {
 
     let students;
     if (session.role === 'STUDENT') {
-      students = await prisma.$queryRaw`
-        SELECT id, "userId", "firstName", "secondName", subjects, "className" 
-        FROM "Student" 
-        WHERE status = 'Active' 
-        AND "firstName" = ${session.firstName} 
-        AND "secondName" = ${session.lastName} 
-        ORDER BY "firstName" ASC
-      `;
+      students = await prisma.student.findMany({
+        where: {
+          status: 'Active',
+          firstName: session.firstName,
+          secondName: session.lastName,
+        },
+        select: {
+          id: true,
+          userId: true,
+          firstName: true,
+          secondName: true,
+          subjects: true,
+          className: true,
+        },
+        orderBy: {
+          firstName: 'asc',
+        },
+      });
     } else {
-      students = await prisma.$queryRaw`
-        SELECT id, "userId", "firstName", "secondName", subjects, "className" 
-        FROM "Student" 
-        WHERE status = 'Active' 
-        ORDER BY "firstName" ASC
-      `;
+      students = await prisma.student.findMany({
+        where: {
+          status: 'Active',
+        },
+        select: {
+          id: true,
+          userId: true,
+          firstName: true,
+          secondName: true,
+          subjects: true,
+          className: true,
+        },
+        orderBy: {
+          firstName: 'asc',
+        },
+      });
     }
 
     let cellData: any[] = [];

@@ -42,20 +42,24 @@ export async function POST(request: Request) {
 
     // Now create the actual category record
     if (category === 'student') {
-      const res = await prisma.$queryRaw`
-        INSERT INTO "Student" (
-          "userId", "firstName", "secondName", "address", "mobileNumber", "email",
-          "fatherName", "parentContact1", "parentContact2", "otherInfo",
-          "className", "schoolName", "status", "subjects",
-          "createdAt", "updatedAt"
-        ) VALUES (
-          ${newUser.id}, ${userData.firstName}, ${userData.secondName}, ${userData.address}, ${userData.mobileNumber}, ${userData.email},
-          ${userData.fatherName || null}, ${userData.parentContact1 || null}, ${userData.parentContact2 || null}, ${userData.otherInfo || null},
-          ${userData.class}, ${userData.schoolName}, ${userData.status || 'Active'}, ${userData.subjects || []},
-          NOW(), NOW()
-        ) RETURNING *
-      `;
-      const student = Array.isArray(res) ? res[0] : res;
+      const student = await prisma.student.create({
+        data: {
+          userId: newUser.id,
+          firstName: userData.firstName,
+          secondName: userData.secondName,
+          address: userData.address,
+          mobileNumber: userData.mobileNumber,
+          email: userData.email,
+          fatherName: userData.fatherName || null,
+          parentContact1: userData.parentContact1 || null,
+          parentContact2: userData.parentContact2 || null,
+          otherInfo: userData.otherInfo || null,
+          className: userData.class || 'N/A',
+          schoolName: userData.schoolName || 'N/A',
+          status: userData.status || 'Active',
+          subjects: userData.subjects || [],
+        },
+      });
       return NextResponse.json(student, { status: 201 });
     } else if (category === 'teacher') {
       const teacher = await prisma.teacher.create({
@@ -101,7 +105,7 @@ export async function POST(request: Request) {
 export async function GET() {
   try {
     const [students, teachers, admins] = await Promise.all([
-      prisma.$queryRaw`SELECT * FROM "Student" ORDER BY "createdAt" DESC`,
+      prisma.student.findMany({ orderBy: { createdAt: 'desc' } }),
       prisma.teacher.findMany({ orderBy: { createdAt: 'desc' } }),
       prisma.admin.findMany({ orderBy: { createdAt: 'desc' } })
     ]); return NextResponse.json({ students, teachers, admins }, { status: 200 });
@@ -123,23 +127,24 @@ export async function PUT(request: Request) {
     let updatedRecord;
 
     if (category === 'student') {
-      updatedRecord = await prisma.$executeRaw`
-        UPDATE "Student"
-        SET "firstName" = ${updateData.firstName},
-            "secondName" = ${updateData.secondName},
-            "address" = ${updateData.address},
-            "mobileNumber" = ${updateData.mobileNumber},
-            "email" = ${updateData.email},
-            "fatherName" = ${updateData.fatherName},
-            "parentContact1" = ${updateData.parentContact1},
-            "parentContact2" = ${updateData.parentContact2},
-            "otherInfo" = ${updateData.otherInfo},
-            "className" = ${updateData.className},
-            "schoolName" = ${updateData.schoolName},
-            "status" = ${updateData.status},
-            "subjects" = ${updateData.subjects}
-        WHERE id = ${Number(id)}
-      `;
+      updatedRecord = await prisma.student.update({
+        where: { id: Number(id) },
+        data: {
+          firstName: updateData.firstName,
+          secondName: updateData.secondName,
+          address: updateData.address,
+          mobileNumber: updateData.mobileNumber,
+          email: updateData.email,
+          fatherName: updateData.fatherName,
+          parentContact1: updateData.parentContact1,
+          parentContact2: updateData.parentContact2,
+          otherInfo: updateData.otherInfo,
+          className: updateData.className,
+          schoolName: updateData.schoolName,
+          status: updateData.status,
+          subjects: updateData.subjects,
+        }
+      });
     } else if (category === 'teacher') {
       updatedRecord = await prisma.teacher.update({
         where: { id: Number(id) },
