@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { fetchWithCache } from '@/lib/client-cache';
 
 type Tab = 'subjects' | 'schools' | 'books' | 'chapters' | 'topics' | 'entries';
 
@@ -35,23 +36,23 @@ export default function ViewDataPage() {
     async function fetchAllData() {
       setLoading(true);
       try {
-        const [subjectsRes, schoolsRes, booksRes, chaptersRes, topicsRes, entriesRes] = await Promise.all([
-          fetch('/api/subjects'),
-          fetch('/api/schools'),
-          fetch('/api/books'),
-          fetch('/api/chapters'),
-          fetch('/api/topics'),
-          fetch('/api/entries')
+        const [subjects, schools, books, chapters, topics, entries] = await Promise.all([
+          fetchWithCache<any[]>('/api/subjects', { maxAgeMs: 86400000 }),
+          fetchWithCache<any[]>('/api/schools', { maxAgeMs: 86400000 }),
+          fetchWithCache<any[]>('/api/books', { maxAgeMs: 86400000 }),
+          fetchWithCache<any[]>('/api/chapters', { maxAgeMs: 86400000 }),
+          fetchWithCache<any[]>('/api/topics', { maxAgeMs: 86400000 }),
+          fetchWithCache<any[]>('/api/entries', { maxAgeMs: 86400000 }),
         ]);
 
-        const subjects = subjectsRes.ok ? await subjectsRes.json() : [];
-        const schools = schoolsRes.ok ? await schoolsRes.json() : [];
-        const books = booksRes.ok ? await booksRes.json() : [];
-        const chapters = chaptersRes.ok ? await chaptersRes.json() : [];
-        const topics = topicsRes.ok ? await topicsRes.json() : [];
-        const entries = entriesRes.ok ? await entriesRes.json() : [];
-
-        setData({ subjects, schools, books, chapters, topics, entries });
+        setData({
+          subjects: subjects || [],
+          schools: schools || [],
+          books: books || [],
+          chapters: chapters || [],
+          topics: topics || [],
+          entries: entries || [],
+        });
       } catch (error) {
         console.error('Failed to fetch data', error);
       } finally {

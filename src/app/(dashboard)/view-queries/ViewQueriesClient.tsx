@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import ImageCropper from '@/components/ImageCropper';
+import { fetchWithCache, invalidateClientCache } from '@/lib/client-cache';
 
 export default function ViewQueriesClient({ currentUser }: { currentUser: any }) {
   const [queries, setQueries] = useState<any[]>([]);
@@ -45,31 +46,24 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
     async function fetchMetadata() {
       try {
         const [sRes, bRes, tRes, usersRes, cRes] = await Promise.all([
-          fetch('/api/subjects'),
-          fetch('/api/books'),
-          fetch('/api/topics'),
-          fetch(`/api/task-users?t=${Date.now()}`),
-          fetch('/api/classes')
+          fetchWithCache<any>('/api/subjects', { maxAgeMs: 86400000 }),
+          fetchWithCache<any>('/api/books', { maxAgeMs: 86400000 }),
+          fetchWithCache<any>('/api/topics', { maxAgeMs: 86400000 }),
+          fetchWithCache<any>('/api/task-users', { maxAgeMs: 300000 }),
+          fetchWithCache<any>('/api/classes', { maxAgeMs: 86400000 })
         ]);
 
-
-
-        if (sRes.ok) setSubjectsList(await sRes.json());
-        if (bRes.ok) setBooksList(await bRes.json());
-        if (tRes.ok) setTopicsList(await tRes.json());
-        if (cRes.ok) setClassesList(await cRes.json());
-        if (usersRes.ok) {
-          const uData = await usersRes.json();
+        if (sRes) setSubjectsList(sRes);
+        if (bRes) setBooksList(bRes);
+        if (tRes) setTopicsList(tRes);
+        if (cRes) setClassesList(cRes);
+        if (usersRes) {
           const formatName = (u: any) => `${u.firstName} ${u.lastName}`.trim();
-          setTeachersList(uData.teachers?.map(formatName) || []);
-          setStudentsList(uData.students?.map(formatName) || []);
+          setTeachersList(usersRes.teachers?.map(formatName) || []);
+          setStudentsList(usersRes.students?.map(formatName) || []);
         }
       } catch (err: any) {
         setError('Failed to fetch metadata: ' + err.message);
-      } finally {
-        // We do not set loading to false here because fetchQueries will handle it, 
-        // or we can set it to false if fetchQueries finishes first. 
-        // But fetchQueries handles its own loading state.
       }
     }
 
@@ -92,10 +86,21 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
           url += `?${queryString}`;
         }
 
-        const qRes = await fetch(url);
-        if (!qRes.ok) throw new Error('Failed to fetch queries');
-        const json = await qRes.json();
-        const data = json.data || json;
+        const json = await fetchWithCache<any>(url, {
+          maxAgeMs: 120000,
+          onRevalidate: (fresh) => {
+            if (fresh) {
+              const data = fresh.data || fresh;
+              if (currentUser.role === 'STUDENT') {
+                const studentFullName = `${currentUser.firstName} ${currentUser.lastName}`.trim();
+                setQueries(data.filter((q: any) => q.studentName === studentFullName));
+              } else {
+                setQueries(data);
+              }
+            }
+          },
+        });
+        const data = json?.data || json || [];
 
         // Apply filtering based on role
         if (currentUser.role === 'STUDENT') {
@@ -115,7 +120,7 @@ export default function ViewQueriesClient({ currentUser }: { currentUser: any })
     if (currentUser) {
       const timeoutId = setTimeout(() => {
         fetchQueries();
-      }, 500);
+      }, 300);
       return () => clearTimeout(timeoutId);
     }
   }, [currentUser, filterStartDate, filterEndDate]);

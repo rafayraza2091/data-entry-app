@@ -25,7 +25,12 @@ export async function GET(request: Request) {
     }
 
     const enrichedUsers = await getCachedAttendanceGrid(date, role);
-    return NextResponse.json(enrichedUsers);
+    return NextResponse.json(enrichedUsers, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'private, max-age=15, stale-while-revalidate=120',
+      }
+    });
   } catch (error: any) {
     console.error('Error fetching attendance:', error);
     return NextResponse.json({ error: 'Failed to fetch attendance' }, { status: 500 });

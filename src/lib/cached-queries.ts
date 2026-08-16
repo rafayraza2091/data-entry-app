@@ -12,7 +12,7 @@ export function revalidateCacheTag(tag: string) {
 export { revalidatePath };
 
 // ==========================================
-// 1. MASTER & CURRICULUM DATA (TTL: 300s)
+// 1. MASTER & CURRICULUM DATA (TTL: 86400s / 24 Hours)
 // ==========================================
 
 export const getCachedSchools = unstable_cache(
@@ -22,7 +22,7 @@ export const getCachedSchools = unstable_cache(
     });
   },
   ['schools-list'],
-  { tags: ['schools'], revalidate: 300 }
+  { tags: ['schools'], revalidate: 86400 }
 );
 
 export const getCachedSubjects = unstable_cache(
@@ -33,7 +33,7 @@ export const getCachedSubjects = unstable_cache(
     });
   },
   ['subjects-list'],
-  { tags: ['subjects'], revalidate: 300 }
+  { tags: ['subjects'], revalidate: 86400 }
 );
 
 export const getCachedClasses = unstable_cache(
@@ -43,7 +43,7 @@ export const getCachedClasses = unstable_cache(
     });
   },
   ['classes-list'],
-  { tags: ['classes'], revalidate: 300 }
+  { tags: ['classes'], revalidate: 86400 }
 );
 
 export const getCachedBooks = unstable_cache(
@@ -53,7 +53,7 @@ export const getCachedBooks = unstable_cache(
     });
   },
   ['books-list'],
-  { tags: ['books'], revalidate: 300 }
+  { tags: ['books'], revalidate: 86400 }
 );
 
 export const getCachedChapters = (book?: string, subject?: string) => {
@@ -69,7 +69,7 @@ export const getCachedChapters = (book?: string, subject?: string) => {
       });
     },
     ['chapters-list-v2', book || 'all', subject || 'all'],
-    { tags: ['chapters'], revalidate: 300 }
+    { tags: ['chapters'], revalidate: 86400 }
   )();
 };
 
@@ -86,7 +86,7 @@ export const getCachedTopics = (book?: string, chapterNumber?: number) => {
       });
     },
     ['topics-list-v2', book || 'all', String(chapterNumber ?? 'all')],
-    { tags: ['topics'], revalidate: 300 }
+    { tags: ['topics'], revalidate: 86400 }
   )();
 };
 
@@ -97,7 +97,7 @@ export const getCachedDataEntries = unstable_cache(
     });
   },
   ['data-entries-list'],
-  { tags: ['dataentries'], revalidate: 180 }
+  { tags: ['dataentries'], revalidate: 86400 }
 );
 
 // ==========================================
