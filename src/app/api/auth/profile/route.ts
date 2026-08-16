@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession, setAuthCookie } from '@/lib/auth';
+import { revalidateCacheTag, revalidatePath } from '@/lib/cached-queries';
+
+export const dynamic = 'force-dynamic';
 
 export async function PATCH(request: Request) {
   try {
@@ -52,6 +55,12 @@ export async function PATCH(request: Request) {
       cleanFirstName,
       cleanLastName
     );
+
+    // Invalidate caches
+    revalidateCacheTag('task-users');
+    revalidateCacheTag('users');
+    revalidateCacheTag('bird-view');
+    revalidatePath('/bird-view');
 
     return NextResponse.json({
       success: true,

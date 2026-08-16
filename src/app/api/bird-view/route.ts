@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
+import {
+  getCachedSubjects,
+  getCachedBirdViewStudents,
+  getCachedAttendanceByDate,
+  getCachedBirdViewTasks,
+  getCachedBirdViewQueries,
+} from '@/lib/cached-queries';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
@@ -13,137 +21,38 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const subjects = await prisma.subjectEntry.findMany({
-      select: {
-        id: true,
-        name: true,
-        code: true,
-      },
-      orderBy: {
-        name: 'asc',
-      }
-    });
-
-    let students;
-    if (session.role === 'STUDENT') {
-      students = await prisma.student.findMany({
-        where: {
-          status: 'Active',
-          firstName: session.firstName,
-          secondName: session.lastName,
-        },
-        select: {
-          id: true,
-          userId: true,
-          firstName: true,
-          secondName: true,
-          subjects: true,
-          className: true,
-        },
-        orderBy: {
-          firstName: 'asc',
-        },
-      });
-    } else {
-      students = await prisma.student.findMany({
-        where: {
-          status: 'Active',
-        },
-        select: {
-          id: true,
-          userId: true,
-          firstName: true,
-          secondName: true,
-          subjects: true,
-          className: true,
-        },
-        orderBy: {
-          firstName: 'asc',
-        },
-      });
-    }
+    const isStudent = session.role === 'STUDENT';
+    const [subjects, students] = await Promise.all([
+      getCachedSubjects(),
+      getCachedBirdViewStudents(isStudent, session.firstName, session.lastName),
+    ]);
 
     let cellData: any[] = [];
     let attendanceData: any[] = [];
     
     if (dateStr) {
-      attendanceData = await prisma.attendance.findMany({
-        where: { date: dateStr },
-        select: { userId: true, status: true }
-      });
-    }
-
-    if (dateStr && viewType) {
-      const startOfDay = new Date(dateStr);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(dateStr);
-      endOfDay.setHours(23, 59, 59, 999);
+      const attendancePromise = getCachedAttendanceByDate(dateStr);
+      let dataPromise: Promise<any[]> = Promise.resolve([]);
 
       if (viewType === 'task') {
-        cellData = await prisma.taskEntry.findMany({
-          where: {
-            dueDate: {
-              gte: startOfDay,
-              lte: endOfDay
-            }
-          },
-          select: {
-            id: true,
-            assignee: true,
-            subject: true,
-            status: true,
-            taskType: true,
-            book: true,
-            chapter: true,
-            topic: true,
-            exercise: true,
-            description: true,
-            reporter: true,
-            createdBy: true,
-            className: true,
-            dueDate: true,
-            rescheduleCount: true,
-            rescheduledFromId: true,
-            rescheduledToId: true,
-            obtainedMarks: true,
-            totalMarks: true,
-            images: true,
-            comments: {
-              where: { parentId: null },
-              include: {
-                replies: {
-                  orderBy: { createdAt: 'asc' }
-                }
-              },
-              orderBy: { createdAt: 'asc' }
-            }
-          }
-        });
+        dataPromise = getCachedBirdViewTasks(dateStr);
       } else if (viewType === 'query') {
-        cellData = await prisma.queryEntry.findMany({
-          where: {
-            createdAt: {
-              gte: startOfDay,
-              lte: endOfDay
-            }
-          },
-          select: {
-            id: true,
-            studentName: true,
-            subject: true,
-            status: true,
-            images: true
-          }
-        });
+        dataPromise = getCachedBirdViewQueries(dateStr);
       }
+
+      const [att, cd] = await Promise.all([attendancePromise, dataPromise]);
+      attendanceData = att;
+      cellData = cd;
     }
 
-    return NextResponse.json({ subjects, students, cellData, attendanceData });
+    return NextResponse.json({ subjects, students, cellData, attendanceData }, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'private, no-cache, no-store, must-revalidate',
+      }
+    });
   } catch (error: any) {
     console.error('Error fetching bird view data:', error);
-    try {
-      require('fs').writeFileSync('/tmp/bird-view-error.log', error.message || String(error));
-    } catch(e) {}
     return NextResponse.json(
       { error: 'Failed to fetch bird view data', details: error.message },
       { status: 500 }

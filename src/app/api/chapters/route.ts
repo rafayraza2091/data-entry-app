@@ -1,31 +1,40 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getCachedChapters, revalidateCacheTag, revalidatePath } from '@/lib/cached-queries';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
     const data = await request.json();
     
+    // Check for duplicate entry (same chapterNumber, book, and subject)
     const existingChapter = await prisma.chapterEntry.findFirst({
       where: {
-        subject: data.subject,
-        book: data.book,
-        chapterNumber: parseInt(data.chapterNumber, 10),
+        chapterNumber: { equals: Number(data.chapterNumber) },
+        book: { equals: data.book },
+        subject: { equals: data.subject },
       }
     });
 
     if (existingChapter) {
-      return NextResponse.json({ error: 'This chapter already exists for this book' }, { status: 409 });
+      return NextResponse.json({ error: 'Chapter with this number already exists for this book' }, { status: 409 });
     }
 
     const newChapter = await prisma.chapterEntry.create({
       data: {
-        subject: data.subject,
-        book: data.book,
-        chapterNumber: parseInt(data.chapterNumber, 10),
+        chapterNumber: Number(data.chapterNumber),
         chapterTitle: data.chapterTitle,
-        page: data.page ? parseInt(data.page, 10) : null,
+        book: data.book,
+        subject: data.subject,
+        page: data.page ? Number(data.page) : null,
       },
     });
+
+    // Invalidate cache immediately
+    revalidateCacheTag('chapters');
+    revalidatePath('/chapter');
+    revalidatePath('/view-data');
 
     return NextResponse.json(newChapter, { status: 201 });
   } catch (error: any) {
@@ -37,18 +46,16 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const book = searchParams.get('book');
-    const subject = searchParams.get('subject');
+    const book = searchParams.get('book') || undefined;
+    const subject = searchParams.get('subject') || undefined;
 
-    const whereClause: any = {};
-    if (book) whereClause.book = book;
-    if (subject) whereClause.subject = subject;
-
-    const chapters = await prisma.chapterEntry.findMany({
-      where: whereClause,
-      orderBy: [{ subject: 'asc' }, { book: 'asc' }, { chapterNumber: 'asc' }],
+    const chapters = await getCachedChapters(book, subject);
+    return NextResponse.json(chapters, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      },
     });
-    return NextResponse.json(chapters, { status: 200 });
   } catch (error: any) {
     console.error(error);
     return NextResponse.json({ error: 'Failed to fetch chapters', details: error.message }, { status: 500 });

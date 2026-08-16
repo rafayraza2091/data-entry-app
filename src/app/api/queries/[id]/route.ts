@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { revalidateCacheTag, revalidatePath } from '@/lib/cached-queries';
+
+export const dynamic = 'force-dynamic';
 
 export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
@@ -20,6 +23,12 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
         status: data.status,
       },
     });
+
+    // Invalidate caches
+    revalidateCacheTag('queries');
+    revalidateCacheTag('bird-view');
+    revalidatePath('/view-queries');
+    revalidatePath('/bird-view');
 
     return NextResponse.json(updatedQuery, { status: 200 });
   } catch (error: any) {

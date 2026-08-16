@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getCachedSchools, revalidateCacheTag, revalidatePath } from '@/lib/cached-queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +30,12 @@ export async function POST(request: Request) {
       },
     });
 
+    // Invalidate cache immediately
+    revalidateCacheTag('schools');
+    revalidateCacheTag('task-users');
+    revalidatePath('/school');
+    revalidatePath('/view-data');
+
     return NextResponse.json(newSchool, { status: 201 });
   } catch (error: any) {
     console.error('Error creating school entry:', error);
@@ -38,10 +45,13 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    const schools = await prisma.schoolEntry.findMany({
-      orderBy: [{ name: 'asc' }, { branch: 'asc' }],
+    const schools = await getCachedSchools();
+    return NextResponse.json(schools, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      },
     });
-    return NextResponse.json(schools, { status: 200 });
   } catch (error: any) {
     console.error(error);
     return NextResponse.json({ error: 'Failed to fetch schools', details: error.message }, { status: 500 });

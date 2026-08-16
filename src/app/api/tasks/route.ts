@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
+import { revalidateCacheTag, revalidatePath } from '@/lib/cached-queries';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
@@ -36,6 +39,12 @@ export async function POST(request: Request) {
         images: Array.isArray(images) ? images : []
       }
     });
+
+    // Invalidate caches
+    revalidateCacheTag('tasks');
+    revalidateCacheTag('bird-view');
+    revalidatePath('/view-tasks');
+    revalidatePath('/bird-view');
 
     return NextResponse.json(taskEntry, { status: 201 });
   } catch (error: any) {
@@ -250,6 +259,12 @@ export async function PATCH(request: Request) {
       data: updateData
     });
 
+    // Invalidate caches
+    revalidateCacheTag('tasks');
+    revalidateCacheTag('bird-view');
+    revalidatePath('/view-tasks');
+    revalidatePath('/bird-view');
+
     return NextResponse.json(updatedTask, { status: 200 });
   } catch (error: any) {
     console.error('Error updating task:', error);
@@ -289,6 +304,12 @@ export async function DELETE(request: Request) {
     await prisma.taskEntry.delete({
       where: { id: Number(id) }
     });
+
+    // Invalidate caches
+    revalidateCacheTag('tasks');
+    revalidateCacheTag('bird-view');
+    revalidatePath('/view-tasks');
+    revalidatePath('/bird-view');
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: any) {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { revalidateCacheTag, revalidatePath } from '@/lib/cached-queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +32,12 @@ export async function POST(request: Request) {
         createdAt: data.createdAt ? new Date(data.createdAt) : undefined,
       },
     });
+
+    // Invalidate caches
+    revalidateCacheTag('queries');
+    revalidateCacheTag('bird-view');
+    revalidatePath('/view-queries');
+    revalidatePath('/bird-view');
 
     return NextResponse.json(newQuery, { status: 201 });
   } catch (error: any) {
@@ -184,6 +191,12 @@ export async function DELETE(request: Request) {
     await prisma.queryEntry.delete({
       where: { id: Number(id) }
     });
+
+    // Invalidate caches
+    revalidateCacheTag('queries');
+    revalidateCacheTag('bird-view');
+    revalidatePath('/view-queries');
+    revalidatePath('/bird-view');
 
     return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: any) {
