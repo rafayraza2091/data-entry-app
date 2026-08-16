@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getCachedBooks, revalidateCacheTag, revalidatePath } from '@/lib/cached-queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,52 +8,54 @@ export async function POST(request: Request) {
   try {
     const data = await request.json();
     
-    const entryData = {
-      title: data.title,
-      className: data.className,
-      subject: data.subject,
-      edition: parseInt(data.edition, 10),
-      publisher: data.publisher,
-      school: data.school,
-    };
-
+    // Check for duplicate entry (same title, className, subject, and school)
     const existingBook = await prisma.bookEntry.findFirst({
       where: {
-        title: entryData.title,
+        title: { equals: data.title },
+        className: { equals: data.className },
+        subject: { equals: data.subject },
+        school: { equals: data.school }
       }
     });
 
     if (existingBook) {
-      return NextResponse.json({ error: 'This book entry already exists' }, { status: 409 });
+      return NextResponse.json({ error: 'Book already exists for this class, subject, and school' }, { status: 409 });
     }
 
-    const newEntry = await prisma.bookEntry.create({
-      data: entryData,
+    const newBook = await prisma.bookEntry.create({
+      data: {
+        title: data.title,
+        className: data.className,
+        subject: data.subject,
+        edition: data.edition || null,
+        publisher: data.publisher || null,
+        school: data.school,
+      },
     });
 
-    return NextResponse.json(newEntry, { status: 201 });
-  } catch (error) {
+    // Invalidate cache immediately
+    revalidateCacheTag('books');
+    revalidatePath('/book');
+    revalidatePath('/view-data');
+
+    return NextResponse.json(newBook, { status: 201 });
+  } catch (error: any) {
     console.error('Error creating book entry:', error);
-    return NextResponse.json({ error: 'Failed to create entry' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to create book', details: error.message }, { status: 500 });
   }
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url);
-    const subject = searchParams.get('subject');
-    const className = searchParams.get('className');
-
-    const whereClause: any = {};
-    if (subject) whereClause.subject = subject;
-    if (className) whereClause.className = { contains: className };
-
-    const entries = await prisma.bookEntry.findMany({
-      where: whereClause,
-      orderBy: { createdAt: 'desc' },
+    const books = await getCachedBooks();
+    return NextResponse.json(books, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      },
     });
-    return NextResponse.json(entries, { status: 200 });
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch entries' }, { status: 500 });
+  } catch (error: any) {
+    console.error(error);
+    return NextResponse.json({ error: 'Failed to fetch books', details: error.message }, { status: 500 });
   }
 }

@@ -1,39 +1,54 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getCachedClasses, revalidateCacheTag, revalidatePath } from '@/lib/cached-queries';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
-  console.log("=> GET /api/classes called!");
-  try {
-    const classes = await prisma.classEntry.findMany({
-      orderBy: { createdAt: 'asc' },
-    });
-    return NextResponse.json(classes);
-  } catch (error) {
-    console.error('Error fetching classes:', error);
-    return NextResponse.json({ error: 'Failed to fetch classes' }, { status: 500 });
-  }
-}
-
 export async function POST(request: Request) {
   try {
-    const { name } = await request.json();
+    const data = await request.json();
+    
+    // Check for duplicate entry (same name)
+    const existingClass = await prisma.classEntry.findFirst({
+      where: {
+        name: { equals: data.name },
+      }
+    });
 
-    if (!name || name.trim() === '') {
-      return NextResponse.json({ error: 'Class name is required' }, { status: 400 });
+    if (existingClass) {
+      return NextResponse.json({ error: 'Class already exists' }, { status: 409 });
     }
 
     const newClass = await prisma.classEntry.create({
-      data: { name: name.trim() },
+      data: {
+        name: data.name,
+      },
     });
+
+    // Invalidate cache immediately
+    revalidateCacheTag('classes');
+    revalidateCacheTag('task-users');
+    revalidatePath('/class');
+    revalidatePath('/view-data');
 
     return NextResponse.json(newClass, { status: 201 });
   } catch (error: any) {
-    if (error.code === 'P2002') {
-      return NextResponse.json({ error: 'This class already exists' }, { status: 400 });
-    }
-    console.error('Error creating class:', error);
-    return NextResponse.json({ error: 'Failed to create class' }, { status: 500 });
+    console.error('Error creating class entry:', error);
+    return NextResponse.json({ error: 'Failed to create class', details: error.message }, { status: 500 });
+  }
+}
+
+export async function GET() {
+  try {
+    const classes = await getCachedClasses();
+    return NextResponse.json(classes, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      },
+    });
+  } catch (error: any) {
+    console.error(error);
+    return NextResponse.json({ error: 'Failed to fetch classes', details: error.message }, { status: 500 });
   }
 }

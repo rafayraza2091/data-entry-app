@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { revalidateCacheTag, revalidatePath } from '@/lib/cached-queries';
+
+export const dynamic = 'force-dynamic';
 
 // DELETE: Decline pending user (Updates status to DECLINED)
 export async function DELETE(
@@ -15,6 +18,8 @@ export async function DELETE(
       where: { id },
       data: { status: 'DECLINED', resolvedAt: new Date() }
     });
+
+    revalidatePath('/notification');
 
     return NextResponse.json({ success: true, message: 'User declined.', user: updated });
   } catch (error) {
@@ -51,6 +56,8 @@ export async function PUT(
       }
     });
 
+    revalidatePath('/notification');
+
     return NextResponse.json({ success: true, user: updatedUser });
   } catch (error) {
     console.error('Error updating pending user:', error);
@@ -78,7 +85,7 @@ export async function POST(
     // Determine Role based on designation
     let role = 'STUDENT';
     if (pendingUser.designation === 'teacher') role = 'TEACHER';
-    if (pendingUser.designation === 'admin') role = 'COORDINATOR'; // Admin role
+    if (pendingUser.designation === 'admin') role = 'COORDINATOR';
 
     // Start transaction to ensure everything creates successfully
     const result = await prisma.$transaction(async (tx) => {
@@ -88,7 +95,7 @@ export async function POST(
           firstName: pendingUser.firstName,
           lastName: pendingUser.lastName,
           username: pendingUser.username,
-          password: pendingUser.password, // already hashed
+          password: pendingUser.password,
           role: role as any,
         },
       });
@@ -128,6 +135,16 @@ export async function POST(
 
       return updatedPending;
     });
+
+    // Invalidate caches
+    revalidateCacheTag('task-users');
+    revalidateCacheTag('users');
+    revalidateCacheTag('students');
+    revalidateCacheTag('bird-view');
+    revalidatePath('/notification');
+    revalidatePath('/users');
+    revalidatePath('/admin/users');
+    revalidatePath('/bird-view');
 
     return NextResponse.json({ success: true, message: 'User approved and fully created.', user: result });
   } catch (error) {

@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
+import { revalidateCacheTag, revalidatePath } from '@/lib/cached-queries';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
@@ -40,6 +43,12 @@ export async function POST(request: Request) {
         isConfirmed: true
       }
     });
+
+    // Invalidate caches
+    revalidateCacheTag('attendance');
+    revalidateCacheTag('bird-view');
+    revalidatePath('/attendance');
+    revalidatePath('/bird-view');
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

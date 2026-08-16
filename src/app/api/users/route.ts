@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { getCachedUsersList, revalidateCacheTag, revalidatePath } from '@/lib/cached-queries';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
@@ -60,6 +63,14 @@ export async function POST(request: Request) {
           subjects: userData.subjects || [],
         },
       });
+
+      // Invalidate caches
+      revalidateCacheTag('task-users');
+      revalidateCacheTag('users');
+      revalidateCacheTag('students');
+      revalidateCacheTag('bird-view');
+      revalidatePath('/users');
+
       return NextResponse.json(student, { status: 201 });
     } else if (category === 'teacher') {
       const teacher = await prisma.teacher.create({
@@ -76,6 +87,13 @@ export async function POST(request: Request) {
           otherInfo: userData.otherInfo,
         },
       });
+
+      // Invalidate caches
+      revalidateCacheTag('task-users');
+      revalidateCacheTag('users');
+      revalidateCacheTag('bird-view');
+      revalidatePath('/users');
+
       return NextResponse.json(teacher, { status: 201 });
     } else if (category === 'admin') {
       const admin = await prisma.admin.create({
@@ -92,6 +110,13 @@ export async function POST(request: Request) {
           otherInfo: userData.otherInfo,
         },
       });
+
+      // Invalidate caches
+      revalidateCacheTag('task-users');
+      revalidateCacheTag('users');
+      revalidateCacheTag('bird-view');
+      revalidatePath('/users');
+
       return NextResponse.json(admin, { status: 201 });
     }
 
@@ -104,11 +129,8 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    const [students, teachers, admins] = await Promise.all([
-      prisma.student.findMany({ orderBy: { createdAt: 'desc' } }),
-      prisma.teacher.findMany({ orderBy: { createdAt: 'desc' } }),
-      prisma.admin.findMany({ orderBy: { createdAt: 'desc' } })
-    ]); return NextResponse.json({ students, teachers, admins }, { status: 200 });
+    const data = await getCachedUsersList();
+    return NextResponse.json(data, { status: 200 });
   } catch (error: any) {
     console.error('Error fetching users:', error);
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
@@ -179,15 +201,16 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Invalid category' }, { status: 400 });
     }
 
+    // Invalidate caches
+    revalidateCacheTag('task-users');
+    revalidateCacheTag('users');
+    revalidateCacheTag('students');
+    revalidateCacheTag('bird-view');
+    revalidatePath('/users');
+
     return NextResponse.json({ success: true, updatedRecord }, { status: 200 });
   } catch (error: any) {
     console.error('Error updating profile:', error);
-    try {
-      require('fs').writeFileSync('/tmp/prisma-update-error.log', JSON.stringify({
-        message: error.message,
-        stack: error.stack
-      }, null, 2));
-    } catch(e) {}
     return NextResponse.json({ error: 'Failed to update profile', details: error.message }, { status: 500 });
   }
 }

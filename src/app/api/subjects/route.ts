@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getCachedSubjects, revalidateCacheTag, revalidatePath } from '@/lib/cached-queries';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,25 +8,31 @@ export async function POST(request: Request) {
   try {
     const data = await request.json();
     
-    // Check for duplicate entry
+    // Check for duplicate entry (same name)
     const existingSubject = await prisma.subjectEntry.findFirst({
       where: {
-        name: {
-          equals: data.name,
-        }
+        name: { equals: data.name }
       }
     });
 
     if (existingSubject) {
       return NextResponse.json({ error: 'Subject already exists' }, { status: 409 });
     }
-    
+
     const newSubject = await prisma.subjectEntry.create({
       data: {
         name: data.name,
-        code: data.code || null,
+        code: data.code,
       },
     });
+
+    // Invalidate cache immediately
+    revalidateCacheTag('subjects');
+    revalidateCacheTag('task-users');
+    revalidateCacheTag('bird-view');
+    revalidatePath('/subject');
+    revalidatePath('/view-data');
+    revalidatePath('/bird-view');
 
     return NextResponse.json(newSubject, { status: 201 });
   } catch (error: any) {
@@ -36,10 +43,13 @@ export async function POST(request: Request) {
 
 export async function GET() {
   try {
-    const subjects = await prisma.subjectEntry.findMany({
-      orderBy: { name: 'asc' },
+    const subjects = await getCachedSubjects();
+    return NextResponse.json(subjects, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      },
     });
-    return NextResponse.json(subjects, { status: 200 });
   } catch (error: any) {
     console.error(error);
     return NextResponse.json({ error: 'Failed to fetch subjects', details: error.message }, { status: 500 });

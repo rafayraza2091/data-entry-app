@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
+import { revalidateCacheTag, revalidatePath } from '@/lib/cached-queries';
+
+export const dynamic = 'force-dynamic';
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -98,6 +101,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         }
       }
     }
+
+    // Invalidate caches
+    revalidateCacheTag('task-users');
+    revalidateCacheTag('users');
+    revalidateCacheTag('students');
+    revalidateCacheTag('bird-view');
+    revalidatePath('/admin/users');
+    revalidatePath('/users');
+    revalidatePath('/bird-view');
 
     return NextResponse.json({ success: true, user: updatedUser });
   } catch (error) {

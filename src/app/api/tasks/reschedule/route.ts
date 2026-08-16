@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
+import { revalidateCacheTag, revalidatePath } from '@/lib/cached-queries';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
@@ -17,7 +20,7 @@ export async function POST(request: Request) {
 
     // Find original task
     const originalTask = await prisma.taskEntry.findUnique({
-      where: { id: Number(originalTaskId) }
+      where: { id: Number(originalTaskId) },
     });
 
     if (!originalTask) {
@@ -25,7 +28,7 @@ export async function POST(request: Request) {
     }
 
     if (originalTask.rescheduledToId) {
-       return NextResponse.json({ error: 'Task was already rescheduled' }, { status: 400 });
+      return NextResponse.json({ error: 'Task was already rescheduled' }, { status: 400 });
     }
 
     const currentUserName = `${session.firstName} ${session.lastName}`.trim();
@@ -50,8 +53,8 @@ export async function POST(request: Request) {
           status: 'OPEN',
           dueDate: new Date(newDate),
           rescheduleCount: newRescheduleCount,
-          rescheduledFromId: originalTask.id
-        }
+          rescheduledFromId: originalTask.id,
+        },
       });
 
       // 2. Update the original task
@@ -59,12 +62,18 @@ export async function POST(request: Request) {
         where: { id: originalTask.id },
         data: {
           status: 'PENDING',
-          rescheduledToId: newTask.id
-        }
+          rescheduledToId: newTask.id,
+        },
       });
 
       return { originalTask: updatedOriginalTask, newTask };
     });
+
+    // Invalidate caches
+    revalidateCacheTag('tasks');
+    revalidateCacheTag('bird-view');
+    revalidatePath('/view-tasks');
+    revalidatePath('/bird-view');
 
     return NextResponse.json(result, { status: 200 });
   } catch (error: any) {

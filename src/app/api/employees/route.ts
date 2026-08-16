@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
+import { getCachedEmployees, revalidateCacheTag, revalidatePath } from '@/lib/cached-queries';
 
-const prisma = new PrismaClient();
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
@@ -53,6 +54,11 @@ export async function POST(request: Request) {
       }
     });
 
+    // Invalidate cache
+    revalidateCacheTag('employees');
+    revalidatePath('/view-employees');
+    revalidatePath('/employee-record');
+
     return NextResponse.json(employeeRecord, { status: 201 });
   } catch (error: any) {
     console.error('Error creating employee record:', error);
@@ -67,9 +73,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const employees = await prisma.employeeRecord.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+    const employees = await getCachedEmployees();
     return NextResponse.json(employees, { status: 200 });
   } catch (error: any) {
     console.error('Error fetching employee records:', error);
@@ -101,6 +105,11 @@ export async function PUT(request: Request) {
       where: { id },
       data: updateData
     });
+
+    // Invalidate cache
+    revalidateCacheTag('employees');
+    revalidatePath('/view-employees');
+    revalidatePath('/employee-record');
 
     return NextResponse.json(updatedRecord, { status: 200 });
   } catch (error: any) {

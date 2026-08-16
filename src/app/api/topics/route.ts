@@ -1,43 +1,44 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getCachedTopics, revalidateCacheTag, revalidatePath } from '@/lib/cached-queries';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
     const data = await request.json();
+    const topicNumStr = (data.topicNumber || data.localTopicNumber || '').toString();
     
-    // Front-end should pass localTopicNumber, we construct the full topic number here
-    // or frontend can pass it directly. Let's construct it here for safety, 
-    // or just assume data.topicNumber is already formatted.
-    // The user said: "the topic number must be as follows: the number of the top chapter would be first, then there should be a point, and then comes the topic number"
-    
-    // We will assume frontend sends localTopicNumber and chapterNumber
-    const formattedTopicNumber = `${data.chapterNumber}.${data.localTopicNumber}`;
-
+    // Check for duplicate entry (same topicNumber, chapterNumber, and book)
     const existingTopic = await prisma.topicEntry.findFirst({
       where: {
-        subject: data.subject,
-        book: data.book,
-        chapterNumber: parseInt(data.chapterNumber, 10),
-        topicNumber: formattedTopicNumber,
+        topicNumber: { equals: topicNumStr },
+        chapterNumber: { equals: Number(data.chapterNumber) },
+        book: { equals: data.book }
       }
     });
 
     if (existingTopic) {
-      return NextResponse.json({ error: 'This topic already exists for this chapter' }, { status: 409 });
+      return NextResponse.json({ error: 'Topic with this number already exists for this chapter' }, { status: 409 });
     }
 
     const newTopic = await prisma.topicEntry.create({
       data: {
-        subject: data.subject,
-        book: data.book,
-        chapterNumber: parseInt(data.chapterNumber, 10),
-        chapterName: data.chapterName,
-        topicNumber: formattedTopicNumber,
+        topicNumber: topicNumStr,
         topicName: data.topicName,
+        chapterNumber: Number(data.chapterNumber),
+        chapterName: data.chapterName || '',
+        subject: data.subject || '',
+        book: data.book,
         exercise: data.exercise || null,
-        page: data.page ? parseInt(data.page, 10) : null,
+        page: data.page ? Number(data.page) : null,
       },
     });
+
+    // Invalidate cache immediately
+    revalidateCacheTag('topics');
+    revalidatePath('/topic');
+    revalidatePath('/view-data');
 
     return NextResponse.json(newTopic, { status: 201 });
   } catch (error: any) {
@@ -49,18 +50,17 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const book = searchParams.get('book');
-    const chapterNumber = searchParams.get('chapterNumber');
+    const book = searchParams.get('book') || undefined;
+    const chapterNumberStr = searchParams.get('chapterNumber');
+    const chapterNumber = chapterNumberStr ? parseInt(chapterNumberStr, 10) : undefined;
 
-    const whereClause: any = {};
-    if (book) whereClause.book = book;
-    if (chapterNumber) whereClause.chapterNumber = parseInt(chapterNumber, 10);
-
-    const topics = await prisma.topicEntry.findMany({
-      where: whereClause,
-      orderBy: [{ subject: 'asc' }, { book: 'asc' }, { chapterNumber: 'asc' }, { topicNumber: 'asc' }],
+    const topics = await getCachedTopics(book, chapterNumber);
+    return NextResponse.json(topics, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      },
     });
-    return NextResponse.json(topics, { status: 200 });
   } catch (error: any) {
     console.error(error);
     return NextResponse.json({ error: 'Failed to fetch topics', details: error.message }, { status: 500 });

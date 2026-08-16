@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
+import { getCachedTaskComments, revalidateCacheTag } from '@/lib/cached-queries';
+
+export const dynamic = 'force-dynamic';
 
 // GET /api/tasks/[id]/comments - Fetch all top-level comments & threaded replies for a task
 export async function GET(
@@ -19,19 +22,7 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid Task ID' }, { status: 400 });
     }
 
-    const comments = await prisma.taskComment.findMany({
-      where: {
-        taskId,
-        parentId: null // Top-level comments only
-      },
-      include: {
-        replies: {
-          orderBy: { createdAt: 'asc' }
-        }
-      },
-      orderBy: { createdAt: 'asc' }
-    });
-
+    const comments = await getCachedTaskComments(taskId);
     return NextResponse.json(comments);
   } catch (error: any) {
     console.error('Error fetching comments:', error);
@@ -78,6 +69,12 @@ export async function POST(
         replies: true
       }
     });
+
+    // Invalidate caches
+    revalidateCacheTag('task-comments');
+    revalidateCacheTag(`task-comments-${taskId}`);
+    revalidateCacheTag('tasks');
+    revalidateCacheTag('bird-view');
 
     return NextResponse.json(comment, { status: 201 });
   } catch (error: any) {
@@ -133,6 +130,12 @@ export async function DELETE(
     await prisma.taskComment.delete({
       where: { id: commentId }
     });
+
+    // Invalidate caches
+    revalidateCacheTag('task-comments');
+    revalidateCacheTag(`task-comments-${taskId}`);
+    revalidateCacheTag('tasks');
+    revalidateCacheTag('bird-view');
 
     return NextResponse.json({ success: true, deletedId: commentId });
   } catch (error: any) {
