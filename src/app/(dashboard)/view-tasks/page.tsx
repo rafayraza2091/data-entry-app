@@ -5,6 +5,7 @@ import ImagePreview from '@/components/ImagePreview';
 import ImageCropper from '@/components/ImageCropper';
 import TaskComments from '@/components/TaskComments';
 import { compressImage } from '@/lib/compressImage';
+import { fetchWithCache, invalidateClientCache } from '@/lib/client-cache';
 
 const getMarksColor = (obtained: number | null | undefined, total: number | null | undefined = 10) => {
   if (obtained === null || obtained === undefined) return 'inherit';
@@ -24,8 +25,8 @@ export default function ViewTasksPage() {
   const [booksList, setBooksList] = useState<any[]>([]);
   const [chaptersList, setChaptersList] = useState<any[]>([]);
   const [topicsList, setTopicsList] = useState<any[]>([]);
-  const [studentsList, setStudentsList] = useState<any[]>([]);
   const [classesList, setClassesList] = useState<any[]>([]);
+  const [studentsList, setStudentsList] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
 
@@ -67,30 +68,28 @@ export default function ViewTasksPage() {
   useEffect(() => {
     async function fetchMetadata() {
       try {
-        const [subjRes, booksRes, chapRes, topRes, usersRes, classesRes, meRes] = await Promise.all([
-          fetch('/api/subjects'),
-          fetch('/api/books'),
-          fetch('/api/chapters'),
-          fetch('/api/topics'),
-          fetch(`/api/task-users?t=${Date.now()}`),
-          fetch('/api/classes'),
-          fetch('/api/auth/me')
+        const [subj, books, chap, top, users, classes, me] = await Promise.all([
+          fetchWithCache<any>('/api/subjects', { maxAgeMs: 86400000 }),
+          fetchWithCache<any>('/api/books', { maxAgeMs: 86400000 }),
+          fetchWithCache<any>('/api/chapters', { maxAgeMs: 86400000 }),
+          fetchWithCache<any>('/api/topics', { maxAgeMs: 86400000 }),
+          fetchWithCache<any>('/api/task-users', { maxAgeMs: 300000 }),
+          fetchWithCache<any>('/api/classes', { maxAgeMs: 86400000 }),
+          fetchWithCache<any>('/api/auth/me', { maxAgeMs: 3600000 })
         ]);
         
-        if (meRes.ok) {
-          const data = await meRes.json();
-          setCurrentUser(data.user);
+        if (me?.user) {
+          setCurrentUser(me.user);
         }
 
-        if (subjRes.ok) setSubjectsList(await subjRes.json());
-        if (booksRes.ok) setBooksList(await booksRes.json());
-        if (chapRes.ok) setChaptersList(await chapRes.json());
-        if (topRes.ok) setTopicsList(await topRes.json());
-        if (classesRes.ok) setClassesList(await classesRes.json());
-        if (usersRes.ok) {
-          const data = await usersRes.json();
+        if (subj) setSubjectsList(subj);
+        if (books) setBooksList(books);
+        if (chap) setChaptersList(chap);
+        if (top) setTopicsList(top);
+        if (classes) setClassesList(classes);
+        if (users?.students) {
           const formatName = (u: any) => `${u.firstName} ${u.lastName}`.trim();
-          setStudentsList(data.students?.map(formatName) || []);
+          setStudentsList(users.students.map(formatName));
         }
       } catch (error) {
         console.error('Failed to fetch metadata', error);
@@ -114,9 +113,15 @@ export default function ViewTasksPage() {
           url += `?${queryString}`;
         }
 
-        const tasksRes = await fetch(url);
-        if (tasksRes.ok) {
-          const json = await tasksRes.json();
+        const json = await fetchWithCache<any>(url, {
+          maxAgeMs: 120000,
+          onRevalidate: (fresh) => {
+            if (fresh?.data || Array.isArray(fresh)) {
+              setTasks(fresh.data || fresh);
+            }
+          },
+        });
+        if (json) {
           setTasks(json.data || json);
         }
       } catch (error) {
@@ -129,7 +134,7 @@ export default function ViewTasksPage() {
     // Debounce the fetch to avoid spamming the backend while typing date/time
     const timeoutId = setTimeout(() => {
       fetchTasks();
-    }, 500);
+    }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [filterStartDate, filterEndDate]);

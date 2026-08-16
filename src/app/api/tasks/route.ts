@@ -98,7 +98,12 @@ export async function GET(request: Request) {
       meta: {
         totalRecords: tasks.length
       }
-    }, { status: 200 });
+    }, {
+      status: 200,
+      headers: {
+        'Cache-Control': 'private, max-age=15, stale-while-revalidate=120',
+      }
+    });
   } catch (error: any) {
     console.error('Error fetching tasks:', error);
     return NextResponse.json({ error: 'Failed to fetch tasks', details: error.message }, { status: 500 });

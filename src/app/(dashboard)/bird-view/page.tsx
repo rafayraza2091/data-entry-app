@@ -126,6 +126,7 @@ import ImagePreview from '@/components/ImagePreview';
 import ImageCropper from '@/components/ImageCropper';
 import TaskComments from '@/components/TaskComments';
 import { compressImage } from '@/lib/compressImage';
+import { fetchWithCache, invalidateClientCache } from '@/lib/client-cache';
 
 interface Subject {
   id: number;
@@ -490,9 +491,8 @@ export default function BirdViewPage() {
   useEffect(() => {
     async function fetchUser() {
       try {
-        const res = await fetch('/api/auth/me');
-        if (res.ok) {
-          const data = await res.json();
+        const data = await fetchWithCache<any>('/api/auth/me', { maxAgeMs: 3600000 });
+        if (data?.user) {
           setCurrentUser(data.user);
         }
       } catch (err) { }
@@ -681,6 +681,8 @@ export default function BirdViewPage() {
 
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
+  const isInitialMountRef = useRef(true);
+
   useEffect(() => {
     setCurrentDate(new Date().toLocaleDateString('en-GB', {
       day: 'numeric',
@@ -692,30 +694,28 @@ export default function BirdViewPage() {
       try {
         const initialDateStr = getLocalDateString(new Date());
 
-        const [response, chapRes, topRes, taskUsersRes, booksRes] = await Promise.all([
-          fetch(`/api/bird-view?date=${initialDateStr}&view=task`),
-          fetch('/api/chapters'),
-          fetch('/api/topics'),
-          fetch('/api/task-users'),
-          fetch('/api/books')
+        const [data, chapters, topics, taskUsers, books] = await Promise.all([
+          fetchWithCache<any>(`/api/bird-view?date=${initialDateStr}&view=task`, { maxAgeMs: 180000 }),
+          fetchWithCache<any>('/api/chapters', { maxAgeMs: 86400000 }),
+          fetchWithCache<any>('/api/topics', { maxAgeMs: 86400000 }),
+          fetchWithCache<any>('/api/task-users', { maxAgeMs: 300000 }),
+          fetchWithCache<any>('/api/books', { maxAgeMs: 86400000 })
         ]);
 
-        if (chapRes.ok) setChaptersList(await chapRes.json());
-        if (topRes.ok) setTopicsList(await topRes.json());
-        if (booksRes.ok) setBooksList(await booksRes.json());
+        if (chapters) setChaptersList(chapters);
+        if (topics) setTopicsList(topics);
+        if (books) setBooksList(books);
 
-        if (taskUsersRes.ok) {
-          const data = await taskUsersRes.json();
-          const names = [...(data.teachers || []), ...(data.admins || []), ...(data.owners || [])]
-            .map(u => `${u.firstName || ''} ${u.lastName || ''}`.trim())
+        if (taskUsers) {
+          const names = [...(taskUsers.teachers || []), ...(taskUsers.admins || []), ...(taskUsers.owners || [])]
+            .map((u: any) => `${u.firstName || ''} ${u.lastName || ''}`.trim())
             .filter(Boolean);
           setReportersList(Array.from(new Set(names)));
         }
 
-        if (response.ok) {
-          const data = await response.json();
-          let fetchedSubjects: Subject[] = data.subjects;
-          let fetchedStudents: Student[] = data.students;
+        if (data) {
+          let fetchedSubjects: Subject[] = data.subjects || [];
+          let fetchedStudents: Student[] = data.students || [];
 
           const savedOrderStr = localStorage.getItem('birdViewOrder');
           if (savedOrderStr) {
@@ -761,17 +761,32 @@ export default function BirdViewPage() {
     fetchData();
   }, []);
 
-  // Fetch dynamic cell data on date or view change
+  // Fetch dynamic cell data on date or view change (Instant 0ms with SWR background revalidation)
   useEffect(() => {
     if (!selectedDate) return;
+
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
+    }
 
     async function fetchCellData() {
       try {
         const dateToUse = selectedDate || new Date();
         const dateStr = getLocalDateString(dateToUse);
-        const response = await fetch(`/api/bird-view?date=${dateStr}&view=${activeView}`);
-        if (response.ok) {
-          const data = await response.json();
+        const url = `/api/bird-view?date=${dateStr}&view=${activeView}`;
+
+        const data = await fetchWithCache<any>(url, {
+          maxAgeMs: 180000,
+          onRevalidate: (fresh) => {
+            if (fresh) {
+              if (fresh.cellData) setCellData(fresh.cellData);
+              if (fresh.attendanceData) setAttendanceData(fresh.attendanceData);
+            }
+          },
+        });
+
+        if (data) {
           if (data.cellData) {
             setCellData(data.cellData);
           } else {
@@ -788,10 +803,6 @@ export default function BirdViewPage() {
       }
     }
 
-    // Skip initial fetch since the first useEffect handles it
-    if (selectedDate && getLocalDateString(selectedDate) === getLocalDateString(new Date()) && activeView === 'task' && refreshTrigger === 0) {
-      // It might have already fetched, but let's just fetch it anyway to be safe, it's fast
-    }
     fetchCellData();
   }, [selectedDate, activeView, refreshTrigger]);
 

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { fetchWithCache, invalidateClientCache } from '@/lib/client-cache';
 
 type AttendanceRecord = {
   userId: number;
@@ -28,8 +29,7 @@ export default function AttendancePage() {
   const [forceEditOld, setForceEditOld] = useState(false);
 
   useEffect(() => {
-    fetch('/api/auth/me')
-      .then(res => res.json())
+    fetchWithCache<any>('/api/auth/me', { maxAgeMs: 3600000 })
       .then(data => {
         if (data && data.user) {
           setCurrentUserRole(data.user.role);
@@ -48,10 +48,16 @@ export default function AttendancePage() {
   const fetchAttendance = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/attendance?date=${date}&role=${roleTab}`);
-      if (!res.ok) throw new Error('Failed to fetch attendance');
-      const data = await res.json();
-      setRecords(data);
+      const url = `/api/attendance?date=${date}&role=${roleTab}`;
+      const data = await fetchWithCache<AttendanceRecord[]>(url, {
+        maxAgeMs: 120000,
+        onRevalidate: (fresh) => {
+          if (Array.isArray(fresh)) setRecords(fresh);
+        },
+      });
+      if (Array.isArray(data)) {
+        setRecords(data);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -101,6 +107,8 @@ export default function AttendancePage() {
       }
 
       alert('Attendance saved successfully!');
+      invalidateClientCache('/api/attendance');
+      invalidateClientCache('/api/bird-view');
       fetchAttendance(); // Refresh to get lock statuses
     } catch (err: any) {
       alert(err.message);
@@ -125,6 +133,8 @@ export default function AttendancePage() {
       }
 
       alert('Attendance confirmed successfully!');
+      invalidateClientCache('/api/attendance');
+      invalidateClientCache('/api/bird-view');
       fetchAttendance();
     } catch (err: any) {
       alert(err.message);

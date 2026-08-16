@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { clearAllClientCache } from '@/lib/client-cache';
 
 const getVibrantColor = (str: string) => {
   const colors = [
@@ -36,10 +37,12 @@ export default function ProfileMenu({ firstName: initialFirstName, role }: { fir
 
   const handleLogout = async () => {
     try {
+      clearAllClientCache();
       await fetch('/api/auth/logout', { method: 'POST' });
       window.location.href = '/login';
     } catch (error) {
       console.error('Logout failed', error);
+      clearAllClientCache();
       window.location.href = '/login';
     }
   };
